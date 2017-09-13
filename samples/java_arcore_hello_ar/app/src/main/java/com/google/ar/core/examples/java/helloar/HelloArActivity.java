@@ -16,6 +16,18 @@
 
 package com.google.ar.core.examples.java.helloar;
 
+import android.opengl.GLES20;
+import android.opengl.GLSurfaceView;
+import android.os.Bundle;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.Toast;
+
 import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.Frame.TrackingState;
@@ -29,18 +41,6 @@ import com.google.ar.core.examples.java.helloar.rendering.ObjectRenderer.BlendMo
 import com.google.ar.core.examples.java.helloar.rendering.PlaneAttachment;
 import com.google.ar.core.examples.java.helloar.rendering.PlaneRenderer;
 import com.google.ar.core.examples.java.helloar.rendering.PointCloudRenderer;
-
-import android.opengl.GLES20;
-import android.opengl.GLSurfaceView;
-import android.os.Bundle;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
-import android.view.GestureDetector;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.WindowManager;
-import android.widget.Toast;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -78,6 +78,7 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     // Tap handling and UI.
     private ArrayBlockingQueue<MotionEvent> mQueuedSingleTaps = new ArrayBlockingQueue<>(16);
     private ArrayList<PlaneAttachment> mTouches = new ArrayList<>();
+    private ArrayBlockingQueue<MotionEvent> mQueuedDoubleTaps = new ArrayBlockingQueue<MotionEvent>(16);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,9 +98,16 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
 
         // Set up tap listener.
         mGestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+
             @Override
-            public boolean onSingleTapUp(MotionEvent e) {
+            public boolean onSingleTapConfirmed(MotionEvent e) {
                 onSingleTap(e);
+                return true;
+            }
+
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                onDoubleTapTapped(e);
                 return true;
             }
 
@@ -154,7 +162,7 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         if (!CameraPermissionHelper.hasCameraPermission(this)) {
             Toast.makeText(this,
-                "Camera permission is needed to run this application", Toast.LENGTH_LONG).show();
+                    "Camera permission is needed to run this application", Toast.LENGTH_LONG).show();
             finish();
         }
     }
@@ -165,12 +173,12 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
         if (hasFocus) {
             // Standard Android full-screen functionality.
             getWindow().getDecorView().setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         }
     }
@@ -178,6 +186,11 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     private void onSingleTap(MotionEvent e) {
         // Queue tap if there is space. Tap is lost if queue is full.
         mQueuedSingleTaps.offer(e);
+    }
+
+    private void onDoubleTapTapped(MotionEvent e) {
+        // Queue tap if there is space. Tap is lost if queue is full.
+        mQueuedDoubleTaps.offer(e);
     }
 
     @Override
@@ -194,7 +207,7 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
             mVirtualObject.setMaterialProperties(0.0f, 3.5f, 1.0f, 6.0f);
 
             mVirtualObjectShadow.createOnGlThread(/*context=*/this,
-                "andy_shadow.obj", "andy_shadow.png");
+                    "andy_shadow.obj", "andy_shadow.png");
             mVirtualObjectShadow.setBlendMode(BlendMode.Shadow);
             mVirtualObjectShadow.setMaterialProperties(1.0f, 0.0f, 0.0f, 1.0f);
         } catch (IOException e) {
@@ -228,6 +241,20 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
             Frame frame = mSession.update();
 
             // Handle taps. Handling only one tap per frame, as taps are usually low frequency
+
+            MotionEvent doubleTap = mQueuedDoubleTaps.poll();
+            if (doubleTap != null) {
+                for (HitResult hitResult : frame.hitTest(doubleTap)) {
+                    if (hitResult instanceof PlaneHitResult && ((PlaneHitResult) hitResult).isHitInPolygon()) {
+                        if (mTouches.size() > 0) {
+                            mSession.removeAnchors(Arrays.asList(mTouches.get(mTouches.size() - 1).getAnchor()));
+                            mTouches.remove(mTouches.size() - 1);
+                        }
+                        break;
+                    }
+                }
+            }
+
             // compared to frame rate.
             MotionEvent tap = mQueuedSingleTaps.poll();
             if (tap != null && frame.getTrackingState() == TrackingState.TRACKING) {
@@ -244,8 +271,8 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
                         // space. This anchor will be used in PlaneAttachment to place the 3d model
                         // in the correct position relative both to the world and to the plane.
                         mTouches.add(new PlaneAttachment(
-                            ((PlaneHitResult) hit).getPlane(),
-                            mSession.addAnchor(hit.getHitPose())));
+                                ((PlaneHitResult) hit).getPlane(),
+                                mSession.addAnchor(hit.getHitPose())));
 
                         // Hits are sorted by depth. Consider only closest hit on a plane.
                         break;
@@ -319,8 +346,8 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
             @Override
             public void run() {
                 mLoadingMessageSnackbar = Snackbar.make(
-                    HelloArActivity.this.findViewById(android.R.id.content),
-                    "Searching for surfaces...", Snackbar.LENGTH_INDEFINITE);
+                        HelloArActivity.this.findViewById(android.R.id.content),
+                        "Searching for surfaces...", Snackbar.LENGTH_INDEFINITE);
                 mLoadingMessageSnackbar.getView().setBackgroundColor(0xbf323232);
                 mLoadingMessageSnackbar.show();
             }
