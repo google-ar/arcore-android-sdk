@@ -241,12 +241,14 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
             Frame frame = mSession.update();
 
             // Handle taps. Handling only one tap per frame, as taps are usually low frequency
-
+            // Handle double taps to remove first.
             MotionEvent doubleTap = mQueuedDoubleTaps.poll();
             if (doubleTap != null) {
+                // compared to frame rate.
                 for (HitResult hitResult : frame.hitTest(doubleTap)) {
                     if (hitResult instanceof PlaneHitResult && ((PlaneHitResult) hitResult).isHitInPolygon()) {
                         if (mTouches.size() > 0) {
+                            //Remove the most recently added Andy
                             mSession.removeAnchors(Arrays.asList(mTouches.get(mTouches.size() - 1).getAnchor()));
                             mTouches.remove(mTouches.size() - 1);
                         }
@@ -255,13 +257,14 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
                 }
             }
 
-            // compared to frame rate.
+            //Next handle single taps to add.
             MotionEvent tap = mQueuedSingleTaps.poll();
+            // compared to frame rate.
             if (tap != null && frame.getTrackingState() == TrackingState.TRACKING) {
                 for (HitResult hit : frame.hitTest(tap)) {
                     // Check if any plane was hit, and if it was hit inside the plane polygon.
                     if (hit instanceof PlaneHitResult && ((PlaneHitResult) hit).isHitInPolygon()) {
-                        // Cap the number of objects created. This avoids overloading both the
+                        // Cap the number of Andys created. This avoids overloading both the
                         // rendering system and ARCore.
                         if (mTouches.size() >= 16) {
                             mSession.removeAnchors(Arrays.asList(mTouches.get(0).getAnchor()));
