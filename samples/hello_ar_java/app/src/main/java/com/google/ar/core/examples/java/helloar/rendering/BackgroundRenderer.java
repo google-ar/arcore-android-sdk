@@ -48,6 +48,8 @@ public class BackgroundRenderer {
     private int mQuadTexCoordParam;
     private int mTextureId = -1;
 
+    private float mLastZoom = 1.0f;
+
     public BackgroundRenderer() {
     }
 
@@ -125,10 +127,15 @@ public class BackgroundRenderer {
      *
      * @param frame The last {@code Frame} returned by {@link Session#update()}.
      */
-    public void draw(Frame frame) {
+    public void draw(Frame frame, float zoom) {
         // If display rotation changed (also includes view size change), we need to re-query the uv
         // coordinates for the screen rect, as they may have changed as well.
-        if (frame.hasDisplayGeometryChanged()) {
+        if (frame.hasDisplayGeometryChanged() || zoom != mLastZoom) {
+            mLastZoom = zoom;
+            for(int i=0; i<QUAD_TEXCOORDS.length; ++i) {
+                mQuadTexCoord.put((QUAD_TEXCOORDS[i]-0.5f) / zoom + 0.5f);
+            }
+            mQuadTexCoord.position(0);
             frame.transformDisplayUvCoords(mQuadTexCoord, mQuadTexCoordTransformed);
         }
 
