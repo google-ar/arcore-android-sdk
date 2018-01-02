@@ -35,6 +35,7 @@ import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
 import com.google.ar.core.PointCloud;
+import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.Trackable;
 import com.google.ar.core.Trackable.TrackingState;
@@ -73,6 +74,8 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     private final ObjectRenderer mVirtualObjectShadow = new ObjectRenderer();
     private final PlaneRenderer mPlaneRenderer = new PlaneRenderer();
     private final PointCloudRenderer mPointCloud = new PointCloudRenderer();
+
+    private final Pose mCameraRelativePose = Pose.makeTranslation(0.15f, -0.15f, -0.5f);
 
     // Temporary matrix allocated here to reduce number of allocations for each frame.
     private final float[] mAnchorMatrix = new float[16];
@@ -353,6 +356,14 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
                 mVirtualObjectShadow.updateModelMatrix(mAnchorMatrix, scaleFactor);
                 mVirtualObject.draw(viewmtx, projmtx, lightIntensity);
                 mVirtualObjectShadow.draw(viewmtx, projmtx, lightIntensity);
+            }
+
+            // Draw a floating android locked to the camera
+            {
+                frame.getCamera().getDisplayOrientedPose()
+                    .compose(mCameraRelativePose).toMatrix(mAnchorMatrix, 0);
+                mVirtualObject.updateModelMatrix(mAnchorMatrix, 0.5f);
+                mVirtualObject.draw(viewmtx, projmtx, lightIntensity);
             }
 
         } catch (Throwable t) {
