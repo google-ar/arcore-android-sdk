@@ -18,6 +18,7 @@ package com.google.ar.core.examples.java.helloar;
 
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.opengl.Matrix;
 import android.os.Bundle;
 import android.support.design.widget.BaseTransientBottomBar;
 import android.support.design.widget.Snackbar;
@@ -25,6 +26,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Toast;
@@ -65,8 +67,11 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
 
     private Session mSession;
     private GestureDetector mGestureDetector;
+    private ScaleGestureDetector mScaleGestureDetector;
     private Snackbar mMessageSnackbar;
     private DisplayRotationHelper mDisplayRotationHelper;
+
+    private float mZoomFactor = 1.0f;
 
     private final BackgroundRenderer mBackgroundRenderer = new BackgroundRenderer();
     private final ObjectRenderer mVirtualObject = new ObjectRenderer();
@@ -102,9 +107,20 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
             }
         });
 
+        mScaleGestureDetector = new ScaleGestureDetector(this, new ScaleGestureDetector
+            .SimpleOnScaleGestureListener() {
+            @Override
+            public boolean onScale(ScaleGestureDetector detector) {
+                mZoomFactor = Math.min(Math.max(1.0f, mZoomFactor * detector.getScaleFactor()),
+                    3.0f);
+                return true;
+            }
+        });
+
         mSurfaceView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
+                mScaleGestureDetector.onTouchEvent(event);
                 return mGestureDetector.onTouchEvent(event);
             }
         });
@@ -296,7 +312,7 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
             }
 
             // Draw background.
-            mBackgroundRenderer.draw(frame);
+            mBackgroundRenderer.draw(frame, mZoomFactor);
 
             // If not tracking, don't draw 3d objects.
             if (camera.getTrackingState() == TrackingState.PAUSED) {
@@ -304,8 +320,11 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
             }
 
             // Get projection matrix.
-            float[] projmtx = new float[16];
-            camera.getProjectionMatrix(projmtx, 0, 0.1f, 100.0f);
+            float[] projmtx = new float[48];
+            camera.getProjectionMatrix(projmtx, 16, 0.1f, 100.0f);
+            Matrix.setIdentityM(projmtx, 32);
+            Matrix.scaleM(projmtx, 32, mZoomFactor, mZoomFactor, 1.0f);
+            Matrix.multiplyMM(projmtx, 0, projmtx, 16, projmtx, 32);
 
             // Get camera matrix and draw.
             float[] viewmtx = new float[16];
