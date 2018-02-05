@@ -124,10 +124,10 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
             message = "Please install ARCore";
             exception = e;
         } catch (UnavailableApkTooOldException e) {
-            message = "Please update ARCore";
+            message = "Please update this app";
             exception = e;
         } catch (UnavailableSdkTooOldException e) {
-            message = "Please update this app";
+            message = "Please update ARCore";
             exception = e;
         } catch (Exception e) {
             message = "This device does not support AR";
