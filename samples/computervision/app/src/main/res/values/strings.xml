@@ -15,5 +15,5 @@
    limitations under the License.
 -->
 <resources>
-    <string name="app_name">CV Java</string>
+  <string name="app_name">CV Java</string>
 </resources>

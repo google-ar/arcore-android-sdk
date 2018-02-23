@@ -17,9 +17,6 @@ allprojects {
         google()
         jcenter()
         mavenLocal()
-        maven {
-            url "${project.rootDir}/../../libraries/m2repository"
-        }
     }
 }
 

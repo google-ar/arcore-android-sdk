@@ -1,5 +1,6 @@
 package com.google.ar.core.examples.c.helloar;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
@@ -17,13 +18,13 @@ public class JniInterface {
   private static final String TAG = "JniInterface";
   static AssetManager assetManager;
 
-  public static native long createNativeApplication(AssetManager assetManager, Context context);
+  public static native long createNativeApplication(AssetManager assetManager);
 
   public static native void destroyNativeApplication(long nativeApplication);
 
   public static native void onPause(long nativeApplication);
 
-  public static native void onResume(long nativeApplication);
+  public static native void onResume(long nativeApplication, Context context, Activity activity);
 
   /** Allocate OpenGL resources for rendering. */
   public static native void onGlSurfaceCreated(long nativeApplication);

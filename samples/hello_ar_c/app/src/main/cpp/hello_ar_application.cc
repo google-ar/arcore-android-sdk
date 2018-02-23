@@ -24,7 +24,11 @@
 
 namespace hello_ar {
 namespace {
+constexpr size_t kMaxNumberOfAndroidsToRender = 20;
 constexpr int32_t kPlaneColorRgbaSize = 16;
+
+const glm::vec3 kWhite = {255, 255, 255};
+
 constexpr std::array<uint32_t, kPlaneColorRgbaSize> kPlaneColorRgba = {
     0xFFFFFFFF, 0xF44336FF, 0xE91E63FF, 0x9C27B0FF, 0x673AB7FF, 0x3F51B5FF,
     0x2196F3FF, 0x03A9F4FF, 0x00BCD4FF, 0x009688FF, 0x4CAF50FF, 0x8BC34AFF,
@@ -38,45 +42,74 @@ inline glm::vec3 GetRandomPlaneColor() {
 }
 }  // namespace
 
-HelloArApplication::HelloArApplication(AAssetManager* asset_manager, void* env,
-                                       void* context)
+HelloArApplication::HelloArApplication(AAssetManager* asset_manager)
     : asset_manager_(asset_manager) {
   LOGI("OnCreate()");
-
-  // === ATTENTION!  ATTENTION!  ATTENTION! ===
-  // This method can and will fail in user-facing situations.  Your application
-  // must handle these cases at least somewhat gracefully.  See HelloAR Java
-  // sample code for reasonable behavior.
-  CHECK(ArSession_create(env, context, &ar_session_) == AR_SUCCESS);
-  CHECK(ar_session_);
-
-  ArConfig* ar_config = nullptr;
-  ArConfig_create(ar_session_, &ar_config);
-  CHECK(ar_config);
-
-  const ArStatus status = ArSession_checkSupported(ar_session_, ar_config);
-  CHECK(status == AR_SUCCESS);
-
-  CHECK(ArSession_configure(ar_session_, ar_config) == AR_SUCCESS);
-
-  ArConfig_destroy(ar_config);
-
-  ArFrame_create(ar_session_, &ar_frame_);
-  CHECK(ar_frame_);
 }
 
 HelloArApplication::~HelloArApplication() {
-  ArSession_destroy(ar_session_);
-  ArFrame_destroy(ar_frame_);
+  if (ar_session_ != nullptr) {
+    ArSession_destroy(ar_session_);
+    ArFrame_destroy(ar_frame_);
+  }
 }
 
 void HelloArApplication::OnPause() {
   LOGI("OnPause()");
-  ArSession_pause(ar_session_);
+  if (ar_session_ != nullptr) {
+    ArSession_pause(ar_session_);
+  }
 }
 
-void HelloArApplication::OnResume() {
+void HelloArApplication::OnResume(void* env, void* context, void* activity) {
   LOGI("OnResume()");
+
+  if (ar_session_ == nullptr) {
+    ArInstallStatus install_status;
+    // If install was not yet requested, that means that we are resuming the
+    // activity first time because of explicit user interaction (such as
+    // launching the application)
+    bool user_requested_install = !install_requested_;
+
+    // === ATTENTION!  ATTENTION!  ATTENTION! ===
+    // This method can and will fail in user-facing situations.  Your
+    // application must handle these cases at least somewhat gracefully.  See
+    // HelloAR Java sample code for reasonable behavior.
+    CHECK(ArCoreApk_requestInstall(env, activity, user_requested_install,
+                                   &install_status) == AR_SUCCESS);
+
+    switch (install_status) {
+      case AR_INSTALL_STATUS_INSTALLED:
+        break;
+      case AR_INSTALL_STATUS_INSTALL_REQUESTED:
+        install_requested_ = true;
+        return;
+    }
+
+    // === ATTENTION!  ATTENTION!  ATTENTION! ===
+    // This method can and will fail in user-facing situations.  Your
+    // application must handle these cases at least somewhat gracefully.  See
+    // HelloAR Java sample code for reasonable behavior.
+    CHECK(ArSession_create(env, context, &ar_session_) == AR_SUCCESS);
+    CHECK(ar_session_);
+
+    ArConfig* ar_config = nullptr;
+    ArConfig_create(ar_session_, &ar_config);
+    CHECK(ar_config);
+
+    const ArStatus status = ArSession_checkSupported(ar_session_, ar_config);
+    CHECK(status == AR_SUCCESS);
+
+    CHECK(ArSession_configure(ar_session_, ar_config) == AR_SUCCESS);
+
+    ArConfig_destroy(ar_config);
+
+    ArFrame_create(ar_session_, &ar_frame_);
+    CHECK(ar_frame_);
+
+    ArSession_setDisplayGeometry(ar_session_, display_rotation_, width_,
+                                 height_);
+  }
 
   const ArStatus status = ArSession_resume(ar_session_);
   CHECK(status == AR_SUCCESS);
@@ -86,8 +119,6 @@ void HelloArApplication::OnSurfaceCreated() {
   LOGI("OnSurfaceCreated()");
 
   background_renderer_.InitializeGlContent();
-  ArSession_setCameraTextureName(ar_session_,
-                                 background_renderer_.GetTextureId());
   point_cloud_renderer_.InitializeGlContent();
   andy_renderer_.InitializeGlContent(asset_manager_, "andy.obj", "andy.png");
   plane_renderer_.InitializeGlContent(asset_manager_);
@@ -97,7 +128,12 @@ void HelloArApplication::OnDisplayGeometryChanged(int display_rotation,
                                                   int width, int height) {
   LOGI("OnSurfaceChanged(%d, %d)", width, height);
   glViewport(0, 0, width, height);
-  ArSession_setDisplayGeometry(ar_session_, display_rotation, width, height);
+  display_rotation_ = display_rotation;
+  width_ = width;
+  height_ = height;
+  if (ar_session_ != nullptr) {
+    ArSession_setDisplayGeometry(ar_session_, display_rotation, width, height);
+  }
 }
 
 void HelloArApplication::OnDrawFrame() {
@@ -109,6 +145,11 @@ void HelloArApplication::OnDrawFrame() {
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  if (ar_session_ == nullptr) return;
+
+  ArSession_setCameraTextureName(ar_session_,
+                                 background_renderer_.GetTextureId());
 
   // Update session to get current frame and render camera background.
   if (ArSession_update(ar_session_, ar_frame_) != AR_SUCCESS) {
@@ -125,9 +166,16 @@ void HelloArApplication::OnDrawFrame() {
                                /*near=*/0.1f, /*far=*/100.f,
                                glm::value_ptr(projection_mat));
 
+  ArTrackingState camera_tracking_state;
+  ArCamera_getTrackingState(ar_session_, ar_camera, &camera_tracking_state);
   ArCamera_release(ar_camera);
 
   background_renderer_.Draw(ar_session_, ar_frame_);
+
+  // If the camera isn't tracking don't bother rendering other objects.
+  if (camera_tracking_state != AR_TRACKING_STATE_TRACKING) {
+    return;
+  }
 
   // Get light estimation value.
   ArLightEstimate* ar_light_estimate;
@@ -176,21 +224,49 @@ void HelloArApplication::OnDrawFrame() {
     ArTrackable* ar_trackable = nullptr;
     ArTrackableList_acquireItem(ar_session_, plane_list, i, &ar_trackable);
     ArPlane* ar_plane = ArAsPlane(ar_trackable);
+    ArTrackingState out_tracking_state;
+    ArTrackable_getTrackingState(ar_session_, ar_trackable,
+                                 &out_tracking_state);
 
-    const auto iter = plane_color_map_.find(ar_plane);
-    glm::vec3 color;
-    if (iter != plane_color_map_.end()) {
-      color = iter->second;
-    } else {
-      color = GetRandomPlaneColor();
-      plane_color_map_.insert({ar_plane, color});
+    ArPlane* subsume_plane;
+    ArPlane_acquireSubsumedBy(ar_session_, ar_plane, &subsume_plane);
+    if (subsume_plane != nullptr) {
+      ArTrackable_release(ArAsTrackable(subsume_plane));
+      continue;
     }
 
-    plane_renderer_.Draw(projection_mat, view_mat, ar_session_, ar_plane,
-                         color);
+    if (ArTrackingState::AR_TRACKING_STATE_TRACKING != out_tracking_state) {
+      continue;
+    }
 
-    ArTrackable_release(ar_trackable);
+    ArTrackingState plane_tracking_state;
+    ArTrackable_getTrackingState(ar_session_, ArAsTrackable(ar_plane),
+                                 &plane_tracking_state);
+    if (plane_tracking_state == AR_TRACKING_STATE_TRACKING) {
+      const auto iter = plane_color_map_.find(ar_plane);
+      glm::vec3 color;
+      if (iter != plane_color_map_.end()) {
+        color = iter->second;
+
+        // If this is an already observed trackable release it so it doesn't
+        // leave an additional reference dangling.
+        ArTrackable_release(ar_trackable);
+      } else {
+        // The first plane is always white.
+        if (!first_plane_has_been_found_) {
+          first_plane_has_been_found_ = true;
+          color = kWhite;
+        } else {
+          color = GetRandomPlaneColor();
+        }
+        plane_color_map_.insert({ar_plane, color});
+      }
+
+      plane_renderer_.Draw(projection_mat, view_mat, ar_session_, ar_plane,
+                           color);
+    }
   }
+
   ArTrackableList_destroy(plane_list);
   plane_list = nullptr;
 
@@ -218,39 +294,50 @@ void HelloArApplication::OnTouched(float x, float y) {
 
     // The hitTest method sorts the resulting list by distance from the camera,
     // increasing.  The first hit result will usually be the most relevant when
-    // responding to user input
-    for (int32_t i = 0; i < hit_result_list_size; ++i) {
-      ArHitResult* ar_hit_result = nullptr;
-      ArHitResult_create(ar_session_, &ar_hit_result);
-      ArHitResultList_getItem(ar_session_, hit_result_list, i, ar_hit_result);
+    // responding to user input.
 
-      if (ar_hit_result == nullptr) {
+    ArHitResult* ar_hit_result = nullptr;
+    for (int32_t i = 0; i < hit_result_list_size; ++i) {
+      ArHitResult* ar_hit = nullptr;
+      ArHitResult_create(ar_session_, &ar_hit);
+      ArHitResultList_getItem(ar_session_, hit_result_list, i, ar_hit);
+
+      if (ar_hit == nullptr) {
         LOGE("HelloArApplication::OnTouched ArHitResultList_getItem error");
         return;
       }
 
-      // Only consider planes for this sample app.
       ArTrackable* ar_trackable = nullptr;
-      ArHitResult_acquireTrackable(ar_session_, ar_hit_result, &ar_trackable);
+      ArHitResult_acquireTrackable(ar_session_, ar_hit, &ar_trackable);
       ArTrackableType ar_trackable_type = AR_TRACKABLE_NOT_VALID;
       ArTrackable_getType(ar_session_, ar_trackable, &ar_trackable_type);
-      if (ar_trackable_type != AR_TRACKABLE_PLANE) {
-        ArTrackable_release(ar_trackable);
-        continue;
-      }
+      // Creates an anchor if a plane or an oriented point was hit.
+      if (AR_TRACKABLE_PLANE == ar_trackable_type) {
+        ArPose* ar_pose = nullptr;
+        ArPose_create(ar_session_, nullptr, &ar_pose);
+        ArHitResult_getHitPose(ar_session_, ar_hit, ar_pose);
+        int32_t in_polygon = 0;
+        ArPlane* ar_plane = ArAsPlane(ar_trackable);
+        ArPlane_isPoseInPolygon(ar_session_, ar_plane, ar_pose, &in_polygon);
+        ArPose_destroy(ar_pose);
+        if (!in_polygon) {
+          continue;
+        }
 
-      ArPose* ar_pose = nullptr;
-      ArPose_create(ar_session_, nullptr, &ar_pose);
-      ArHitResult_getHitPose(ar_session_, ar_hit_result, ar_pose);
-      int32_t in_polygon = 0;
-      ArPlane* ar_plane = ArAsPlane(ar_trackable);
-      ArPlane_isPoseInPolygon(ar_session_, ar_plane, ar_pose, &in_polygon);
-      ArTrackable_release(ar_trackable);
-      ArPose_destroy(ar_pose);
-      if (!in_polygon) {
-        continue;
+        ar_hit_result = ar_hit;
+        break;
+      } else if (AR_TRACKABLE_POINT == ar_trackable_type) {
+        ArPoint* ar_point = ArAsPoint(ar_trackable);
+        ArPointOrientationMode mode;
+        ArPoint_getOrientationMode(ar_session_, ar_point, &mode);
+        if (AR_POINT_ORIENTATION_ESTIMATED_SURFACE_NORMAL == mode) {
+          ar_hit_result = ar_hit;
+          break;
+        }
       }
+    }
 
+    if (ar_hit_result) {
       // Note that the application is responsible for releasing the anchor
       // pointer after using it. Call ArAnchor_release(anchor) to release.
       ArAnchor* anchor = nullptr;
@@ -265,16 +352,21 @@ void HelloArApplication::OnTouched(float x, float y) {
       ArAnchor_getTrackingState(ar_session_, anchor, &tracking_state);
       if (tracking_state != AR_TRACKING_STATE_TRACKING) {
         ArAnchor_release(anchor);
-        continue;
+        return;
       }
 
-      tracked_obj_set_.insert(anchor);
+      if (tracked_obj_set_.size() >= kMaxNumberOfAndroidsToRender) {
+        ArAnchor_release(tracked_obj_set_[0]);
+        tracked_obj_set_.erase(tracked_obj_set_.begin());
+      }
+
+      tracked_obj_set_.push_back(anchor);
       ArHitResult_destroy(ar_hit_result);
       ar_hit_result = nullptr;
-    }
 
-    ArHitResultList_destroy(hit_result_list);
-    hit_result_list = nullptr;
+      ArHitResultList_destroy(hit_result_list);
+      hit_result_list = nullptr;
+    }
   }
 }
 

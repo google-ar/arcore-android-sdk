@@ -119,7 +119,7 @@ public class HelloArActivity extends AppCompatActivity
     mSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
 
     JniInterface.assetManager = getAssets();
-    mNativeApplication = JniInterface.createNativeApplication(getAssets(), getApplicationContext());
+    mNativeApplication = JniInterface.createNativeApplication(getAssets());
 
     mPlaneStatusCheckingHandler = new Handler();
   }
@@ -134,7 +134,7 @@ public class HelloArActivity extends AppCompatActivity
       return;
     }
 
-    JniInterface.onResume(mNativeApplication);
+    JniInterface.onResume(mNativeApplication, getApplicationContext(), this);
     mSurfaceView.onResume();
 
     mLoadingMessageSnackbar =

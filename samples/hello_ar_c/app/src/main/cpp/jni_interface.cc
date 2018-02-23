@@ -46,9 +46,9 @@ jint JNI_OnLoad(JavaVM *vm, void *) {
 }
 
 JNI_METHOD(jlong, createNativeApplication)
-(JNIEnv *env, jclass, jobject j_asset_manager, jobject context) {
+(JNIEnv *env, jclass, jobject j_asset_manager) {
   AAssetManager *asset_manager = AAssetManager_fromJava(env, j_asset_manager);
-  return jptr(new hello_ar::HelloArApplication(asset_manager, env, context));
+  return jptr(new hello_ar::HelloArApplication(asset_manager));
 }
 
 JNI_METHOD(void, destroyNativeApplication)
@@ -62,8 +62,9 @@ JNI_METHOD(void, onPause)
 }
 
 JNI_METHOD(void, onResume)
-(JNIEnv *, jclass, jlong native_application) {
-  native(native_application)->OnResume();
+(JNIEnv *env, jclass, jlong native_application, jobject context,
+ jobject activity) {
+  native(native_application)->OnResume(env, context, activity);
 }
 
 JNI_METHOD(void, onGlSurfaceCreated)

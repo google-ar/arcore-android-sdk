@@ -28,20 +28,16 @@ public final class CameraPermissionHelper {
   private static final int CAMERA_PERMISSION_CODE = 0;
   private static final String CAMERA_PERMISSION = Manifest.permission.CAMERA;
 
-  /**
-   * Check to see we have the necessary permissions for this app.
-   */
+  /** Check to see we have the necessary permissions for this app. */
   public static boolean hasCameraPermission(Activity activity) {
     return ContextCompat.checkSelfPermission(activity, CAMERA_PERMISSION)
-            == PackageManager.PERMISSION_GRANTED;
+        == PackageManager.PERMISSION_GRANTED;
   }
 
-  /**
-   * Check to see we have the necessary permissions for this app, and ask for them if we don't.
-   */
+  /** Check to see we have the necessary permissions for this app, and ask for them if we don't. */
   public static void requestCameraPermission(Activity activity) {
-    ActivityCompat.requestPermissions(activity, new String[]{CAMERA_PERMISSION},
-            CAMERA_PERMISSION_CODE);
+    ActivityCompat.requestPermissions(
+        activity, new String[] {CAMERA_PERMISSION}, CAMERA_PERMISSION_CODE);
   }
 
   /** Check to see if we need to show the rationale for this permission. */

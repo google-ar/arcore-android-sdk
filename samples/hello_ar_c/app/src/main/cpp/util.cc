@@ -286,8 +286,8 @@ bool LoadObjFile(AAssetManager* mgr, const std::string& file_name,
                 break;
               }
               [[clang::fallthrough]];
-              // Intentionally falling to default error case because vertex
-              // normal face only has two values.
+            // Intentionally falling to default error case because vertex
+            // normal face only has two values.
             default:
               // Error formatting.
               LOGE(
