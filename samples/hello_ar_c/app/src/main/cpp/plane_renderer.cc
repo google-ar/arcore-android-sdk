@@ -69,7 +69,7 @@ void PlaneRenderer::InitializeGlContent(AAssetManager* asset_manager) {
                   GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  if (!util::LoadPngFromAssetManager(GL_TEXTURE_2D, "trigrid.png")) {
+  if (!util::LoadPngFromAssetManager(GL_TEXTURE_2D, "models/trigrid.png")) {
     LOGE("Could not load png texture for planes.");
   }
 

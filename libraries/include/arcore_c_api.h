@@ -236,6 +236,17 @@ typedef struct ArPointCloud_ ArPointCloud;
 /// Release with ArImageMetadata_release()
 typedef struct ArImageMetadata_ ArImageMetadata;
 
+/// Accessing CPU image from the tracking camera (@ref ownership "reference
+/// type, large data").
+///
+/// Acquire with ArFrame_acquireCameraImage()<br>
+/// Convert to NDK AImage with ArImage_getNdkImage()<br>
+/// Release with ArImage_releaseImage()
+typedef struct ArImage_ ArImage;
+
+/// Forward declaring the AImage struct from Android NDK, which is used
+/// in ArImage_getNdkImage().
+typedef struct AImage AImage;
 /// @}
 
 // Trackables.
@@ -822,11 +833,12 @@ ArStatus ArSession_checkSupported(const ArSession *session,
                                   const ArConfig *config);
 
 /// Configures the session with the given config.
+/// Note: a seession is always initially configured with the default config.
+/// This should be called if a configuration different than default is needed.
 ///
 /// @return #AR_SUCCESS or any of:
 /// - #AR_ERROR_FATAL
 /// - #AR_ERROR_UNSUPPORTED_CONFIGURATION
-/// - #AR_ERROR_SESSION_NOT_PAUSED
 ArStatus ArSession_configure(ArSession *session, const ArConfig *config);
 
 /// Starts or resumes the ARCore Session.
@@ -1229,7 +1241,6 @@ void ArFrame_getUpdatedTrackables(const ArSession *session,
                                   const ArFrame *frame,
                                   ArTrackableType filter_type,
                                   ArTrackableList *out_trackable_list);
-
 /// @}
 
 // === ArPointCloud methods ===
@@ -1297,6 +1308,27 @@ void ArImageMetadata_getNdkCameraMetadata(
 /// This method may safely be called with @c nullptr - it will do nothing.
 void ArImageMetadata_release(ArImageMetadata *metadata);
 
+// === CPU Image Access types and methods ===
+/// Gets the image of the tracking camera relative to the input session and
+/// frame.
+/// Return values:
+/// @returns #AR_SUCCESS or any of:
+/// - #AR_ERROR_INVALID_ARGUMENT - one more input arguments are invalid.
+/// - #AR_ERROR_DEADLINE_EXCEEDED - the input frame is not the current frame.
+/// - #AR_ERROR_RESOURCE_EXHAUSTED - the caller app has exceeded maximum number
+///   of images that it can hold without releasing.
+/// - #AR_ERROR_NOT_YET_AVAILABLE - image with the timestamp of the input frame
+///   was not found within a bounded amount of time, or the camera failed to
+///   produce the image
+ArStatus ArFrame_acquireCameraImage(ArSession *session,
+                                    ArFrame *frame,
+                                    ArImage **out_image);
+
+/// Converts an ArImage object to an Android NDK AImage object.
+void ArImage_getNdkImage(const ArImage *image, const AImage **out_ndk_image);
+
+/// Releases an instance of ArImage returned by ArFrame_acquireCameraImage().
+void ArImage_release(ArImage *image);
 /// @}
 
 // === ArLightEstimate methods ===
@@ -1318,11 +1350,46 @@ void ArLightEstimate_getState(const ArSession *session,
                               const ArLightEstimate *light_estimate,
                               ArLightEstimateState *out_light_estimate_state);
 
-/// Retrieves the pixel intensity of the current camera view. Values are in the
-/// range (0.0, 1.0), with zero being black and one being white.
+/// Retrieves the pixel intensity, in gamma space, of the current camera view.
+/// Values are in the range (0.0, 1.0), with zero being black and one being
+/// white.
+/// If rendering in gamma space, divide this value by 0.466, which is middle
+/// gray in gamma space, and multiply against the final calculated color after
+/// rendering.
+/// If rendering in linear space, first convert this value to linear space by
+/// rising to the power 2.2. Normalize the result by dividing it by 0.18 which
+/// is middle gray in linear space. Then multiply by the final calculated color
+/// after rendering.
 void ArLightEstimate_getPixelIntensity(const ArSession *session,
                                        const ArLightEstimate *light_estimate,
                                        float *out_pixel_intensity);
+
+// Gets the color correction values that are uploaded to the fragment shader.
+// Use the RGB scale factors (components 0-2) to match the color of the light in
+// the scene. Use the pixel intensity (component 3) to match the intensity of
+// the light in the scene.
+// out_color_correction_4 components are:
+//   [0] Red channel scale factor.
+//   [1] Green channel scale factor.
+//   [2] Blue channel scale factor.
+//   [3] Pixel intensity. This is the same value as the one return from
+//       ArLightEstimate_getPixelIntensity().
+//  The RGB scale factors can be used independently from the pixel intensity
+//  value. They are put together for the convenience of only having to upload
+//  one float4 to the fragment shader.
+//  The RGB scale factors are not intended to brighten nor dim the scene.  They
+//  are only to shift the color of the virtual object towards the color of the
+//  light; not intensity of the light. The pixel intensity is used to match the
+//  intensity of the light in the scene.
+//  Color correction values are reported in gamma space.
+//  If rendering in gamma space, component-wise multiply them against the final
+//  calculated color after rendering.
+//  If rendering in linear space, first convert the values to linear space by
+//  rising to the power 2.2. Then component-wise multiply against the final
+//  calculated color after rendering.
+void ArLightEstimate_getColorCorrection(const ArSession *session,
+                                        const ArLightEstimate *light_estimate,
+                                        float *out_color_correction_4);
 
 /// @}
 
@@ -1430,7 +1497,7 @@ void ArTrackable_getTrackingState(const ArSession *session,
                                   const ArTrackable *trackable,
                                   ArTrackingState *out_tracking_state);
 
-/// Creates aa Anchor at the given pose in the world coordinate space, attached
+/// Creates an Anchor at the given pose in the world coordinate space, attached
 /// to this Trackable, and acquires a reference to it. The type of Trackable
 /// will determine the semantics of attachment and how the Anchor's pose will be
 /// updated to maintain this relationship. Note that the relative offset between

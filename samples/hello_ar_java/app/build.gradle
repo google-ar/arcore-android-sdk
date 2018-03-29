@@ -22,7 +22,7 @@ android {
 
 dependencies {
     // ARCore library
-    implementation 'com.google.ar:core:1.0.0'
+    implementation 'com.google.ar:core:1.1.0'
 
     // Obj - a simple Wavefront OBJ file loader
     // https://github.com/javagl/Obj

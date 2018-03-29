@@ -48,6 +48,7 @@ uniform sampler2D u_Texture;
 
 uniform vec4 u_LightingParameters;
 uniform vec4 u_MaterialParameters;
+uniform vec4 u_ColorCorrectionParameters;
 
 varying vec3 v_ViewPosition;
 varying vec3 v_ViewNormal;
@@ -57,10 +58,12 @@ void main() {
     // We support approximate sRGB gamma.
     const float kGamma = 0.4545454;
     const float kInverseGamma = 2.2;
+    const float kMiddleGrayGamma = 0.466;
 
     // Unpack lighting and material parameters for better naming.
     vec3 viewLightDirection = u_LightingParameters.xyz;
-    float lightIntensity = u_LightingParameters.w;
+    vec3 colorShift = u_ColorCorrectionParameters.rgb;
+    float averagePixelIntensity = u_ColorCorrectionParameters.a;
 
     float materialAmbient = u_MaterialParameters.x;
     float materialDiffuse = u_MaterialParameters.y;
@@ -83,20 +86,23 @@ void main() {
     float ambient = materialAmbient;
 
     // Approximate a hemisphere light (not a harsh directional light).
-    float diffuse = lightIntensity * materialDiffuse *
+    float diffuse = materialDiffuse *
             0.5 * (dot(viewNormal, viewLightDirection) + 1.0);
 
     // Compute specular light.
     vec3 reflectedLightDirection = reflect(viewLightDirection, viewNormal);
     float specularStrength = max(0.0, dot(viewFragmentDirection,
             reflectedLightDirection));
-    float specular = lightIntensity * materialSpecular *
+    float specular = materialSpecular *
             pow(specularStrength, materialSpecularPower);
 
+    vec3 color = objectColor.rgb * (ambient + diffuse) + specular;
     // Apply SRGB gamma before writing the fragment color.
+    color.rgb = pow(color, vec3(kGamma));
+    // Apply average pixel intensity and color shift
+    color *= colorShift * (averagePixelIntensity/kMiddleGrayGamma);
+    gl_FragColor.rgb = color;
     gl_FragColor.a = objectColor.a;
-    gl_FragColor.rgb = pow(objectColor.rgb * (ambient + diffuse) + specular,
-        vec3(kGamma));
 }
 )";
 }  // namespace
@@ -119,6 +125,8 @@ void ObjRenderer::InitializeGlContent(AAssetManager* asset_manager,
       glGetUniformLocation(shader_program_, "u_LightingParameters");
   uniform_material_param_ =
       glGetUniformLocation(shader_program_, "u_MaterialParameters");
+  uniform_color_correction_param_ =
+      glGetUniformLocation(shader_program_, "u_ColorCorrectionParameters");
 
   attri_vertices_ = glGetAttribLocation(shader_program_, "a_Position");
   attri_uvs_ = glGetAttribLocation(shader_program_, "a_TexCoord");
@@ -155,7 +163,7 @@ void ObjRenderer::SetMaterialProperty(float ambient, float diffuse,
 
 void ObjRenderer::Draw(const glm::mat4& projection_mat,
                        const glm::mat4& view_mat, const glm::mat4& model_mat,
-                       float light_intensity) const {
+                       const float* color_correction4) const {
   if (!shader_program_) {
     LOGE("shader_program is null.");
     return;
@@ -172,10 +180,12 @@ void ObjRenderer::Draw(const glm::mat4& projection_mat,
   glm::vec4 view_light_direction = glm::normalize(mv_mat * kLightDirection);
 
   glUniform4f(uniform_lighting_param_, view_light_direction[0],
-              view_light_direction[1], view_light_direction[2],
-              light_intensity);
+              view_light_direction[1], view_light_direction[2], 1.f);
   glUniform4f(uniform_material_param_, ambient_, diffuse_, specular_,
               specular_power_);
+
+  glUniform4f(uniform_color_correction_param_, color_correction4[0],
+              color_correction4[1], color_correction4[2], color_correction4[3]);
 
   glUniformMatrix4fv(uniform_mvp_mat_, 1, GL_FALSE, glm::value_ptr(mvp_mat));
   glUniformMatrix4fv(uniform_mv_mat_, 1, GL_FALSE, glm::value_ptr(mv_mat));

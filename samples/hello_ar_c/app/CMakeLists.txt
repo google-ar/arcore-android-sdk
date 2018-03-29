@@ -23,7 +23,7 @@ cmake_minimum_required(VERSION 3.4.1)
 # Import the ARCore library.
 add_library(arcore SHARED IMPORTED)
 set_target_properties(arcore PROPERTIES IMPORTED_LOCATION
-                      ${ARCORE_LIBPATH}/${ANDROID_ABI}/libarcore_sdk.so)
+                      ${ARCORE_LIBPATH}/${ANDROID_ABI}/libarcore_sdk_c.so)
 
 # This is the main app library.
 add_library(hello_ar_native SHARED

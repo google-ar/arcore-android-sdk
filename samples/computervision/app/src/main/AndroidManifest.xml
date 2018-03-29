@@ -19,6 +19,9 @@
     package="com.google.ar.core.examples.java.computervision">
 
   <uses-permission android:name="android.permission.CAMERA"/>
+  <!-- This tag indicates that this application requires ARCore.  This results in the application
+       only being visible in the Google Play Store on devices that support ARCore. -->
+  <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
 
   <application
       android:allowBackup="false"
@@ -29,8 +32,7 @@
       tools:ignore="GoogleAppIndexingWarning">
 
     <activity
-        android:name=".MainActivity"
-        android:label="@string/app_name"
+        android:name=".ComputerVisionActivity"
         android:configChanges="orientation|screenSize"
         android:exported="true"
         android:theme="@style/Theme.AppCompat.NoActionBar"
@@ -40,5 +42,8 @@
         <category android:name="android.intent.category.LAUNCHER"/>
       </intent-filter>
     </activity>
+    <!-- This tag indicates that this application requires ARCore.  This results in the Google Play
+         Store downloading and installing ARCore along with the application. -->
+    <meta-data android:name="com.google.ar.core" android:value="required" />
   </application>
 </manifest>

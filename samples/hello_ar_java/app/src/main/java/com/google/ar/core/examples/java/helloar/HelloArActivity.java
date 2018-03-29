@@ -19,19 +19,13 @@ package com.google.ar.core.examples.java.helloar;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
-import android.support.design.widget.BaseTransientBottomBar;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.GestureDetector;
 import android.view.MotionEvent;
-import android.view.View;
-import android.view.WindowManager;
 import android.widget.Toast;
 import com.google.ar.core.Anchor;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
-import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
@@ -41,18 +35,24 @@ import com.google.ar.core.PointCloud;
 import com.google.ar.core.Session;
 import com.google.ar.core.Trackable;
 import com.google.ar.core.TrackingState;
-import com.google.ar.core.examples.java.helloar.rendering.BackgroundRenderer;
-import com.google.ar.core.examples.java.helloar.rendering.ObjectRenderer;
-import com.google.ar.core.examples.java.helloar.rendering.ObjectRenderer.BlendMode;
-import com.google.ar.core.examples.java.helloar.rendering.PlaneRenderer;
-import com.google.ar.core.examples.java.helloar.rendering.PointCloudRenderer;
+import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
+import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
+import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
+import com.google.ar.core.examples.java.common.helpers.SnackbarHelper;
+import com.google.ar.core.examples.java.common.helpers.TapHelper;
+import com.google.ar.core.examples.java.common.rendering.BackgroundRenderer;
+import com.google.ar.core.examples.java.common.rendering.ObjectRenderer;
+import com.google.ar.core.examples.java.common.rendering.ObjectRenderer.BlendMode;
+import com.google.ar.core.examples.java.common.rendering.PlaneRenderer;
+import com.google.ar.core.examples.java.common.rendering.PointCloudRenderer;
+import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
+import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.concurrent.ArrayBlockingQueue;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -70,21 +70,20 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
   private boolean installRequested;
 
   private Session session;
-  private GestureDetector gestureDetector;
-  private Snackbar messageSnackbar;
+  private final SnackbarHelper messageSnackbarHelper = new SnackbarHelper();
   private DisplayRotationHelper displayRotationHelper;
+  private TapHelper tapHelper;
 
   private final BackgroundRenderer backgroundRenderer = new BackgroundRenderer();
   private final ObjectRenderer virtualObject = new ObjectRenderer();
   private final ObjectRenderer virtualObjectShadow = new ObjectRenderer();
   private final PlaneRenderer planeRenderer = new PlaneRenderer();
-  private final PointCloudRenderer pointCloud = new PointCloudRenderer();
+  private final PointCloudRenderer pointCloudRenderer = new PointCloudRenderer();
 
   // Temporary matrix allocated here to reduce number of allocations for each frame.
   private final float[] anchorMatrix = new float[16];
 
-  // Tap handling and UI.
-  private final ArrayBlockingQueue<MotionEvent> queuedSingleTaps = new ArrayBlockingQueue<>(16);
+  // Anchors created from taps used for object placing.
   private final ArrayList<Anchor> anchors = new ArrayList<>();
 
   @Override
@@ -95,29 +94,8 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
 
     // Set up tap listener.
-    gestureDetector =
-        new GestureDetector(
-            this,
-            new GestureDetector.SimpleOnGestureListener() {
-              @Override
-              public boolean onSingleTapUp(MotionEvent e) {
-                onSingleTap(e);
-                return true;
-              }
-
-              @Override
-              public boolean onDown(MotionEvent e) {
-                return true;
-              }
-            });
-
-    surfaceView.setOnTouchListener(
-        new View.OnTouchListener() {
-          @Override
-          public boolean onTouch(View v, MotionEvent event) {
-            return gestureDetector.onTouchEvent(event);
-          }
-        });
+    tapHelper = new TapHelper(/*context=*/ this);
+    surfaceView.setOnTouchListener(tapHelper);
 
     // Set up renderer.
     surfaceView.setPreserveEGLContextOnPause(true);
@@ -152,7 +130,9 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
           return;
         }
 
+        // Create the session.
         session = new Session(/* context= */ this);
+
       } catch (UnavailableArcoreNotInstalledException
           | UnavailableUserDeclinedInstallationException e) {
         message = "Please install ARCore";
@@ -163,30 +143,37 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
       } catch (UnavailableSdkTooOldException e) {
         message = "Please update this app";
         exception = e;
-      } catch (Exception e) {
+      } catch (UnavailableDeviceNotCompatibleException e) {
         message = "This device does not support AR";
+        exception = e;
+      } catch (Exception e) {
+        message = "Failed to create AR session";
         exception = e;
       }
 
       if (message != null) {
-        showSnackbarMessage(message, true);
+        messageSnackbarHelper.showError(this, message);
         Log.e(TAG, "Exception creating session", exception);
         return;
       }
-
-      // Create default config and check if supported.
-      Config config = new Config(session);
-      if (!session.isSupported(config)) {
-        showSnackbarMessage("This device does not support AR", true);
-      }
-      session.configure(config);
     }
 
-    showLoadingMessage();
     // Note that order matters - see the note in onPause(), the reverse applies here.
-    session.resume();
+    try {
+      session.resume();
+    } catch (CameraNotAvailableException e) {
+      // In some cases (such as another camera app launching) the camera may be given to
+      // a different app instead. Handle this properly by showing a message and recreate the
+      // session at the next iteration.
+      messageSnackbarHelper.showError(this, "Camera not available. Please restart the app.");
+      session = null;
+      return;
+    }
+
     surfaceView.onResume();
     displayRotationHelper.onResume();
+
+    messageSnackbarHelper.showMessage(this, "Searching for surfaces...");
   }
 
   @Override
@@ -218,50 +205,31 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
   @Override
   public void onWindowFocusChanged(boolean hasFocus) {
     super.onWindowFocusChanged(hasFocus);
-    if (hasFocus) {
-      // Standard Android full-screen functionality.
-      getWindow()
-          .getDecorView()
-          .setSystemUiVisibility(
-              View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                  | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                  | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                  | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                  | View.SYSTEM_UI_FLAG_FULLSCREEN
-                  | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
-      getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-    }
-  }
-
-  private void onSingleTap(MotionEvent e) {
-    // Queue tap if there is space. Tap is lost if queue is full.
-    queuedSingleTaps.offer(e);
+    FullScreenHelper.setFullScreenOnWindowFocusChanged(this, hasFocus);
   }
 
   @Override
   public void onSurfaceCreated(GL10 gl, EGLConfig config) {
     GLES20.glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
-    // Create the texture and pass it to ARCore session to be filled during update().
-    backgroundRenderer.createOnGlThread(/*context=*/ this);
-
-    // Prepare the other rendering objects.
+    // Prepare the rendering objects. This involves reading shaders, so may throw an IOException.
     try {
-      virtualObject.createOnGlThread(/*context=*/ this, "andy.obj", "andy.png");
-      virtualObject.setMaterialProperties(0.0f, 3.5f, 1.0f, 6.0f);
+      // Create the texture and pass it to ARCore session to be filled during update().
+      backgroundRenderer.createOnGlThread(/*context=*/ this);
+      planeRenderer.createOnGlThread(/*context=*/ this, "models/trigrid.png");
+      pointCloudRenderer.createOnGlThread(/*context=*/ this);
 
-      virtualObjectShadow.createOnGlThread(/*context=*/ this, "andy_shadow.obj", "andy_shadow.png");
+      virtualObject.createOnGlThread(/*context=*/ this, "models/andy.obj", "models/andy.png");
+      virtualObject.setMaterialProperties(0.0f, 2.0f, 0.5f, 6.0f);
+
+      virtualObjectShadow.createOnGlThread(
+          /*context=*/ this, "models/andy_shadow.obj", "models/andy_shadow.png");
       virtualObjectShadow.setBlendMode(BlendMode.Shadow);
       virtualObjectShadow.setMaterialProperties(1.0f, 0.0f, 0.0f, 1.0f);
+
     } catch (IOException e) {
-      Log.e(TAG, "Failed to read obj file");
+      Log.e(TAG, "Failed to read an asset file", e);
     }
-    try {
-      planeRenderer.createOnGlThread(/*context=*/ this, "trigrid.png");
-    } catch (IOException e) {
-      Log.e(TAG, "Failed to read plane texture");
-    }
-    pointCloud.createOnGlThread(/*context=*/ this);
   }
 
   @Override
@@ -294,7 +262,7 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
       // Handle taps. Handling only one tap per frame, as taps are usually low frequency
       // compared to frame rate.
 
-      MotionEvent tap = queuedSingleTaps.poll();
+      MotionEvent tap = tapHelper.poll();
       if (tap != null && camera.getTrackingState() == TrackingState.TRACKING) {
         for (HitResult hit : frame.hitTest(tap)) {
           // Check if any plane was hit, and if it was hit inside the plane polygon
@@ -337,23 +305,26 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
       camera.getViewMatrix(viewmtx, 0);
 
       // Compute lighting from average intensity of the image.
-      final float lightIntensity = frame.getLightEstimate().getPixelIntensity();
+      // The first three components are color scaling factors.
+      // The last one is the average pixel intensity in gamma space.
+      final float[] colorCorrectionRgba = new float[4];
+      frame.getLightEstimate().getColorCorrection(colorCorrectionRgba, 0);
 
       // Visualize tracked points.
       PointCloud pointCloud = frame.acquirePointCloud();
-      this.pointCloud.update(pointCloud);
-      this.pointCloud.draw(viewmtx, projmtx);
+      pointCloudRenderer.update(pointCloud);
+      pointCloudRenderer.draw(viewmtx, projmtx);
 
       // Application is responsible for releasing the point cloud resources after
       // using it.
       pointCloud.release();
 
       // Check if we detected at least one plane. If so, hide the loading message.
-      if (messageSnackbar != null) {
+      if (messageSnackbarHelper.isShowing()) {
         for (Plane plane : session.getAllTrackables(Plane.class)) {
           if (plane.getType() == com.google.ar.core.Plane.Type.HORIZONTAL_UPWARD_FACING
               && plane.getTrackingState() == TrackingState.TRACKING) {
-            hideLoadingMessage();
+            messageSnackbarHelper.hide(this);
             break;
           }
         }
@@ -376,64 +347,13 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
         // Update and draw the model and its shadow.
         virtualObject.updateModelMatrix(anchorMatrix, scaleFactor);
         virtualObjectShadow.updateModelMatrix(anchorMatrix, scaleFactor);
-        virtualObject.draw(viewmtx, projmtx, lightIntensity);
-        virtualObjectShadow.draw(viewmtx, projmtx, lightIntensity);
+        virtualObject.draw(viewmtx, projmtx, colorCorrectionRgba);
+        virtualObjectShadow.draw(viewmtx, projmtx, colorCorrectionRgba);
       }
 
     } catch (Throwable t) {
       // Avoid crashing the application due to unhandled exceptions.
       Log.e(TAG, "Exception on the OpenGL thread", t);
     }
-  }
-
-  private void showSnackbarMessage(String message, boolean finishOnDismiss) {
-    messageSnackbar =
-        Snackbar.make(
-            HelloArActivity.this.findViewById(android.R.id.content),
-            message,
-            Snackbar.LENGTH_INDEFINITE);
-    messageSnackbar.getView().setBackgroundColor(0xbf323232);
-    if (finishOnDismiss) {
-      messageSnackbar.setAction(
-          "Dismiss",
-          new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-              messageSnackbar.dismiss();
-            }
-          });
-      messageSnackbar.addCallback(
-          new BaseTransientBottomBar.BaseCallback<Snackbar>() {
-            @Override
-            public void onDismissed(Snackbar transientBottomBar, int event) {
-              super.onDismissed(transientBottomBar, event);
-              finish();
-            }
-          });
-    }
-    messageSnackbar.show();
-  }
-
-  private void showLoadingMessage() {
-    runOnUiThread(
-        new Runnable() {
-          @Override
-          public void run() {
-            showSnackbarMessage("Searching for surfaces...", false);
-          }
-        });
-  }
-
-  private void hideLoadingMessage() {
-    runOnUiThread(
-        new Runnable() {
-          @Override
-          public void run() {
-            if (messageSnackbar != null) {
-              messageSnackbar.dismiss();
-            }
-            messageSnackbar = null;
-          }
-        });
   }
 }

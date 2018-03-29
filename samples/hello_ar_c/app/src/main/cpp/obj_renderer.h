@@ -48,13 +48,13 @@ class ObjRenderer {
 
   // Draws the model.
   void Draw(const glm::mat4& projection_mat, const glm::mat4& view_mat,
-            const glm::mat4& model_mat, float light_intensity) const;
+            const glm::mat4& model_mat, const float* color_correction4) const;
 
  private:
   // Shader material lighting pateremrs
   float ambient_ = 0.0f;
-  float diffuse_ = 3.5f;
-  float specular_ = 1.0f;
+  float diffuse_ = 2.0f;
+  float specular_ = 0.5f;
   float specular_power_ = 6.0f;
 
   // Model attribute arrays
@@ -78,6 +78,7 @@ class ObjRenderer {
   GLuint uniform_texture_;
   GLuint uniform_lighting_param_;
   GLuint uniform_material_param_;
+  GLuint uniform_color_correction_param_;
 };
 }  // namespace hello_ar
 

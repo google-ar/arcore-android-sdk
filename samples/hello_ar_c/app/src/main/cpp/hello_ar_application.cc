@@ -120,7 +120,8 @@ void HelloArApplication::OnSurfaceCreated() {
 
   background_renderer_.InitializeGlContent();
   point_cloud_renderer_.InitializeGlContent();
-  andy_renderer_.InitializeGlContent(asset_manager_, "andy.obj", "andy.png");
+  andy_renderer_.InitializeGlContent(asset_manager_, "models/andy.obj",
+                                     "models/andy.png");
   plane_renderer_.InitializeGlContent(asset_manager_);
 }
 
@@ -187,10 +188,12 @@ void HelloArApplication::OnDrawFrame() {
                            &ar_light_estimate_state);
 
   // Set light intensity to default. Intensity value ranges from 0.0f to 1.0f.
-  float light_intensity = 0.8f;
+  // The first three components are color scaling factors.
+  // The last one is the average pixel intensity in gamma space.
+  float color_correction[4] = {1.f, 1.f, 1.f, 1.f};
   if (ar_light_estimate_state == AR_LIGHT_ESTIMATE_STATE_VALID) {
-    ArLightEstimate_getPixelIntensity(ar_session_, ar_light_estimate,
-                                      &light_intensity);
+    ArLightEstimate_getColorCorrection(ar_session_, ar_light_estimate,
+                                       color_correction);
   }
 
   ArLightEstimate_destroy(ar_light_estimate);
@@ -204,7 +207,8 @@ void HelloArApplication::OnDrawFrame() {
     if (tracking_state == AR_TRACKING_STATE_TRACKING) {
       // Render object only if the tracking state is AR_TRACKING_STATE_TRACKING.
       util::GetTransformMatrixFromAnchor(ar_session_, obj_iter, &model_mat);
-      andy_renderer_.Draw(projection_mat, view_mat, model_mat, light_intensity);
+      andy_renderer_.Draw(projection_mat, view_mat, model_mat,
+                          color_correction);
     }
   }
 
