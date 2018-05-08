@@ -70,15 +70,15 @@ class ObjRenderer {
 
   // Shader program details
   GLuint shader_program_;
-  GLuint attri_vertices_;
-  GLuint attri_uvs_;
-  GLuint attri_normals_;
-  GLuint uniform_mvp_mat_;
-  GLuint uniform_mv_mat_;
-  GLuint uniform_texture_;
-  GLuint uniform_lighting_param_;
-  GLuint uniform_material_param_;
-  GLuint uniform_color_correction_param_;
+  GLint attri_vertices_;
+  GLint attri_uvs_;
+  GLint attri_normals_;
+  GLint uniform_mvp_mat_;
+  GLint uniform_mv_mat_;
+  GLint uniform_texture_;
+  GLint uniform_lighting_param_;
+  GLint uniform_material_param_;
+  GLint uniform_color_correction_param_;
 };
 }  // namespace hello_ar
 

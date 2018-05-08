@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Copyright 2018 Google Inc.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<resources>
+  <!-- Strings in the main activity -->
+  <string name="app_name">Cloud Anchor Example</string>
+  <string name="cancel">Cancel</string>
+  <string name="host_button_text">Host</string>
+  <string name="host_dialog_title">Host an Anchor</string>
+  <string name="host_ok">Host</string>
+  <string name="initial_room_code">0000</string>
+  <string name="resolve_button_text">Resolve</string>
+
+  <!-- Strings in the Resolve Dialog Box -->
+  <string name="resolve_dialog_ok">Resolve</string>
+  <string name="resolve_dialog_title">Resolve an Anchor</string>
+  <string name="resolve_dialog_text_hint">Enter Room Code</string>
+
+  <!-- Strings used in Snackbar messages -->
+  <string name="snackbar_anchor_placed">Now hosting anchor...</string>
+  <string name="snackbar_arcore_unavailable">Please install ARCore.</string>
+  <string name="snackbar_arcore_too_old">Please update ARCore.</string>
+  <string name="snackbar_arcore_sdk_too_old">Please update the app with a newer version of the ARCore SDK.</string>
+  <string name="snackbar_arcore_exception">This device does not support ARCore.</string>
+  <string name="snackbar_camera_unavailable">Camera unavailable. Please restart the app.</string>
+  <string name="snackbar_cloud_id_shared">The anchor ID was shared via Firebase.</string>
+  <string name="snackbar_dismiss">Dismiss</string>
+  <string name="snackbar_firebase_error">There was a Firebase Error. Please check Logcat for more details.</string>
+  <string name="snackbar_host_error">Hosting Error: %1$s</string>
+  <string name="snackbar_initial_message">Please select Host or Resolve to continue.</string>
+  <string name="snackbar_on_host">Now in Hosting Mode. Press Cancel to Exit.</string>
+  <string name="snackbar_on_resolve">Now in Resolving Mode. Press Cancel to Exit.</string>
+  <string name="snackbar_resolve_error">Resolving Error: %1$s</string>
+  <string name="snackbar_resolve_success">The anchor was successfully resolved.</string>
+  <string name="snackbar_room_code_available">The room code is now available. Please place an anchor to host.</string>
+</resources>

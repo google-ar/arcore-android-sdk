@@ -25,8 +25,12 @@ namespace hello_ar {
 namespace util {
 
 void CheckGlError(const char* operation) {
+  bool anyError = false;
   for (GLint error = glGetError(); error; error = glGetError()) {
     LOGE("after %s() glError (0x%x)\n", operation, error);
+    anyError = true;
+  }
+  if (anyError) {
     abort();
   }
 }
@@ -382,6 +386,34 @@ void GetTransformMatrixFromAnchor(ArSession* ar_session,
   ArAnchor_getPose(ar_session, ar_anchor, pose.GetArPose());
   ArPose_getMatrix(ar_session, pose.GetArPose(),
                    glm::value_ptr(*out_model_mat));
+}
+
+glm::vec3 GetPlaneNormal(const ArSession* ar_session,
+                         const ArPose& plane_pose) {
+  float plane_pose_raw[7] = {0.f};
+  ArPose_getPoseRaw(ar_session, &plane_pose, plane_pose_raw);
+  glm::quat plane_quaternion(plane_pose_raw[3], plane_pose_raw[0],
+                             plane_pose_raw[1], plane_pose_raw[2]);
+  // Get normal vector, normal is defined to be positive Y-position in local
+  // frame.
+  return glm::rotate(plane_quaternion, glm::vec3(0., 1.f, 0.));
+}
+
+float CalculateDistanceToPlane(const ArSession* ar_session,
+                               const ArPose& plane_pose,
+                               const ArPose& camera_pose) {
+  float plane_pose_raw[7] = {0.f};
+  ArPose_getPoseRaw(ar_session, &plane_pose, plane_pose_raw);
+  glm::vec3 plane_position(plane_pose_raw[4], plane_pose_raw[5],
+                           plane_pose_raw[6]);
+  glm::vec3 normal = GetPlaneNormal(ar_session, plane_pose);
+
+  float camera_pose_raw[7] = {0.f};
+  ArPose_getPoseRaw(ar_session, &camera_pose, camera_pose_raw);
+  glm::vec3 camera_P_plane(camera_pose_raw[4] - plane_position.x,
+                           camera_pose_raw[5] - plane_position.y,
+                           camera_pose_raw[6] - plane_position.z);
+  return glm::dot(normal, camera_P_plane);
 }
 
 }  // namespace util

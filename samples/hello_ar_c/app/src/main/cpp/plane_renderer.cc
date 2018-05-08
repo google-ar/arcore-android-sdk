@@ -27,12 +27,27 @@ constexpr char kVertexShader[] = R"(
     varying float v_alpha;
 
     uniform mat4 mvp;
-    uniform mat4 texture_mat;
+    uniform mat4 model_mat;
+    uniform vec3 normal;
+
     void main() {
-      gl_Position = mvp * vec4(vertex.x, 0.0, vertex.y, 1.0);
       // Vertex Z value is used as the alpha in this shader.
       v_alpha = vertex.z;
-      v_textureCoords = (texture_mat * vec4(vertex.x, 0.0, vertex.y, 1.0)).xz;
+
+      vec4 local_pos = vec4(vertex.x, 0.0, vertex.y, 1.0);
+      gl_Position = mvp * local_pos;
+      vec4 world_pos = model_mat * local_pos;
+
+      // Construct two vectors that are orthogonal to the normal.
+      // This arbitrary choice is not co-linear with either horizontal
+      // or vertical plane normals.
+      const vec3 arbitrary = vec3(1.0, 1.0, 0.0);
+      vec3 vec_u = normalize(cross(normal, arbitrary));
+      vec3 vec_v = normalize(cross(normal, vec_u));
+
+      // Project vertices in world frame onto vec_u and vec_v.
+      v_textureCoords = vec2(
+         dot(world_pos.xyz, vec_u), dot(world_pos.xyz, vec_v));
     })";
 
 constexpr char kFragmentShader[] = R"(
@@ -57,7 +72,8 @@ void PlaneRenderer::InitializeGlContent(AAssetManager* asset_manager) {
 
   uniform_mvp_mat_ = glGetUniformLocation(shader_program_, "mvp");
   uniform_texture_ = glGetUniformLocation(shader_program_, "texture");
-  uniform_texture_mat_ = glGetUniformLocation(shader_program_, "texture_mat");
+  uniform_model_mat_ = glGetUniformLocation(shader_program_, "model_mat");
+  uniform_normal_vec_ = glGetUniformLocation(shader_program_, "normal");
   uniform_color_ = glGetUniformLocation(shader_program_, "color");
   attri_vertices_ = glGetAttribLocation(shader_program_, "vertex");
 
@@ -88,8 +104,6 @@ void PlaneRenderer::Draw(const glm::mat4& projection_mat,
     return;
   }
 
-  glm::mat4 model_mat;
-
   UpdateForPlane(ar_session, ar_plane);
 
   glUseProgram(shader_program_);
@@ -103,9 +117,9 @@ void PlaneRenderer::Draw(const glm::mat4& projection_mat,
   glUniformMatrix4fv(uniform_mvp_mat_, 1, GL_FALSE,
                      glm::value_ptr(projection_mat * view_mat * model_mat_));
 
-  glUniformMatrix4fv(uniform_texture_mat_, 1, GL_FALSE,
+  glUniformMatrix4fv(uniform_model_mat_, 1, GL_FALSE,
                      glm::value_ptr(model_mat_));
-
+  glUniform3f(uniform_normal_vec_, normal_vec_.x, normal_vec_.y, normal_vec_.z);
   glUniform3f(uniform_color_, color.x, color.y, color.z);
 
   glEnableVertexAttribArray(attri_vertices_);
@@ -161,24 +175,20 @@ void PlaneRenderer::UpdateForPlane(const ArSession* ar_session,
   ArPlane_getCenterPose(ar_session, ar_plane, scopedArPose.GetArPose());
   ArPose_getMatrix(ar_session, scopedArPose.GetArPose(),
                    glm::value_ptr(model_mat_));
-
-  // Get plane center in XZ axis.
-  glm::vec2 plane_center = glm::vec2(model_mat_[3][0], model_mat_[3][2]);
+  normal_vec_ = util::GetPlaneNormal(ar_session, *scopedArPose.GetArPose());
 
   // Feather distance 0.2 meters.
   const float kFeatherLength = 0.2f;
   // Feather scale over the distance between plane center and vertices.
   const float kFeatherScale = 0.2f;
 
-  // Fill vertex 0 to 3, with alpha set to 1.
+  // Fill vertex 4 to 7, with alpha set to 1.
   for (int32_t i = 0; i < vertices_size; ++i) {
-    const glm::vec2 v = raw_vertices[i];
-
     // Vector from plane center to current point.
-    const glm::vec2 d = v - plane_center;
+    glm::vec2 v = raw_vertices[i];
     const float scale =
-        1.0f - std::min((kFeatherLength / glm::length(d)), kFeatherScale);
-    const glm::vec2 result_v = scale * d + plane_center;
+        1.0f - std::min((kFeatherLength / glm::length(v)), kFeatherScale);
+    const glm::vec2 result_v = scale * v;
 
     vertices_.push_back(glm::vec3(result_v.x, result_v.y, 1.0f));
   }

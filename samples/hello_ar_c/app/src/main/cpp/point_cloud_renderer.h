@@ -49,8 +49,8 @@ class PointCloudRenderer {
 
  private:
   GLuint shader_program_;
-  GLuint attribute_vertices_;
-  GLuint uniform_mvp_mat_;
+  GLint attribute_vertices_;
+  GLint uniform_mvp_mat_;
 };
 }  // namespace hello_ar
 

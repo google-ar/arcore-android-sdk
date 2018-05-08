@@ -30,9 +30,9 @@ constexpr int32_t kPlaneColorRgbaSize = 16;
 const glm::vec3 kWhite = {255, 255, 255};
 
 constexpr std::array<uint32_t, kPlaneColorRgbaSize> kPlaneColorRgba = {
-    0xFFFFFFFF, 0xF44336FF, 0xE91E63FF, 0x9C27B0FF, 0x673AB7FF, 0x3F51B5FF,
-    0x2196F3FF, 0x03A9F4FF, 0x00BCD4FF, 0x009688FF, 0x4CAF50FF, 0x8BC34AFF,
-    0xCDDC39FF, 0xFFEB3BFF, 0xFFC107FF, 0xFF9800FF};
+    {0xFFFFFFFF, 0xF44336FF, 0xE91E63FF, 0x9C27B0FF, 0x673AB7FF, 0x3F51B5FF,
+     0x2196F3FF, 0x03A9F4FF, 0x00BCD4FF, 0x009688FF, 0x4CAF50FF, 0x8BC34AFF,
+     0xCDDC39FF, 0xFFEB3BFF, 0xFFC107FF, 0xFF9800FF}};
 
 inline glm::vec3 GetRandomPlaneColor() {
   const int32_t colorRgba = kPlaneColorRgba[std::rand() % kPlaneColorRgbaSize];
@@ -92,17 +92,6 @@ void HelloArApplication::OnResume(void* env, void* context, void* activity) {
     // HelloAR Java sample code for reasonable behavior.
     CHECK(ArSession_create(env, context, &ar_session_) == AR_SUCCESS);
     CHECK(ar_session_);
-
-    ArConfig* ar_config = nullptr;
-    ArConfig_create(ar_session_, &ar_config);
-    CHECK(ar_config);
-
-    const ArStatus status = ArSession_checkSupported(ar_session_, ar_config);
-    CHECK(status == AR_SUCCESS);
-
-    CHECK(ArSession_configure(ar_session_, ar_config) == AR_SUCCESS);
-
-    ArConfig_destroy(ar_config);
 
     ArFrame_create(ar_session_, &ar_frame_);
     CHECK(ar_frame_);
@@ -317,14 +306,28 @@ void HelloArApplication::OnTouched(float x, float y) {
       ArTrackable_getType(ar_session_, ar_trackable, &ar_trackable_type);
       // Creates an anchor if a plane or an oriented point was hit.
       if (AR_TRACKABLE_PLANE == ar_trackable_type) {
-        ArPose* ar_pose = nullptr;
-        ArPose_create(ar_session_, nullptr, &ar_pose);
-        ArHitResult_getHitPose(ar_session_, ar_hit, ar_pose);
+        ArPose* hit_pose = nullptr;
+        ArPose_create(ar_session_, nullptr, &hit_pose);
+        ArHitResult_getHitPose(ar_session_, ar_hit, hit_pose);
         int32_t in_polygon = 0;
         ArPlane* ar_plane = ArAsPlane(ar_trackable);
-        ArPlane_isPoseInPolygon(ar_session_, ar_plane, ar_pose, &in_polygon);
-        ArPose_destroy(ar_pose);
-        if (!in_polygon) {
+        ArPlane_isPoseInPolygon(ar_session_, ar_plane, hit_pose, &in_polygon);
+
+        // Use hit pose and camera pose to check if hittest is from the
+        // back of the plane, if it is, no need to create the anchor.
+        ArPose* camera_pose = nullptr;
+        ArPose_create(ar_session_, nullptr, &camera_pose);
+        ArCamera* ar_camera;
+        ArFrame_acquireCamera(ar_session_, ar_frame_, &ar_camera);
+        ArCamera_getPose(ar_session_, ar_camera, camera_pose);
+        ArCamera_release(ar_camera);
+        float normal_distance_to_plane = util::CalculateDistanceToPlane(
+            ar_session_, *hit_pose, *camera_pose);
+
+        ArPose_destroy(hit_pose);
+        ArPose_destroy(camera_pose);
+
+        if (!in_polygon || normal_distance_to_plane < 0) {
           continue;
         }
 

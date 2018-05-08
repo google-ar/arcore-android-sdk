@@ -52,16 +52,17 @@ class PlaneRenderer {
   std::vector<glm::vec3> vertices_;
   std::vector<GLushort> triangles_;
   glm::mat4 model_mat_ = glm::mat4(1.0f);
+  glm::vec3 normal_vec_ = glm::vec3(0.0f);
 
-  GLuint vertex_buffers_[2];
   GLuint texture_id_;
 
   GLuint shader_program_;
-  GLuint attri_vertices_;
-  GLuint uniform_mvp_mat_;
-  GLuint uniform_texture_;
-  GLuint uniform_texture_mat_;
-  GLuint uniform_color_;
+  GLint attri_vertices_;
+  GLint uniform_mvp_mat_;
+  GLint uniform_texture_;
+  GLint uniform_model_mat_;
+  GLint uniform_normal_vec_;
+  GLint uniform_color_;
 };
 }  // namespace hello_ar
 

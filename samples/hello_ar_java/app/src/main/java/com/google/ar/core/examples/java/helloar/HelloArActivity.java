@@ -261,14 +261,16 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
 
       // Handle taps. Handling only one tap per frame, as taps are usually low frequency
       // compared to frame rate.
-
       MotionEvent tap = tapHelper.poll();
       if (tap != null && camera.getTrackingState() == TrackingState.TRACKING) {
         for (HitResult hit : frame.hitTest(tap)) {
           // Check if any plane was hit, and if it was hit inside the plane polygon
           Trackable trackable = hit.getTrackable();
           // Creates an anchor if a plane or an oriented point was hit.
-          if ((trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hit.getHitPose()))
+          if ((trackable instanceof Plane
+                  && ((Plane) trackable).isPoseInPolygon(hit.getHitPose())
+                  && (PlaneRenderer.calculateDistanceToPlane(hit.getHitPose(), camera.getPose())
+                      > 0))
               || (trackable instanceof Point
                   && ((Point) trackable).getOrientationMode()
                       == OrientationMode.ESTIMATED_SURFACE_NORMAL)) {

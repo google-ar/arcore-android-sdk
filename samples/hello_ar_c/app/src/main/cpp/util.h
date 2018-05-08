@@ -114,6 +114,16 @@ void Log4x4Matrix(float raw_matrix[16]);
 void GetTransformMatrixFromAnchor(ArSession* ar_session,
                                   const ArAnchor* ar_anchor,
                                   glm::mat4* out_model_mat);
+
+// Get the plane's normal from center pose.
+glm::vec3 GetPlaneNormal(const ArSession* ar_session, const ArPose& plane_pose);
+
+// Calculate the normal distance to plane from cameraPose, the given planePose
+// should have y axis parallel to plane's normal, for example plane's center
+// pose or hit test pose.
+float CalculateDistanceToPlane(const ArSession* ar_session,
+                               const ArPose& plane_pose,
+                               const ArPose& camera_pose);
 }  // namespace util
 }  // namespace hello_ar
 
