@@ -27,6 +27,7 @@ import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.TextView;
 import android.widget.Toast;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -37,8 +38,6 @@ import javax.microedition.khronos.opengles.GL10;
  */
 public class ComputerVisionActivity extends AppCompatActivity
     implements GLSurfaceView.Renderer, DisplayManager.DisplayListener {
-  private static final float SWIPE_SCALING_FACTOR = 1.15f;
-  private static final float MIN_DELTA = .01f;
 
   // Opaque native pointer to the native application instance.
   private long nativeApplication;
@@ -48,49 +47,26 @@ public class ComputerVisionActivity extends AppCompatActivity
   private int viewportWidth;
   private int viewportHeight;
   // Using float value to set the splitter position in shader in native code.
-  private float splitterPosition = 0.5f;
-  private float startCoordX = 0;
-  private float startCoordY = 0;
-  private float startPosition = 0;
+  private float splitterPosition = 0.0f;
+
+  // Camera intrinsics text elements.
+  private TextView cameraIntrinsicsTextView;
+  private boolean isShowingCpuIntrinsics = true;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
-    surfaceView = findViewById(R.id.surfaceview);
+    cameraIntrinsicsTextView = findViewById(R.id.camera_intrinsics_view);
 
+    surfaceView = findViewById(R.id.surfaceview);
     surfaceView.setOnTouchListener(
         new View.OnTouchListener() {
           @Override
           public boolean onTouch(View view, MotionEvent motionEvent) {
-            if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
-              startCoordX = motionEvent.getX();
-              startCoordY = motionEvent.getY();
-              startPosition = splitterPosition;
-
-            } else if (motionEvent.getAction() == MotionEvent.ACTION_MOVE) {
-              float delta = 0;
-              switch (getWindowManager().getDefaultDisplay().getRotation()) {
-                case Surface.ROTATION_90:
-                  delta = (motionEvent.getX() - startCoordX) / view.getWidth();
-                  break;
-                case Surface.ROTATION_180:
-                  delta = -(motionEvent.getY() - startCoordY) / view.getHeight();
-                  break;
-                case Surface.ROTATION_270:
-                  delta = -(motionEvent.getX() - startCoordX) / view.getWidth();
-                  break;
-                case Surface.ROTATION_0:
-                default:
-                  // Other cases, use Surface.ROTATION_0's delta value.
-                  delta = (motionEvent.getY() - startCoordY) / view.getHeight();
-                  break;
-              }
-              if (Math.abs(delta) > MIN_DELTA) {
-                float newPosition = startPosition + delta * SWIPE_SCALING_FACTOR;
-                newPosition = Math.min(1.f, Math.max(0.f, newPosition));
-                splitterPosition = newPosition;
-              }
+            if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
+              isShowingCpuIntrinsics = (splitterPosition > 0.5f);
+              splitterPosition = isShowingCpuIntrinsics ? 0.0f : 1.0f;
             }
 
             return true;
@@ -104,7 +80,7 @@ public class ComputerVisionActivity extends AppCompatActivity
     surfaceView.setRenderer(this);
     surfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
 
-    nativeApplication = JniInterface.createNativeApplication();
+    nativeApplication = JniInterface.createNativeApplication(getAssets());
   }
 
   @Override
@@ -244,6 +220,15 @@ public class ComputerVisionActivity extends AppCompatActivity
         viewportChanged = false;
       }
       JniInterface.onGlSurfaceDrawFrame(nativeApplication, splitterPosition);
+      final String cameraIntrinsicsText =
+          JniInterface.getCameraIntrinsicsText(nativeApplication, isShowingCpuIntrinsics);
+      runOnUiThread(
+          new Runnable() {
+            @Override
+            public void run() {
+              cameraIntrinsicsTextView.setText(cameraIntrinsicsText);
+            }
+          });
     }
   }
 

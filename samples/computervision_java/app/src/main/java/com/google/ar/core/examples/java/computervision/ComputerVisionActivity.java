@@ -23,8 +23,11 @@ import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.widget.TextView;
 import android.widget.Toast;
 import com.google.ar.core.ArCoreApk;
+import com.google.ar.core.Camera;
+import com.google.ar.core.CameraIntrinsics;
 import com.google.ar.core.Frame;
 import com.google.ar.core.Session;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
@@ -44,6 +47,10 @@ import javax.microedition.khronos.opengles.GL10;
 /** This is a simple example that demonstrates cpu image access with ARCore. */
 public class ComputerVisionActivity extends AppCompatActivity implements GLSurfaceView.Renderer {
   private static final String TAG = ComputerVisionActivity.class.getSimpleName();
+  private static final String CAMERA_INTRINSICS_TEXT_FORMAT =
+      "Unrotated Camera %s Intrinsics:\n\tFocal Length: (%.2f, %.2f)\n\tPrincipal Point: "
+          + "(%.2f, %.2f)\n\tImage Dimensions: (%d, %d)\n\tUnrotated Field of View: (%.2fº, %.2fº)";
+  private static final float RADIANS_TO_DEGREES = (float) (180 / Math.PI);
 
   // This app demonstrates two approaches to obtaining image data accessible on CPU:
   // 1. Access the CPU image directly from ARCore. This approach delivers a frame without latency
@@ -68,6 +75,9 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
   private final CpuImageRenderer cpuImageRenderer = new CpuImageRenderer();
   private final EdgeDetector edgeDetector = new EdgeDetector();
 
+  // Camera intrinsics text view.
+  private TextView cameraIntrinsicsTextView;
+
   // The fields below are used for the GPU_DOWNLOAD image acquisition path.
   private final TextureReader textureReader = new TextureReader();
   private int gpuDownloadFrameBufferIndex = -1;
@@ -84,6 +94,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
+    cameraIntrinsicsTextView = findViewById(R.id.camera_intrinsics_view);
     surfaceView = findViewById(R.id.surfaceview);
     cpuImageDisplayRotationHelper = new CpuImageDisplayRotationHelper(/*context=*/ this);
     cpuImageTouchListener = new CpuImageTouchListener(cpuImageRenderer);
@@ -236,7 +247,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
 
     try {
       session.setCameraTextureName(cpuImageRenderer.getTextureId());
-      Frame frame = session.update();
+      final Frame frame = session.update();
 
       switch (imageAcquisitionPath) {
         case CPU_DIRECT_ACCESS:
@@ -247,6 +258,14 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
           break;
       }
 
+      // Update the camera intrinsics' text.
+      runOnUiThread(
+          new Runnable() {
+            @Override
+            public void run() {
+              cameraIntrinsicsTextView.setText(getCameraIntrinsicsText(frame));
+            }
+          });
     } catch (Exception t) {
       // Avoid crashing the application due to unhandled exceptions.
       Log.e(TAG, "Exception on the OpenGL thread", t);
@@ -316,5 +335,35 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
     // Submit request for the texture from the current frame.
     gpuDownloadFrameBufferIndex =
         textureReader.submitFrame(cpuImageRenderer.getTextureId(), TEXTURE_WIDTH, TEXTURE_HEIGHT);
+  }
+
+  private String getCameraIntrinsicsText(Frame frame) {
+    Camera camera = frame.getCamera();
+
+    boolean shouldShowCpuIntrinsics = (cpuImageRenderer.getSplitterPosition() < 0.5f);
+    CameraIntrinsics intrinsics =
+        shouldShowCpuIntrinsics ? camera.getImageIntrinsics() : camera.getTextureIntrinsics();
+    String intrinsicsLabel = shouldShowCpuIntrinsics ? "Image" : "Texture";
+
+    float[] focalLength = intrinsics.getFocalLength();
+    float[] principalPoint = intrinsics.getPrincipalPoint();
+    int[] imageSize = intrinsics.getImageDimensions();
+
+    float fovX = (float) (2 * Math.atan2((double) imageSize[0], (double) (2 * focalLength[0])));
+    float fovY = (float) (2 * Math.atan2((double) imageSize[1], (double) (2 * focalLength[1])));
+    fovX *= RADIANS_TO_DEGREES;
+    fovY *= RADIANS_TO_DEGREES;
+
+    return String.format(
+        CAMERA_INTRINSICS_TEXT_FORMAT,
+        intrinsicsLabel,
+        focalLength[0],
+        focalLength[1],
+        principalPoint[0],
+        principalPoint[1],
+        imageSize[0],
+        imageSize[1],
+        fovX,
+        fovY);
   }
 }

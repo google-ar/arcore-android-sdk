@@ -45,7 +45,6 @@ constexpr bool kUseSingleImage = false;
 AugmentedImageApplication::AugmentedImageApplication(
     AAssetManager* asset_manager)
     : asset_manager_(asset_manager) {
-  LOGI("OnCreate()");
 }
 
 AugmentedImageApplication::~AugmentedImageApplication() {
@@ -158,8 +157,8 @@ AugmentedImageApplication::CreateAugmentedImageDatabase() const {
     delete[] grayscale_buffer;
   } else {
     std::string database_buffer;
-    util::LoadEntireAssetFile(asset_manager_, "sample_database.imgdb",
-                              &database_buffer);
+    util::LoadFileFromAssetManager(asset_manager_, "sample_database.imgdb",
+                                   &database_buffer);
 
     uint8_t* raw_buffer = reinterpret_cast<uint8_t*>(&database_buffer.front());
     const ArStatus status = ArAugmentedImageDatabase_deserialize(
@@ -174,7 +173,7 @@ AugmentedImageApplication::CreateAugmentedImageDatabase() const {
 void AugmentedImageApplication::OnSurfaceCreated() {
   LOGI("OnSurfaceCreated()");
 
-  background_renderer_.InitializeGlContent();
+  background_renderer_.InitializeGlContent(asset_manager_);
   image_renderer_.InitializeGlContent(asset_manager_);
 }
 

@@ -19,6 +19,7 @@
 
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#include <android/asset_manager.h>
 #include <cstdlib>
 #include <vector>
 
@@ -36,7 +37,7 @@ class PointCloudRenderer {
   ~PointCloudRenderer() = default;
 
   // Initialize the GL content, needs to be called on GL thread.
-  void InitializeGlContent();
+  void InitializeGlContent(AAssetManager* asset_manager);
 
   // Render the AR point cloud.
   //
@@ -51,6 +52,8 @@ class PointCloudRenderer {
   GLuint shader_program_;
   GLuint attribute_vertices_;
   GLuint uniform_mvp_mat_;
+  GLint uniform_color_;
+  GLint uniform_point_size_;
 };
 }  // namespace cloud_anchor
 

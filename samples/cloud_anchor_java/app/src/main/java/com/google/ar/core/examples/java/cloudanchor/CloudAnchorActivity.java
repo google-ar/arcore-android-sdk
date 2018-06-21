@@ -58,7 +58,6 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.common.base.Preconditions;
 import com.google.firebase.database.DatabaseError;
 import java.io.IOException;
-import java.util.Collection;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -71,6 +70,7 @@ import javax.microedition.khronos.opengles.GL10;
  */
 public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceView.Renderer {
   private static final String TAG = CloudAnchorActivity.class.getSimpleName();
+  private static final float[] OBJECT_COLOR = new float[] {139.0f, 195.0f, 74.0f, 255.0f};
 
   private enum HostResolveMode {
     NONE,
@@ -368,11 +368,10 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
       // camera framerate.
       Frame frame = session.update();
       Camera camera = frame.getCamera();
-      Collection<Anchor> updatedAnchors = frame.getUpdatedAnchors();
       TrackingState cameraTrackingState = camera.getTrackingState();
 
       // Notify the cloudManager of all the updates.
-      cloudManager.onUpdate(updatedAnchors);
+      cloudManager.onUpdate();
 
       // Handle user input.
       handleTap(frame, cameraTrackingState);
@@ -421,8 +420,8 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
         float scaleFactor = 1.0f;
         virtualObject.updateModelMatrix(anchorMatrix, scaleFactor);
         virtualObjectShadow.updateModelMatrix(anchorMatrix, scaleFactor);
-        virtualObject.draw(viewMatrix, projectionMatrix, colorCorrectionRgba);
-        virtualObjectShadow.draw(viewMatrix, projectionMatrix, colorCorrectionRgba);
+        virtualObject.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, OBJECT_COLOR);
+        virtualObjectShadow.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, OBJECT_COLOR);
       }
     } catch (Throwable t) {
       // Avoid crashing the application due to unhandled exceptions.

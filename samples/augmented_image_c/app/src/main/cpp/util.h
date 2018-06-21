@@ -88,7 +88,17 @@ void CheckGlError(const char* operation);
 // @param vertex_source, the vertex shader source.
 // @param fragment_source, the fragment shader source.
 // @return
-GLuint CreateProgram(const char* vertex_source, const char* fragment_source);
+GLuint CreateProgram(AAssetManager* mgr, const char* vertex_shader_file_name,
+                     const char* fragment_shader_file_name);
+
+// Load a text file from assets folder.
+//
+// @param mgr, AAssetManager pointer.
+// @param file_name, path to the file, relative to the assets folder.
+// @param out_string, output string.
+// @return true if the file is loaded correctly, otherwise false.
+bool LoadFileFromAssetManager(AAssetManager* mgr, const char* file_name,
+                              std::string* out_file_text_string);
 
 // Loads png file from assets folder and then assign it to the OpenGL target.
 // This method must be called from the renderer thread since it will result in
@@ -120,16 +130,6 @@ bool LoadImageFromAssetManager(const std::string& path, int* out_width,
 // instance.
 // @return true if function is successful, otherwise false
 bool HideFitToScanImage(void* activity);
-
-// Loads a file from asset.
-//
-// @param mgr, the pointer to AAssetManager
-// @param file_name, the filename to load
-// @param out_file_buffer, a pointer to a std::string object, it will
-// be resized to the file content size, and populated with file content.
-// @return true if file is loaded successfully, otherwise false.
-bool LoadEntireAssetFile(AAssetManager* mgr, const std::string& file_name,
-                         std::string* out_file_buffer);
 
 // Loads obj file from assets folder from the app.
 //

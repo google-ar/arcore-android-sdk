@@ -124,7 +124,7 @@ class FirebaseManager {
     DatabaseReference roomRef = hotspotListRef.child(String.valueOf(roomCode));
     roomRef.child(KEY_DISPLAY_NAME).setValue(DISPLAY_NAME_VALUE);
     roomRef.child(KEY_ANCHOR_ID).setValue(cloudAnchorId);
-    roomRef.child(KEY_TIMESTAMP).setValue(Long.valueOf(System.currentTimeMillis()));
+    roomRef.child(KEY_TIMESTAMP).setValue(System.currentTimeMillis());
   }
 
   /**

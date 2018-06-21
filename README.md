@@ -1,5 +1,5 @@
-Google ARCore SDK for Android
-=============================
+ARCore SDK for Android
+======================
 Copyright (c) 2017 Google Inc.  All rights reserved.
 
 This SDK provides APIs for all of the essential AR features like motion tracking, environmental understanding, and light estimation. With these capabilities you can build entirely new AR experiences or enhance existing apps with AR features.

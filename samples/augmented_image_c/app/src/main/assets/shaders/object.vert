@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-precision highp float;
-precision highp int;
-uniform sampler2D texture;
-uniform vec3 color;
-varying vec2 v_textureCoords;
-varying float v_alpha;
+uniform mat4 u_ModelView;
+uniform mat4 u_ModelViewProjection;
+attribute vec4 a_Position;
+attribute vec3 a_Normal;
+attribute vec2 a_TexCoord;
+varying vec3 v_ViewPosition;
+varying vec3 v_ViewNormal;
+varying vec2 v_TexCoord;
 
 void main() {
-  float r = texture2D(texture, v_textureCoords).r;
-  gl_FragColor = vec4(color.xyz, r * v_alpha);
+  v_ViewPosition = (u_ModelView * a_Position).xyz;
+  v_ViewNormal = normalize((u_ModelView * vec4(a_Normal, 0.0)).xyz);
+  v_TexCoord = a_TexCoord;
+  gl_Position = u_ModelViewProjection * a_Position;
 }

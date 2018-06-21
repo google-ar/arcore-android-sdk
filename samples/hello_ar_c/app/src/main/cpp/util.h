@@ -77,10 +77,23 @@ void CheckGlError(const char* operation);
 
 // Create a shader program ID.
 //
-// @param vertex_source, the vertex shader source.
-// @param fragment_source, the fragment shader source.
-// @return
-GLuint CreateProgram(const char* vertex_source, const char* fragment_source);
+// @param asset_manager, AAssetManager pointer.
+// @param vertex_shader_file_name, the vertex shader source file.
+// @param fragment_shader_file_name, the fragment shader source file.
+// @return a non-zero value if the shader is created successfully, otherwise 0.
+GLuint CreateProgram(const char* vertex_shader_file_name,
+                     const char* fragment_shader_file_name,
+                     AAssetManager* asset_manager);
+
+// Load a text file from assets folder.
+//
+// @param asset_manager, AAssetManager pointer.
+// @param file_name, path to the file, relative to the assets folder.
+// @param out_string, output string.
+// @return true if the file is loaded correctly, otherwise false.
+bool LoadTextFileFromAssetManager(const char* file_name,
+                                  AAssetManager* asset_manager,
+                                  std::string* out_file_text_string);
 
 // Load png file from assets folder and then assign it to the OpenGL target.
 // This method must be called from the renderer thread since it will result in
@@ -93,14 +106,14 @@ bool LoadPngFromAssetManager(int target, const std::string& path);
 
 // Load obj file from assets folder from the app.
 //
-// @param mgr, AAssetManager pointer.
+// @param asset_manager, AAssetManager pointer.
 // @param file_name, name of the obj file.
 // @param out_vertices, output vertices.
 // @param out_normals, output normals.
 // @param out_uv, output texture UV coordinates.
 // @param out_indices, output triangle indices.
 // @return true if obj is loaded correctly, otherwise false.
-bool LoadObjFile(AAssetManager* mgr, const std::string& file_name,
+bool LoadObjFile(const std::string& file_name, AAssetManager* asset_manager,
                  std::vector<GLfloat>* out_vertices,
                  std::vector<GLfloat>* out_normals,
                  std::vector<GLfloat>* out_uv,
@@ -108,20 +121,20 @@ bool LoadObjFile(AAssetManager* mgr, const std::string& file_name,
 
 // Format and output the matrix to logcat file.
 // Note that this function output matrix in row major.
-void Log4x4Matrix(float raw_matrix[16]);
+void Log4x4Matrix(const float raw_matrix[16]);
 
 // Get transformation matrix from ArAnchor.
-void GetTransformMatrixFromAnchor(ArSession* ar_session,
-                                  const ArAnchor* ar_anchor,
+void GetTransformMatrixFromAnchor(const ArAnchor& ar_anchor,
+                                  ArSession* ar_session,
                                   glm::mat4* out_model_mat);
 
 // Get the plane's normal from center pose.
-glm::vec3 GetPlaneNormal(const ArSession* ar_session, const ArPose& plane_pose);
+glm::vec3 GetPlaneNormal(const ArSession& ar_session, const ArPose& plane_pose);
 
 // Calculate the normal distance to plane from cameraPose, the given planePose
 // should have y axis parallel to plane's normal, for example plane's center
 // pose or hit test pose.
-float CalculateDistanceToPlane(const ArSession* ar_session,
+float CalculateDistanceToPlane(const ArSession& ar_session,
                                const ArPose& plane_pose,
                                const ArPose& camera_pose);
 }  // namespace util

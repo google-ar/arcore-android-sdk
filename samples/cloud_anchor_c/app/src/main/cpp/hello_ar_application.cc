@@ -47,7 +47,6 @@ HelloArApplication::HelloArApplication(
     std::shared_ptr<CloudAnchorManager> cloud_anchor_manager)
     : cloud_anchor_manager_(std::move(cloud_anchor_manager)),
       asset_manager_(asset_manager) {
-  LOGI("OnCreate()");
 }
 
 HelloArApplication::~HelloArApplication() {
@@ -122,8 +121,8 @@ void HelloArApplication::OnResume(void* env, void* context, void* activity) {
 void HelloArApplication::OnSurfaceCreated() {
   LOGI("OnSurfaceCreated()");
 
-  background_renderer_.InitializeGlContent();
-  point_cloud_renderer_.InitializeGlContent();
+  background_renderer_.InitializeGlContent(asset_manager_);
+  point_cloud_renderer_.InitializeGlContent(asset_manager_);
   andy_renderer_.InitializeGlContent(asset_manager_, "models/andy.obj",
                                      "models/andy.png");
   plane_renderer_.InitializeGlContent(asset_manager_);
@@ -202,6 +201,9 @@ void HelloArApplication::OnDrawFrame() {
                                        color_correction);
   }
 
+  // Default color of the model is green.
+  const float object_color[] = {139.0f, 195.0f, 74.0f, 255.0f};
+
   ArLightEstimate_destroy(ar_light_estimate);
   ar_light_estimate = nullptr;
 
@@ -214,8 +216,8 @@ void HelloArApplication::OnDrawFrame() {
     if (tracking_state == AR_TRACKING_STATE_TRACKING) {
       // Render object only if the tracking state is AR_TRACKING_STATE_TRACKING.
       util::GetTransformMatrixFromAnchor(ar_session_, cloud_anchor, &model_mat);
-      andy_renderer_.Draw(projection_mat, view_mat, model_mat,
-                          color_correction);
+      andy_renderer_.Draw(projection_mat, view_mat, model_mat, color_correction,
+                          object_color);
     }
   }
 

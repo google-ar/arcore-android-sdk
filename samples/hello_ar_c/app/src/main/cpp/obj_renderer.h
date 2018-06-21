@@ -48,7 +48,8 @@ class ObjRenderer {
 
   // Draws the model.
   void Draw(const glm::mat4& projection_mat, const glm::mat4& view_mat,
-            const glm::mat4& model_mat, const float* color_correction4) const;
+            const glm::mat4& model_mat, const float* color_correction4,
+            const float* object_color4) const;
 
  private:
   // Shader material lighting pateremrs
@@ -79,6 +80,7 @@ class ObjRenderer {
   GLint uniform_lighting_param_;
   GLint uniform_material_param_;
   GLint uniform_color_correction_param_;
+  GLint uniform_color_;
 };
 }  // namespace hello_ar
 

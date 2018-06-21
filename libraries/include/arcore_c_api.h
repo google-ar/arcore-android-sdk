@@ -119,6 +119,10 @@
 /// @defgroup image ImageMetadata
 /// Provides access to metadata from the camera image capture result.
 
+/// @defgroup intrinsics Intrinsics
+/// Provides information about the physical characteristics of the device
+/// camera.
+
 /// @defgroup light LightEstimate
 /// Holds information about the estimated lighting of the real scene.
 
@@ -187,6 +191,20 @@ typedef struct ArPose_ ArPose;
 /// Acquire with ArFrame_acquireCamera()<br>
 /// Release with ArCamera_release()
 typedef struct ArCamera_ ArCamera;
+
+/// @}
+
+// === Camera intrinstics types and methods ===
+
+/// @addtogroup intrinsics
+/// @{
+
+/// The physical characteristics of a given camera.
+///
+/// Allocate with ArCameraIntrinsics_create()<br>
+/// Populate with ArCamera_getIntrinsics()<br>
+/// Release with ArCameraIntrinsics_destroy()
+typedef struct ArCameraIntrinsics_ ArCameraIntrinsics;
 
 /// @}
 
@@ -1058,6 +1076,12 @@ ArStatus ArSession_checkSupported(const ArSession *session,
 /// - #AR_ERROR_UNSUPPORTED_CONFIGURATION
 ArStatus ArSession_configure(ArSession *session, const ArConfig *config);
 
+/// Gets the current config. More specifically, fills the given ArConfig object
+/// with the copy of the configuration most recently set by
+/// ArSession_configure(). Note: if the session was not explicitly configured, a
+/// default configuration is returned (same as ArConfig_create()).
+void ArSession_getConfig(ArSession *session, ArConfig *out_config);
+
 /// Starts or resumes the ARCore Session.
 ///
 /// Typically this should be called from <a
@@ -1205,11 +1229,12 @@ ArStatus ArSession_hostAndAcquireNewCloudAnchor(ArSession *session,
 /// resolve the anchor's pose using the given cloud anchor ID.
 ///
 /// If this function returns #AR_SUCCESS, the cloud state of @c out_cloud_anchor
-/// will be #AR_CLOUD_STATE_TASK_IN_PROGRESS, and its tracking state will be
-/// #AR_TRACKING_STATE_PAUSED. This anchor will never start tracking until its
-/// pose has been successfully resolved. If the resolving task ends in an error,
-/// the tracking state will be set to #AR_TRACKING_STATE_STOPPED. If the return
-/// value is not #AR_SUCCESS, then @c out_cloud_anchor will be set to null.
+/// will be #AR_CLOUD_ANCHOR_STATE_TASK_IN_PROGRESS, and its tracking state will
+/// be #AR_TRACKING_STATE_PAUSED. This anchor will never start tracking until
+/// its pose has been successfully resolved. If the resolving task ends in an
+/// error, the tracking state will be set to #AR_TRACKING_STATE_STOPPED. If the
+/// return value is not #AR_SUCCESS, then @c out_cloud_anchor will be set to
+/// null.
 ///
 /// @param[in]    session          The ARCore session
 /// @param[in]    cloud_anchor_id  The cloud ID of the anchor to be resolved
@@ -1311,7 +1336,7 @@ void ArCamera_getDisplayOrientedPose(const ArSession *session,
                                      ArPose *out_pose);
 
 /// Returns the view matrix for the camera for this frame. This matrix performs
-/// the inverse transfrom as the pose provided by
+/// the inverse transform as the pose provided by
 /// ArCamera_getDisplayOrientedPose().
 ///
 /// @param[in]    session           The ARCore session
@@ -1347,11 +1372,61 @@ void ArCamera_getProjectionMatrix(const ArSession *session,
                                   float far,
                                   float *dest_col_major_4x4);
 
+/// Retrieves the unrotated and uncropped intrinsics for the image (CPU) stream.
+/// @param camera The intrinsics may change per frame, so this should be called
+/// on each frame to get the intrinsics for the current frame.
+void ArCamera_getImageIntrinsics(const ArSession *session,
+                                 const ArCamera *camera,
+                                 ArCameraIntrinsics *out_camera_intrinsics);
+
+/// Retrieves the unrotated and uncropped intrinsics for the texture (GPU)
+/// stream.
+/// @param camera The intrinsics may change per frame, so this should be called
+/// on each frame to get the intrinsics for the current frame.
+void ArCamera_getTextureIntrinsics(const ArSession *session,
+                                   const ArCamera *camera,
+                                   ArCameraIntrinsics *out_camera_intrinsics);
+
 /// Releases a reference to the camera.  This must match a call to
 /// ArFrame_acquireCamera().
 ///
 /// This method may safely be called with @c nullptr - it will do nothing.
 void ArCamera_release(ArCamera *camera);
+
+/// @}
+
+// === ArCameraIntrinsics methods ===
+/// @addtogroup intrinsics
+/// @{
+
+/// Allocates a camera intrinstics object.
+void ArCameraIntrinsics_create(const ArSession *session,
+                               ArCameraIntrinsics **out_camera_intrinsics);
+
+/// Returns the focal length in pixels.
+/// The focal length is conventionally represented in pixels. For a detailed
+/// explanation, please see http://ksimek.github.io/2013/08/13/intrinsic.
+/// Pixels-to-meters conversion can use SENSOR_INFO_PHYSICAL_SIZE and
+/// SENSOR_INFO_PIXEL_ARRAY_SIZE in the Android CameraCharacteristics API.
+void ArCameraIntrinsics_getFocalLength(const ArSession *session,
+                                       const ArCameraIntrinsics *intrinsics,
+                                       float *out_fx,
+                                       float *out_fy);
+
+/// Returns the principal point in pixels.
+void ArCameraIntrinsics_getPrincipalPoint(const ArSession *session,
+                                          const ArCameraIntrinsics *intrinsics,
+                                          float *out_cx,
+                                          float *out_cy);
+
+/// Returns the image's width and height in pixels.
+void ArCameraIntrinsics_getImageDimensions(const ArSession *session,
+                                           const ArCameraIntrinsics *intrinsics,
+                                           int32_t *out_width,
+                                           int32_t *out_height);
+
+/// Releases the provided camera intrinsics object.
+void ArCameraIntrinsics_destroy(ArCameraIntrinsics *camera_intrinsics);
 
 /// @}
 
@@ -1383,6 +1458,23 @@ void ArFrame_getDisplayGeometryChanged(const ArSession *session,
 void ArFrame_getTimestamp(const ArSession *session,
                           const ArFrame *frame,
                           int64_t *out_timestamp_ns);
+
+/// Sets @c out_pose to the pose of the <a
+/// href="https://developer.android.com/guide/topics/sensors/sensors_overview.html#sensors-coords"
+/// >Android Sensor Coordinate System</a> in the world coordinate space at the
+/// time of capture of the current camera texture. The orientation follows the
+/// device's "native" orientation (it is not affected by display orientation).
+///
+/// Note: This pose is only useful when ArCamera_getTrackingState() returns
+/// #AR_TRACKING_STATE_TRACKING and otherwise should not be used.
+///
+/// @param[in]    session  The ARCore session
+/// @param[in]    frame    The current frame.
+/// @param[inout] out_pose An already-allocated ArPose object into which the
+///     pose will be stored.
+void ArFrame_getAndroidSensorPose(const ArSession *session,
+                                  const ArFrame *frame,
+                                  ArPose *out_pose);
 
 /// Transform the given texture coordinates to correctly show the background
 /// image. This will account for the display rotation, and any additional

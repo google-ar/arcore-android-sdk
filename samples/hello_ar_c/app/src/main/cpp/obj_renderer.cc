@@ -19,99 +19,16 @@
 
 namespace hello_ar {
 namespace {
-
 const glm::vec4 kLightDirection(0.0f, 1.0f, 0.0f, 0.0f);
-
-constexpr char kVertexShader[] = R"(
-uniform mat4 u_ModelView;
-uniform mat4 u_ModelViewProjection;
-
-attribute vec4 a_Position;
-attribute vec3 a_Normal;
-attribute vec2 a_TexCoord;
-
-varying vec3 v_ViewPosition;
-varying vec3 v_ViewNormal;
-varying vec2 v_TexCoord;
-
-void main() {
-    v_ViewPosition = (u_ModelView * a_Position).xyz;
-    v_ViewNormal = normalize((u_ModelView * vec4(a_Normal, 0.0)).xyz);
-    v_TexCoord = a_TexCoord;
-    gl_Position = u_ModelViewProjection * a_Position;
-})";
-
-constexpr char kFragmentShader[] = R"(
-precision mediump float;
-
-uniform sampler2D u_Texture;
-
-uniform vec4 u_LightingParameters;
-uniform vec4 u_MaterialParameters;
-uniform vec4 u_ColorCorrectionParameters;
-
-varying vec3 v_ViewPosition;
-varying vec3 v_ViewNormal;
-varying vec2 v_TexCoord;
-
-void main() {
-    // We support approximate sRGB gamma.
-    const float kGamma = 0.4545454;
-    const float kInverseGamma = 2.2;
-    const float kMiddleGrayGamma = 0.466;
-
-    // Unpack lighting and material parameters for better naming.
-    vec3 viewLightDirection = u_LightingParameters.xyz;
-    vec3 colorShift = u_ColorCorrectionParameters.rgb;
-    float averagePixelIntensity = u_ColorCorrectionParameters.a;
-
-    float materialAmbient = u_MaterialParameters.x;
-    float materialDiffuse = u_MaterialParameters.y;
-    float materialSpecular = u_MaterialParameters.z;
-    float materialSpecularPower = u_MaterialParameters.w;
-
-    // Normalize varying parameters, because they are linearly interpolated in
-    // the vertex shader.
-    vec3 viewFragmentDirection = normalize(v_ViewPosition);
-    vec3 viewNormal = normalize(v_ViewNormal);
-
-    // Apply inverse SRGB gamma to the texture before making lighting
-    // calculations.
-    // Flip the y-texture coordinate to address the texture from top-left.
-    vec4 objectColor = texture2D(u_Texture,
-            vec2(v_TexCoord.x, 1.0 - v_TexCoord.y));
-    objectColor.rgb = pow(objectColor.rgb, vec3(kInverseGamma));
-
-    // Ambient light is unaffected by the light intensity.
-    float ambient = materialAmbient;
-
-    // Approximate a hemisphere light (not a harsh directional light).
-    float diffuse = materialDiffuse *
-            0.5 * (dot(viewNormal, viewLightDirection) + 1.0);
-
-    // Compute specular light.
-    vec3 reflectedLightDirection = reflect(viewLightDirection, viewNormal);
-    float specularStrength = max(0.0, dot(viewFragmentDirection,
-            reflectedLightDirection));
-    float specular = materialSpecular *
-            pow(specularStrength, materialSpecularPower);
-
-    vec3 color = objectColor.rgb * (ambient + diffuse) + specular;
-    // Apply SRGB gamma before writing the fragment color.
-    color.rgb = pow(color, vec3(kGamma));
-    // Apply average pixel intensity and color shift
-    color *= colorShift * (averagePixelIntensity/kMiddleGrayGamma);
-    gl_FragColor.rgb = color;
-    gl_FragColor.a = objectColor.a;
-}
-)";
+constexpr char kVertexShaderFilename[] = "shaders/object.vert";
+constexpr char kFragmentShaderFilename[] = "shaders/object.frag";
 }  // namespace
 
 void ObjRenderer::InitializeGlContent(AAssetManager* asset_manager,
                                       const std::string& obj_file_name,
                                       const std::string& png_file_name) {
-  shader_program_ = util::CreateProgram(kVertexShader, kFragmentShader);
-
+  shader_program_ = util::CreateProgram(kVertexShaderFilename,
+                                        kFragmentShaderFilename, asset_manager);
   if (!shader_program_) {
     LOGE("Could not create program.");
   }
@@ -127,6 +44,7 @@ void ObjRenderer::InitializeGlContent(AAssetManager* asset_manager,
       glGetUniformLocation(shader_program_, "u_MaterialParameters");
   uniform_color_correction_param_ =
       glGetUniformLocation(shader_program_, "u_ColorCorrectionParameters");
+  uniform_color_ = glGetUniformLocation(shader_program_, "u_ObjColor");
 
   attri_vertices_ = glGetAttribLocation(shader_program_, "a_Position");
   attri_uvs_ = glGetAttribLocation(shader_program_, "a_TexCoord");
@@ -147,7 +65,7 @@ void ObjRenderer::InitializeGlContent(AAssetManager* asset_manager,
 
   glBindTexture(GL_TEXTURE_2D, 0);
 
-  util::LoadObjFile(asset_manager, obj_file_name, &vertices_, &normals_, &uvs_,
+  util::LoadObjFile(obj_file_name, asset_manager, &vertices_, &normals_, &uvs_,
                     &indices_);
 
   util::CheckGlError("obj_renderer::InitializeGlContent()");
@@ -163,7 +81,8 @@ void ObjRenderer::SetMaterialProperty(float ambient, float diffuse,
 
 void ObjRenderer::Draw(const glm::mat4& projection_mat,
                        const glm::mat4& view_mat, const glm::mat4& model_mat,
-                       const float* color_correction4) const {
+                       const float* color_correction4,
+                       const float* object_color4) const {
   if (!shader_program_) {
     LOGE("shader_program is null.");
     return;
@@ -183,9 +102,8 @@ void ObjRenderer::Draw(const glm::mat4& projection_mat,
               view_light_direction[1], view_light_direction[2], 1.f);
   glUniform4f(uniform_material_param_, ambient_, diffuse_, specular_,
               specular_power_);
-
-  glUniform4f(uniform_color_correction_param_, color_correction4[0],
-              color_correction4[1], color_correction4[2], color_correction4[3]);
+  glUniform4fv(uniform_color_correction_param_, 1, color_correction4);
+  glUniform4fv(uniform_color_, 1, object_color4);
 
   glUniformMatrix4fv(uniform_mvp_mat_, 1, GL_FALSE, glm::value_ptr(mvp_mat));
   glUniformMatrix4fv(uniform_mv_mat_, 1, GL_FALSE, glm::value_ptr(mv_mat));

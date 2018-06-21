@@ -85,8 +85,13 @@ class HelloArApplication {
 
   AAssetManager* const asset_manager_;
 
-  // The anchors at which we are drawing android models
-  std::vector<ArAnchor*> tracked_obj_set_;
+  // The anchors at which we are drawing android models using given colors.
+  struct ColoredAnchor {
+    ArAnchor* anchor;
+    float color[4];
+  };
+
+  std::vector<ColoredAnchor> anchors_;
 
   // Stores the randomly-selected color each plane is drawn with
   std::unordered_map<ArPlane*, glm::vec3> plane_color_map_;
@@ -101,6 +106,8 @@ class HelloArApplication {
   ObjRenderer andy_renderer_;
 
   int32_t plane_count_ = 0;
+
+  void SetColor(float r, float g, float b, float a, float* color4f);
 };
 }  // namespace hello_ar
 

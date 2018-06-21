@@ -38,40 +38,8 @@ constexpr int kSobelEdgeThreshold = 128 * 128;
 constexpr int kCoordsPerVertex = 3;
 constexpr int kTexCoordsPerVertex = 2;
 constexpr int kTextureCount = 4;
-
-constexpr char kVertexShader[] = R"(
-      attribute vec4 a_Position;
-      attribute vec2 a_TexCoord;
-      attribute vec2 a_ImgCoord;
-
-      varying vec2 v_TexCoord;
-      varying vec2 v_ImgCoord;
-
-      void main() {
-         gl_Position = a_Position;
-         v_TexCoord = a_TexCoord;
-         v_ImgCoord = a_ImgCoord;
-    })";
-
-constexpr char kFragmentShader[] = R"(
-    #extension GL_OES_EGL_image_external : require
-    precision mediump float;
-    varying vec2 v_TexCoord;
-    varying vec2 v_ImgCoord;
-    uniform float s_SplitterPosition;
-    uniform samplerExternalOES TexVideo;
-    uniform sampler2D TexCpuImageGrayscale;
-
-    void main() {
-      if (v_TexCoord.x < s_SplitterPosition)
-      {
-        gl_FragColor = texture2D(TexVideo, v_TexCoord);
-      }
-      else
-      {
-        gl_FragColor= texture2D(TexCpuImageGrayscale, v_ImgCoord);
-      }
-    })";
+constexpr char kVertexShaderFilename[] = "shaders/cpu_image.vert";
+constexpr char kFragmentShaderFilename[] = "shaders/cpu_image.frag";
 
 bool GetNdkImageProperties(const AImage* ndk_image, int32_t* out_format,
                            int32_t* out_width, int32_t* out_height,
@@ -161,7 +129,7 @@ bool DetectEdge(const AImage* ndk_image, int32_t width, int32_t height,
 
 }  // namespace
 
-void CpuImageRenderer::InitializeGlContent() {
+void CpuImageRenderer::InitializeGlContent(AAssetManager* asset_manager) {
   GLuint textures[kTextureCount];
   glGenTextures(kTextureCount, textures);
 
@@ -190,7 +158,8 @@ void CpuImageRenderer::InitializeGlContent() {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-  shader_program_ = util::CreateProgram(kVertexShader, kFragmentShader);
+  shader_program_ = util::CreateProgram(asset_manager, kVertexShaderFilename,
+                                        kFragmentShaderFilename);
   if (!shader_program_) {
     LOGE("Could not create program.");
   }

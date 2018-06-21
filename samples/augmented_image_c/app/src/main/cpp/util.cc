@@ -131,13 +131,30 @@ static GLuint LoadShader(GLenum shader_type, const char* shader_source) {
   return shader;
 }
 
-GLuint CreateProgram(const char* vertex_source, const char* fragment_source) {
-  GLuint vertexShader = LoadShader(GL_VERTEX_SHADER, vertex_source);
+GLuint CreateProgram(AAssetManager* mgr, const char* vertex_shader_file_name,
+                     const char* fragment_shader_file_name) {
+  std::string VertexShaderContent;
+  if (!LoadFileFromAssetManager(mgr, vertex_shader_file_name,
+                                &VertexShaderContent)) {
+    LOGE("Failed to load file: %s", vertex_shader_file_name);
+    return 0;
+  }
+
+  std::string FragmentShaderContent;
+  if (!LoadFileFromAssetManager(mgr, fragment_shader_file_name,
+                                &FragmentShaderContent)) {
+    LOGE("Failed to load file: %s", fragment_shader_file_name);
+    return 0;
+  }
+
+  GLuint vertexShader =
+      LoadShader(GL_VERTEX_SHADER, VertexShaderContent.c_str());
   if (!vertexShader) {
     return 0;
   }
 
-  GLuint fragment_shader = LoadShader(GL_FRAGMENT_SHADER, fragment_source);
+  GLuint fragment_shader =
+      LoadShader(GL_FRAGMENT_SHADER, FragmentShaderContent.c_str());
   if (!fragment_shader) {
     return 0;
   }
@@ -167,6 +184,31 @@ GLuint CreateProgram(const char* vertex_source, const char* fragment_source) {
     }
   }
   return program;
+}
+
+bool LoadFileFromAssetManager(AAssetManager* mgr, const char* file_name,
+                              std::string* out_file_text_string) {
+  // If the file hasn't been uncompressed, load it to the internal storage.
+  // Note that AAsset_openFileDescriptor doesn't support compressed
+  // files (.obj).
+  AAsset* asset = AAssetManager_open(mgr, file_name, AASSET_MODE_STREAMING);
+  if (asset == nullptr) {
+    LOGE("Error opening asset %s", file_name);
+    return false;
+  }
+
+  off_t file_size = AAsset_getLength(asset);
+  out_file_text_string->resize(file_size);
+  int ret = AAsset_read(asset, &out_file_text_string->front(), file_size);
+
+  if (ret <= 0) {
+    LOGE("Failed to open file: %s", file_name);
+    AAsset_close(asset);
+    return false;
+  }
+
+  AAsset_close(asset);
+  return true;
 }
 
 bool HideFitToScanImage(void* activity) {
@@ -218,29 +260,6 @@ bool LoadImageFromAssetManager(const std::string& path, int* out_width,
   return true;
 }
 
-bool LoadEntireAssetFile(AAssetManager* mgr, const std::string& file_name,
-                         std::string* out_file_buffer) {
-  AAsset* asset =
-      AAssetManager_open(mgr, file_name.c_str(), AASSET_MODE_BUFFER);
-  if (asset == nullptr) {
-    LOGE("Error opening asset %s", file_name.c_str());
-    return false;
-  }
-
-  off_t file_size = AAsset_getLength(asset);
-  out_file_buffer->resize(file_size);
-  int ret = AAsset_read(asset, &out_file_buffer->front(), file_size);
-
-  if (ret < 0 || ret == EOF) {
-    LOGE("Failed to open file: %s", file_name.c_str());
-    AAsset_close(asset);
-    return false;
-  }
-
-  AAsset_close(asset);
-  return true;
-}
-
 bool LoadObjFile(AAssetManager* mgr, const std::string& file_name,
                  std::vector<GLfloat>* out_vertices,
                  std::vector<GLfloat>* out_normals,
@@ -253,11 +272,10 @@ bool LoadObjFile(AAssetManager* mgr, const std::string& file_name,
   std::vector<GLushort> normal_indices;
   std::vector<GLushort> uv_indices;
 
-  // If the file hasn't been uncompressed, load it to the internal storage.
-  // Note that AAsset_openFileDescriptor doesn't support compressed
-  // files (.obj).
   std::string file_buffer;
-  if (!LoadEntireAssetFile(mgr, file_name, &file_buffer)) {
+  bool read_success =
+      LoadFileFromAssetManager(mgr, file_name.c_str(), &file_buffer);
+  if (!read_success) {
     return false;
   }
   std::stringstream file_string_stream(file_buffer);

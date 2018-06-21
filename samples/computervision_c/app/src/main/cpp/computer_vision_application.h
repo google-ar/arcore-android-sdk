@@ -19,6 +19,7 @@
 
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#include <android/asset_manager.h>
 #include <jni.h>
 #include <memory>
 #include <set>
@@ -35,6 +36,7 @@ namespace computer_vision {
 class ComputerVisionApplication {
  public:
   // Constructor and deconstructor.
+  ComputerVisionApplication(AAssetManager* asset_manager);
   ~ComputerVisionApplication();
 
   // OnPause is called on the UI thread from the Activity's onPause method.
@@ -60,9 +62,13 @@ class ComputerVisionApplication {
   // OnDrawFrame is called on the OpenGL thread to render the next frame.
   void OnDrawFrame(float split_position);
 
+  // Get the text logs for the camera intrinsics.
+  std::string GetCameraIntrinsicsText(bool show_cpu_intrinsics);
+
  private:
   ArSession* ar_session_ = nullptr;
   ArFrame* ar_frame_ = nullptr;
+  ArCameraIntrinsics* ar_camera_intrinsics_ = nullptr;
 
   bool install_requested_ = false;
   int width_ = 1;
@@ -70,6 +76,8 @@ class ComputerVisionApplication {
   int display_rotation_ = 0;
   int camera_to_display_rotation_ = 0;
   float aspect_ratio_ = 0.0;
+
+  AAssetManager* const asset_manager_;
 
   CpuImageRenderer cpu_image_renderer_;
 };

@@ -34,29 +34,13 @@ const GLfloat kUvs[] = {
     0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
 };
 
-constexpr char kVertexShader[] = R"(
-    attribute vec4 vertex;
-    attribute vec2 textureCoords;
-    varying vec2 v_textureCoords;
-    void main() {
-      v_textureCoords = textureCoords;
-      gl_Position = vertex;
-    })";
-
-constexpr char kFragmentShader[] = R"(
-    #extension GL_OES_EGL_image_external : require
-    precision mediump float;
-    uniform samplerExternalOES texture;
-    varying vec2 v_textureCoords;
-    void main() {
-      gl_FragColor = texture2D(texture, v_textureCoords);
-    })";
-
+constexpr char kVertexShaderFilename[] = "shaders/screenquad.vert";
+constexpr char kFragmentShaderFilename[] = "shaders/screenquad.frag";
 }  // namespace
 
-void BackgroundRenderer::InitializeGlContent() {
-  shader_program_ = util::CreateProgram(kVertexShader, kFragmentShader);
-
+void BackgroundRenderer::InitializeGlContent(AAssetManager* asset_manager) {
+  shader_program_ = util::CreateProgram(kVertexShaderFilename,
+                                        kFragmentShaderFilename, asset_manager);
   if (!shader_program_) {
     LOGE("Could not create program.");
   }
@@ -66,9 +50,9 @@ void BackgroundRenderer::InitializeGlContent() {
   glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  uniform_texture_ = glGetUniformLocation(shader_program_, "texture");
-  attribute_vertices_ = glGetAttribLocation(shader_program_, "vertex");
-  attribute_uvs_ = glGetAttribLocation(shader_program_, "textureCoords");
+  uniform_texture_ = glGetUniformLocation(shader_program_, "sTexture");
+  attribute_vertices_ = glGetAttribLocation(shader_program_, "a_Position");
+  attribute_uvs_ = glGetAttribLocation(shader_program_, "a_TexCoord");
 }
 
 void BackgroundRenderer::Draw(const ArSession* session, const ArFrame* frame) {

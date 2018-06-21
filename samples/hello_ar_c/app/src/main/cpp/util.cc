@@ -71,13 +71,31 @@ static GLuint LoadShader(GLenum shader_type, const char* shader_source) {
   return shader;
 }
 
-GLuint CreateProgram(const char* vertex_source, const char* fragment_source) {
-  GLuint vertexShader = LoadShader(GL_VERTEX_SHADER, vertex_source);
+GLuint CreateProgram(const char* vertex_shader_file_name,
+                     const char* fragment_shader_file_name,
+                     AAssetManager* asset_manager) {
+  std::string VertexShaderContent;
+  if (!LoadTextFileFromAssetManager(vertex_shader_file_name, asset_manager,
+                                    &VertexShaderContent)) {
+    LOGE("Failed to load file: %s", vertex_shader_file_name);
+    return 0;
+  }
+
+  std::string FragmentShaderContent;
+  if (!LoadTextFileFromAssetManager(fragment_shader_file_name, asset_manager,
+                                    &FragmentShaderContent)) {
+    LOGE("Failed to load file: %s", fragment_shader_file_name);
+    return 0;
+  }
+
+  GLuint vertexShader =
+      LoadShader(GL_VERTEX_SHADER, VertexShaderContent.c_str());
   if (!vertexShader) {
     return 0;
   }
 
-  GLuint fragment_shader = LoadShader(GL_FRAGMENT_SHADER, fragment_source);
+  GLuint fragment_shader =
+      LoadShader(GL_FRAGMENT_SHADER, FragmentShaderContent.c_str());
   if (!fragment_shader) {
     return 0;
   }
@@ -107,6 +125,33 @@ GLuint CreateProgram(const char* vertex_source, const char* fragment_source) {
     }
   }
   return program;
+}
+
+bool LoadTextFileFromAssetManager(const char* file_name,
+                                  AAssetManager* asset_manager,
+                                  std::string* out_file_text_string) {
+  // If the file hasn't been uncompressed, load it to the internal storage.
+  // Note that AAsset_openFileDescriptor doesn't support compressed
+  // files (.obj).
+  AAsset* asset =
+      AAssetManager_open(asset_manager, file_name, AASSET_MODE_STREAMING);
+  if (asset == nullptr) {
+    LOGE("Error opening asset %s", file_name);
+    return false;
+  }
+
+  off_t file_size = AAsset_getLength(asset);
+  out_file_text_string->resize(file_size);
+  int ret = AAsset_read(asset, &out_file_text_string->front(), file_size);
+
+  if (ret <= 0) {
+    LOGE("Failed to open file: %s", file_name);
+    AAsset_close(asset);
+    return false;
+  }
+
+  AAsset_close(asset);
+  return true;
 }
 
 bool LoadPngFromAssetManager(int target, const std::string& path) {
@@ -160,7 +205,7 @@ bool LoadPngFromAssetManager(int target, const std::string& path) {
   return true;
 }
 
-bool LoadObjFile(AAssetManager* mgr, const std::string& file_name,
+bool LoadObjFile(const std::string& file_name, AAssetManager* asset_manager,
                  std::vector<GLfloat>* out_vertices,
                  std::vector<GLfloat>* out_normals,
                  std::vector<GLfloat>* out_uv,
@@ -172,28 +217,12 @@ bool LoadObjFile(AAssetManager* mgr, const std::string& file_name,
   std::vector<GLushort> normal_indices;
   std::vector<GLushort> uv_indices;
 
-  // If the file hasn't been uncompressed, load it to the internal storage.
-  // Note that AAsset_openFileDescriptor doesn't support compressed
-  // files (.obj).
-  AAsset* asset =
-      AAssetManager_open(mgr, file_name.c_str(), AASSET_MODE_STREAMING);
-  if (asset == nullptr) {
-    LOGE("Error opening asset %s", file_name.c_str());
-    return false;
-  }
-
-  off_t file_size = AAsset_getLength(asset);
   std::string file_buffer;
-  file_buffer.resize(file_size);
-  int ret = AAsset_read(asset, &file_buffer.front(), file_size);
-
-  if (ret < 0 || ret == EOF) {
-    LOGE("Failed to open file: %s", file_name.c_str());
-    AAsset_close(asset);
+  bool read_success = LoadTextFileFromAssetManager(file_name.c_str(),
+                                                   asset_manager, &file_buffer);
+  if (!read_success) {
     return false;
   }
-
-  AAsset_close(asset);
   std::stringstream file_string_stream(file_buffer);
 
   while (!file_string_stream.eof()) {
@@ -363,7 +392,7 @@ bool LoadObjFile(AAssetManager* mgr, const std::string& file_name,
   return true;
 }
 
-void Log4x4Matrix(float raw_matrix[16]) {
+void Log4x4Matrix(const float raw_matrix[16]) {
   LOGI(
       "%f, %f, %f, %f\n"
       "%f, %f, %f, %f\n"
@@ -375,23 +404,23 @@ void Log4x4Matrix(float raw_matrix[16]) {
       raw_matrix[14], raw_matrix[15]);
 }
 
-void GetTransformMatrixFromAnchor(ArSession* ar_session,
-                                  const ArAnchor* ar_anchor,
+void GetTransformMatrixFromAnchor(const ArAnchor& ar_anchor,
+                                  ArSession* ar_session,
                                   glm::mat4* out_model_mat) {
   if (out_model_mat == nullptr) {
     LOGE("util::GetTransformMatrixFromAnchor model_mat is null.");
     return;
   }
   util::ScopedArPose pose(ar_session);
-  ArAnchor_getPose(ar_session, ar_anchor, pose.GetArPose());
+  ArAnchor_getPose(ar_session, &ar_anchor, pose.GetArPose());
   ArPose_getMatrix(ar_session, pose.GetArPose(),
                    glm::value_ptr(*out_model_mat));
 }
 
-glm::vec3 GetPlaneNormal(const ArSession* ar_session,
+glm::vec3 GetPlaneNormal(const ArSession& ar_session,
                          const ArPose& plane_pose) {
   float plane_pose_raw[7] = {0.f};
-  ArPose_getPoseRaw(ar_session, &plane_pose, plane_pose_raw);
+  ArPose_getPoseRaw(&ar_session, &plane_pose, plane_pose_raw);
   glm::quat plane_quaternion(plane_pose_raw[3], plane_pose_raw[0],
                              plane_pose_raw[1], plane_pose_raw[2]);
   // Get normal vector, normal is defined to be positive Y-position in local
@@ -399,17 +428,17 @@ glm::vec3 GetPlaneNormal(const ArSession* ar_session,
   return glm::rotate(plane_quaternion, glm::vec3(0., 1.f, 0.));
 }
 
-float CalculateDistanceToPlane(const ArSession* ar_session,
+float CalculateDistanceToPlane(const ArSession& ar_session,
                                const ArPose& plane_pose,
                                const ArPose& camera_pose) {
   float plane_pose_raw[7] = {0.f};
-  ArPose_getPoseRaw(ar_session, &plane_pose, plane_pose_raw);
+  ArPose_getPoseRaw(&ar_session, &plane_pose, plane_pose_raw);
   glm::vec3 plane_position(plane_pose_raw[4], plane_pose_raw[5],
                            plane_pose_raw[6]);
   glm::vec3 normal = GetPlaneNormal(ar_session, plane_pose);
 
   float camera_pose_raw[7] = {0.f};
-  ArPose_getPoseRaw(ar_session, &camera_pose, camera_pose_raw);
+  ArPose_getPoseRaw(&ar_session, &camera_pose, camera_pose_raw);
   glm::vec3 camera_P_plane(camera_pose_raw[4] - plane_position.x,
                            camera_pose_raw[5] - plane_position.y,
                            camera_pose_raw[6] - plane_position.z);

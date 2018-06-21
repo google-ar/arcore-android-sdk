@@ -19,30 +19,22 @@
 
 namespace cloud_anchor {
 namespace {
-constexpr char kVertexShader[] = R"(
-    attribute vec4 vertex;
-    uniform mat4 mvp;
-    void main() {
-      gl_PointSize = 5.0;
-      // Pointcloud vertex's w component is confidence value.
-      // Not used in renderer.
-      gl_Position = mvp * vec4(vertex.xyz, 1.0);
-    })";
-
-constexpr char kFragmentShader[] = R"(
-    precision lowp float;
-    void main() {
-      gl_FragColor = vec4(0.1215, 0.7372, 0.8235, 1.0);
-    })";
+constexpr char kVertexShaderFilename[] = "shaders/point_cloud.vert";
+constexpr char kFragmentShaderFilename[] = "shaders/point_cloud.frag";
 }  // namespace
 
-void PointCloudRenderer::InitializeGlContent() {
-  shader_program_ = util::CreateProgram(kVertexShader, kFragmentShader);
+void PointCloudRenderer::InitializeGlContent(AAssetManager* asset_manager) {
+  shader_program_ = util::CreateProgram(asset_manager, kVertexShaderFilename,
+                                        kFragmentShaderFilename);
+  if (!shader_program_) {
+    LOGE("Could not create program.");
+  }
 
-  CHECK(shader_program_);
-
-  attribute_vertices_ = glGetAttribLocation(shader_program_, "vertex");
-  uniform_mvp_mat_ = glGetUniformLocation(shader_program_, "mvp");
+  attribute_vertices_ = glGetAttribLocation(shader_program_, "a_Position");
+  uniform_mvp_mat_ =
+      glGetUniformLocation(shader_program_, "u_ModelViewProjection");
+  uniform_color_ = glGetUniformLocation(shader_program_, "u_Color");
+  uniform_point_size_ = glGetUniformLocation(shader_program_, "u_PointSize");
 
   util::CheckGlError("point_cloud_renderer::InitializeGlContent()");
 }
@@ -67,6 +59,11 @@ void PointCloudRenderer::Draw(glm::mat4 mvp_matrix, ArSession* ar_session,
   glEnableVertexAttribArray(attribute_vertices_);
   glVertexAttribPointer(attribute_vertices_, 4, GL_FLOAT, GL_FALSE, 0,
                         point_cloud_data);
+
+  // Set cyan color to the point cloud.
+  glUniform4f(uniform_color_, 31.0f / 255.0f, 188.0f / 255.0f, 210.0f / 255.0f,
+              1.0f);
+  glUniform1f(uniform_point_size_, 5.0f);
 
   glDrawArrays(GL_POINTS, 0, number_of_points);
 

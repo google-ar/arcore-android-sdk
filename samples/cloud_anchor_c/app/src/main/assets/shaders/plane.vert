@@ -1,10 +1,11 @@
 /*
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2018 Google Inc. All Rights Reserved.
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,28 +14,26 @@
  * limitations under the License.
  */
 
-uniform mat4 u_Model;
-uniform mat4 u_ModelViewProjection;
-uniform mat2 u_PlaneUvMatrix;
-uniform vec3 u_Normal;
-
-attribute vec3 a_XZPositionAlpha; // (x, z, alpha)
-
-varying vec3 v_TexCoordAlpha;
+precision highp float;
+precision highp int;
+attribute vec3 vertex;
+varying vec2 v_textureCoords;
+varying float v_alpha;
+uniform mat4 mvp;
+uniform mat4 texture_mat;
 
 void main() {
-   vec4 local_pos = vec4(a_XZPositionAlpha.x, 0.0, a_XZPositionAlpha.y, 1.0);
-   vec4 world_pos = u_Model * local_pos;
-
-   // Construct two vectors that are orthogonal to the normal.
-   // This arbitrary choice is not co-linear with either horizontal
-   // or vertical plane normals.
-   const vec3 arbitrary = vec3(1.0, 1.0, 0.0);
-   vec3 vec_u = normalize(cross(u_Normal, arbitrary));
-   vec3 vec_v = normalize(cross(u_Normal, vec_u));
-
-   // Project vertices in world frame onto vec_u and vec_v.
-   vec2 uv = vec2(dot(world_pos.xyz, vec_u), dot(world_pos.xyz, vec_v));
-   v_TexCoordAlpha = vec3(u_PlaneUvMatrix * uv, a_XZPositionAlpha.z);
-   gl_Position = u_ModelViewProjection * local_pos;
+  vec4 position = vec4(vertex.x, 0.0, vertex.y, 1.0);
+  gl_Position = mvp * position;
+  // Vertex Z value is used as the alpha in this shader.
+  v_alpha = vertex.z;
+  vec4 world_pos = texture_mat * position;
+  // Vector from center pose to this vertex in world frame.
+  vec2 xz_vec = vec2(world_pos.x - texture_mat[3].x, world_pos.z - texture_mat[3].z);
+  // If (world_pos.y - u_Model[3].y) almost equal to zero, this is a horizontal plane,
+  // if it's horizontal plane, we use world frame for texture to make it tied to the world,
+  // if it's vertical plane, we map the texture to the vertices on plane in world frame.
+  v_textureCoords = abs(world_pos.y - texture_mat[3].y) < 0.0001 ?
+                    world_pos.xz :
+                    vec2(texture_mat[3].x + length(xz_vec) * sign(xz_vec.x), world_pos.y);
 }

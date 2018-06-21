@@ -17,11 +17,13 @@
 #include "computer_vision_application.h"
 #include <media/NdkImage.h>
 #include <array>
+#include <cmath>
 
 #include "util.h"
 
 namespace computer_vision {
 namespace {
+constexpr float kRadiansToDegrees = static_cast<float>(180 / M_PI);
 
 float GetViewportAspectRatio(int display_rotation, int viewport_width,
                              int viewport_height) {
@@ -44,11 +46,14 @@ float GetViewportAspectRatio(int display_rotation, int viewport_width,
 
 }  // namespace
 
+ComputerVisionApplication::ComputerVisionApplication(
+    AAssetManager* asset_manager)
+    : asset_manager_(asset_manager) {}
+
 ComputerVisionApplication::~ComputerVisionApplication() {
-  if (ar_session_ != nullptr) {
-    ArSession_destroy(ar_session_);
-    ArFrame_destroy(ar_frame_);
-  }
+  ArSession_destroy(ar_session_);
+  ArFrame_destroy(ar_frame_);
+  ArCameraIntrinsics_destroy(ar_camera_intrinsics_);
 }
 
 void ComputerVisionApplication::OnPause() {
@@ -94,6 +99,9 @@ void ComputerVisionApplication::OnResume(void* env, void* context,
     ArFrame_create(ar_session_, &ar_frame_);
     CHECK(ar_frame_);
 
+    ArCameraIntrinsics_create(ar_session_, &ar_camera_intrinsics_);
+    CHECK(ar_camera_intrinsics_);
+
     ArSession_setDisplayGeometry(ar_session_, display_rotation_, width_,
                                  height_);
   }
@@ -104,7 +112,7 @@ void ComputerVisionApplication::OnResume(void* env, void* context,
 
 void ComputerVisionApplication::OnSurfaceCreated() {
   LOGI("OnSurfaceCreated()");
-  cpu_image_renderer_.InitializeGlContent();
+  cpu_image_renderer_.InitializeGlContent(asset_manager_);
 }
 
 void ComputerVisionApplication::OnDisplayGeometryChanged(
@@ -152,6 +160,51 @@ void ComputerVisionApplication::OnDrawFrame(float split_position) {
   }
   cpu_image_renderer_.Draw(ar_session_, ar_frame_, ndk_image, aspect_ratio_,
                            camera_to_display_rotation_, split_position);
+}
+
+std::string ComputerVisionApplication::GetCameraIntrinsicsText(
+    bool show_cpu_intrinsics) {
+  if (ar_session_ == nullptr) return "";
+
+  ArCamera* ar_camera;
+  ArFrame_acquireCamera(ar_session_, ar_frame_, &ar_camera);
+  if (show_cpu_intrinsics) {
+    ArCamera_getImageIntrinsics(ar_session_, ar_camera, ar_camera_intrinsics_);
+  } else {
+    ArCamera_getTextureIntrinsics(ar_session_, ar_camera,
+                                  ar_camera_intrinsics_);
+  }
+
+  float fx;
+  float fy;
+  float cx;
+  float cy;
+  int image_width;
+  int image_height;
+
+  ArCameraIntrinsics_getFocalLength(ar_session_, ar_camera_intrinsics_, &fx,
+                                    &fy);
+  ArCameraIntrinsics_getPrincipalPoint(ar_session_, ar_camera_intrinsics_, &cx,
+                                       &cy);
+  ArCameraIntrinsics_getImageDimensions(ar_session_, ar_camera_intrinsics_,
+                                        &image_width, &image_height);
+
+  ArCamera_release(ar_camera);
+
+  float fov_x = 2.0f * std::atan2(image_width, 2.0f * fx);
+  float fov_y = 2.0f * std::atan2(image_height, 2.0f * fy);
+  fov_x *= kRadiansToDegrees;
+  fov_y *= kRadiansToDegrees;
+
+  std::string intrinsics_type_label(show_cpu_intrinsics ? "Image" : "Texture");
+
+  return "Unrotated Camera " + intrinsics_type_label +
+         " Intrinsics:\n\tFocal Length: (" + std::to_string(fx) + ", " +
+         std::to_string(fy) + ")\n\tPrincipal Point: (" + std::to_string(cx) +
+         ", " + std::to_string(cy) + ")\n\tImage Dimensions: (" +
+         std::to_string(image_width) + ", " + std::to_string(image_height) +
+         ")\n\tUnrotated Field of View: (" + std::to_string(fov_x) + "º, " +
+         std::to_string(fov_y) + "º)";
 }
 
 }  // namespace computer_vision

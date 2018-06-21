@@ -19,6 +19,7 @@
 
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#include <android/asset_manager.h>
 #include <cstdlib>
 
 #include "arcore_c_api.h"
@@ -34,7 +35,7 @@ class BackgroundRenderer {
 
   // Sets up OpenGL state.  Must be called on the OpenGL thread and before any
   // other methods below.
-  void InitializeGlContent();
+  void InitializeGlContent(AAssetManager* asset_manager);
 
   // Draws the background image.  This methods must be called for every ArFrame
   // returned by ArSession_update() to catch display geometry change events.

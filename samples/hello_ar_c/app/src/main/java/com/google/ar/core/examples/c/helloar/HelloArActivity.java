@@ -41,32 +41,32 @@ public class HelloArActivity extends AppCompatActivity
   private static final String TAG = HelloArActivity.class.getSimpleName();
   private static final int SNACKBAR_UPDATE_INTERVAL_MILLIS = 1000; // In milliseconds.
 
-  private GLSurfaceView mSurfaceView;
+  private GLSurfaceView surfaceView;
 
-  private boolean mViewportChanged = false;
-  private int mViewportWidth;
-  private int mViewportHeight;
+  private boolean viewportChanged = false;
+  private int viewportWidth;
+  private int viewportHeight;
 
   // Opaque native pointer to the native application instance.
-  private long mNativeApplication;
-  private GestureDetector mGestureDetector;
+  private long nativeApplication;
+  private GestureDetector gestureDetector;
 
-  private Snackbar mLoadingMessageSnackbar;
-  private Handler mPlaneStatusCheckingHandler;
-  private final Runnable mPlaneStatusCheckingRunnable =
+  private Snackbar loadingMessageSnackbar;
+  private Handler planeStatusCheckingHandler;
+  private final Runnable planeStatusCheckingRunnable =
       new Runnable() {
         @Override
         public void run() {
           // The runnable is executed on main UI thread.
           try {
-            if (JniInterface.hasDetectedPlanes(mNativeApplication)) {
-              if (mLoadingMessageSnackbar != null) {
-                mLoadingMessageSnackbar.dismiss();
+            if (JniInterface.hasDetectedPlanes(nativeApplication)) {
+              if (loadingMessageSnackbar != null) {
+                loadingMessageSnackbar.dismiss();
               }
-              mLoadingMessageSnackbar = null;
+              loadingMessageSnackbar = null;
             } else {
-              mPlaneStatusCheckingHandler.postDelayed(
-                  mPlaneStatusCheckingRunnable, SNACKBAR_UPDATE_INTERVAL_MILLIS);
+              planeStatusCheckingHandler.postDelayed(
+                  planeStatusCheckingRunnable, SNACKBAR_UPDATE_INTERVAL_MILLIS);
             }
           } catch (Exception e) {
             Log.e(TAG, e.getMessage());
@@ -78,20 +78,20 @@ public class HelloArActivity extends AppCompatActivity
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
-    mSurfaceView = (GLSurfaceView) findViewById(R.id.surfaceview);
+    surfaceView = (GLSurfaceView) findViewById(R.id.surfaceview);
 
     // Set up tap listener.
-    mGestureDetector =
+    gestureDetector =
         new GestureDetector(
             this,
             new GestureDetector.SimpleOnGestureListener() {
               @Override
               public boolean onSingleTapUp(final MotionEvent e) {
-                mSurfaceView.queueEvent(
+                surfaceView.queueEvent(
                     new Runnable() {
                       @Override
                       public void run() {
-                        JniInterface.onTouched(mNativeApplication, e.getX(), e.getY());
+                        JniInterface.onTouched(nativeApplication, e.getX(), e.getY());
                       }
                     });
                 return true;
@@ -103,25 +103,25 @@ public class HelloArActivity extends AppCompatActivity
               }
             });
 
-    mSurfaceView.setOnTouchListener(
+    surfaceView.setOnTouchListener(
         new View.OnTouchListener() {
           @Override
           public boolean onTouch(View v, MotionEvent event) {
-            return mGestureDetector.onTouchEvent(event);
+            return gestureDetector.onTouchEvent(event);
           }
         });
 
     // Set up renderer.
-    mSurfaceView.setPreserveEGLContextOnPause(true);
-    mSurfaceView.setEGLContextClientVersion(2);
-    mSurfaceView.setEGLConfigChooser(8, 8, 8, 8, 16, 0); // Alpha used for plane blending.
-    mSurfaceView.setRenderer(this);
-    mSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
+    surfaceView.setPreserveEGLContextOnPause(true);
+    surfaceView.setEGLContextClientVersion(2);
+    surfaceView.setEGLConfigChooser(8, 8, 8, 8, 16, 0); // Alpha used for plane blending.
+    surfaceView.setRenderer(this);
+    surfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
 
     JniInterface.assetManager = getAssets();
-    mNativeApplication = JniInterface.createNativeApplication(getAssets());
+    nativeApplication = JniInterface.createNativeApplication(getAssets());
 
-    mPlaneStatusCheckingHandler = new Handler();
+    planeStatusCheckingHandler = new Handler();
   }
 
   @Override
@@ -134,19 +134,19 @@ public class HelloArActivity extends AppCompatActivity
       return;
     }
 
-    JniInterface.onResume(mNativeApplication, getApplicationContext(), this);
-    mSurfaceView.onResume();
+    JniInterface.onResume(nativeApplication, getApplicationContext(), this);
+    surfaceView.onResume();
 
-    mLoadingMessageSnackbar =
+    loadingMessageSnackbar =
         Snackbar.make(
             HelloArActivity.this.findViewById(android.R.id.content),
             "Searching for surfaces...",
             Snackbar.LENGTH_INDEFINITE);
     // Set the snackbar background to light transparent black color.
-    mLoadingMessageSnackbar.getView().setBackgroundColor(0xbf323232);
-    mLoadingMessageSnackbar.show();
-    mPlaneStatusCheckingHandler.postDelayed(
-        mPlaneStatusCheckingRunnable, SNACKBAR_UPDATE_INTERVAL_MILLIS);
+    loadingMessageSnackbar.getView().setBackgroundColor(0xbf323232);
+    loadingMessageSnackbar.show();
+    planeStatusCheckingHandler.postDelayed(
+        planeStatusCheckingRunnable, SNACKBAR_UPDATE_INTERVAL_MILLIS);
 
     // Listen to display changed events to detect 180° rotation, which does not cause a config
     // change or view resize.
@@ -156,10 +156,10 @@ public class HelloArActivity extends AppCompatActivity
   @Override
   public void onPause() {
     super.onPause();
-    mSurfaceView.onPause();
-    JniInterface.onPause(mNativeApplication);
+    surfaceView.onPause();
+    JniInterface.onPause(nativeApplication);
 
-    mPlaneStatusCheckingHandler.removeCallbacks(mPlaneStatusCheckingRunnable);
+    planeStatusCheckingHandler.removeCallbacks(planeStatusCheckingRunnable);
 
     getSystemService(DisplayManager.class).unregisterDisplayListener(this);
   }
@@ -170,8 +170,8 @@ public class HelloArActivity extends AppCompatActivity
 
     // Synchronized to avoid racing onDrawFrame.
     synchronized (this) {
-      JniInterface.destroyNativeApplication(mNativeApplication);
-      mNativeApplication = 0;
+      JniInterface.destroyNativeApplication(nativeApplication);
+      nativeApplication = 0;
     }
   }
 
@@ -196,30 +196,30 @@ public class HelloArActivity extends AppCompatActivity
   @Override
   public void onSurfaceCreated(GL10 gl, EGLConfig config) {
     GLES20.glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    JniInterface.onGlSurfaceCreated(mNativeApplication);
+    JniInterface.onGlSurfaceCreated(nativeApplication);
   }
 
   @Override
   public void onSurfaceChanged(GL10 gl, int width, int height) {
-    mViewportWidth = width;
-    mViewportHeight = height;
-    mViewportChanged = true;
+    viewportWidth = width;
+    viewportHeight = height;
+    viewportChanged = true;
   }
 
   @Override
   public void onDrawFrame(GL10 gl) {
     // Synchronized to avoid racing onDestroy.
     synchronized (this) {
-      if (mNativeApplication == 0) {
+      if (nativeApplication == 0) {
         return;
       }
-      if (mViewportChanged) {
+      if (viewportChanged) {
         int displayRotation = getWindowManager().getDefaultDisplay().getRotation();
         JniInterface.onDisplayGeometryChanged(
-            mNativeApplication, displayRotation, mViewportWidth, mViewportHeight);
-        mViewportChanged = false;
+            nativeApplication, displayRotation, viewportWidth, viewportHeight);
+        viewportChanged = false;
       }
-      JniInterface.onGlSurfaceDrawFrame(mNativeApplication);
+      JniInterface.onGlSurfaceDrawFrame(nativeApplication);
     }
   }
 
@@ -245,6 +245,6 @@ public class HelloArActivity extends AppCompatActivity
 
   @Override
   public void onDisplayChanged(int displayId) {
-    mViewportChanged = true;
+    viewportChanged = true;
   }
 }

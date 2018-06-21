@@ -15,57 +15,18 @@
  */
 
 #include "plane_renderer.h"
+#include <string>
 #include "util.h"
 
 namespace hello_ar {
 namespace {
-constexpr char kVertexShader[] = R"(
-    precision highp float;
-    precision highp int;
-    attribute vec3 vertex;
-    varying vec2 v_textureCoords;
-    varying float v_alpha;
-
-    uniform mat4 mvp;
-    uniform mat4 model_mat;
-    uniform vec3 normal;
-
-    void main() {
-      // Vertex Z value is used as the alpha in this shader.
-      v_alpha = vertex.z;
-
-      vec4 local_pos = vec4(vertex.x, 0.0, vertex.y, 1.0);
-      gl_Position = mvp * local_pos;
-      vec4 world_pos = model_mat * local_pos;
-
-      // Construct two vectors that are orthogonal to the normal.
-      // This arbitrary choice is not co-linear with either horizontal
-      // or vertical plane normals.
-      const vec3 arbitrary = vec3(1.0, 1.0, 0.0);
-      vec3 vec_u = normalize(cross(normal, arbitrary));
-      vec3 vec_v = normalize(cross(normal, vec_u));
-
-      // Project vertices in world frame onto vec_u and vec_v.
-      v_textureCoords = vec2(
-         dot(world_pos.xyz, vec_u), dot(world_pos.xyz, vec_v));
-    })";
-
-constexpr char kFragmentShader[] = R"(
-    precision highp float;
-    precision highp int;
-    uniform sampler2D texture;
-    uniform vec3 color;
-    varying vec2 v_textureCoords;
-    varying float v_alpha;
-    void main() {
-      float r = texture2D(texture, v_textureCoords).r;
-      gl_FragColor = vec4(color.xyz, r * v_alpha);
-    })";
+constexpr char kVertexShaderFilename[] = "shaders/plane.vert";
+constexpr char kFragmentShaderFilename[] = "shaders/plane.frag";
 }  // namespace
 
 void PlaneRenderer::InitializeGlContent(AAssetManager* asset_manager) {
-  shader_program_ = util::CreateProgram(kVertexShader, kFragmentShader);
-
+  shader_program_ = util::CreateProgram(kVertexShaderFilename,
+                                        kFragmentShaderFilename, asset_manager);
   if (!shader_program_) {
     LOGE("Could not create program.");
   }
@@ -97,8 +58,8 @@ void PlaneRenderer::InitializeGlContent(AAssetManager* asset_manager) {
 }
 
 void PlaneRenderer::Draw(const glm::mat4& projection_mat,
-                         const glm::mat4& view_mat, const ArSession* ar_session,
-                         const ArPlane* ar_plane, const glm::vec3& color) {
+                         const glm::mat4& view_mat, const ArSession& ar_session,
+                         const ArPlane& ar_plane, const glm::vec3& color) {
   if (!shader_program_) {
     LOGE("shader_program is null.");
     return;
@@ -134,8 +95,8 @@ void PlaneRenderer::Draw(const glm::mat4& projection_mat,
   util::CheckGlError("plane_renderer::Draw()");
 }
 
-void PlaneRenderer::UpdateForPlane(const ArSession* ar_session,
-                                   const ArPlane* ar_plane) {
+void PlaneRenderer::UpdateForPlane(const ArSession& ar_session,
+                                   const ArPlane& ar_plane) {
   // The following code generates a triangle mesh filling a convex polygon,
   // including a feathered edge for blending.
   //
@@ -152,7 +113,7 @@ void PlaneRenderer::UpdateForPlane(const ArSession* ar_session,
   triangles_.clear();
 
   int32_t polygon_length;
-  ArPlane_getPolygonSize(ar_session, ar_plane, &polygon_length);
+  ArPlane_getPolygonSize(&ar_session, &ar_plane, &polygon_length);
 
   if (polygon_length == 0) {
     LOGE("PlaneRenderer::UpdatePlane, no valid plane polygon is found");
@@ -161,7 +122,7 @@ void PlaneRenderer::UpdateForPlane(const ArSession* ar_session,
 
   const int32_t vertices_size = polygon_length / 2;
   std::vector<glm::vec2> raw_vertices(vertices_size);
-  ArPlane_getPolygon(ar_session, ar_plane,
+  ArPlane_getPolygon(&ar_session, &ar_plane,
                      glm::value_ptr(raw_vertices.front()));
 
   // Fill vertex 0 to 3. Note that the vertex.xy are used for x and z
@@ -171,9 +132,9 @@ void PlaneRenderer::UpdateForPlane(const ArSession* ar_session,
     vertices_.push_back(glm::vec3(raw_vertices[i].x, raw_vertices[i].y, 0.0f));
   }
 
-  util::ScopedArPose scopedArPose(ar_session);
-  ArPlane_getCenterPose(ar_session, ar_plane, scopedArPose.GetArPose());
-  ArPose_getMatrix(ar_session, scopedArPose.GetArPose(),
+  util::ScopedArPose scopedArPose(&ar_session);
+  ArPlane_getCenterPose(&ar_session, &ar_plane, scopedArPose.GetArPose());
+  ArPose_getMatrix(&ar_session, scopedArPose.GetArPose(),
                    glm::value_ptr(model_mat_));
   normal_vec_ = util::GetPlaneNormal(ar_session, *scopedArPose.GetArPose());
 

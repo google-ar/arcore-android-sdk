@@ -23,7 +23,6 @@
 #include <array>
 #include <cstdint>
 #include <cstdlib>
-#include <string>
 #include <vector>
 
 #include "arcore_c_api.h"
@@ -43,11 +42,11 @@ class PlaneRenderer {
 
   // Draws the provided plane.
   void Draw(const glm::mat4& projection_mat, const glm::mat4& view_mat,
-            const ArSession* ar_session, const ArPlane* ar_plane,
+            const ArSession& ar_session, const ArPlane& ar_plane,
             const glm::vec3& color);
 
  private:
-  void UpdateForPlane(const ArSession* ar_session, const ArPlane* ar_plane);
+  void UpdateForPlane(const ArSession& ar_session, const ArPlane& ar_plane);
 
   std::vector<glm::vec3> vertices_;
   std::vector<GLushort> triangles_;

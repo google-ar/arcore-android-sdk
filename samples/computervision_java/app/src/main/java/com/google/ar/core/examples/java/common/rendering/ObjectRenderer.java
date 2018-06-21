@@ -53,6 +53,7 @@ public class ObjectRenderer {
   private static final String FRAGMENT_SHADER_NAME = "shaders/object.frag";
 
   private static final int COORDS_PER_VERTEX = 3;
+  private static final float[] DEFAULT_COLOR = new float[] {0f, 0f, 0f, 0f};
 
   // Note: the last component must be zero to avoid applying the translational part of the matrix.
   private static final float[] LIGHT_DIRECTION = new float[] {0.250f, 0.866f, 0.433f, 0.0f};
@@ -89,6 +90,9 @@ public class ObjectRenderer {
 
   // Shader location: color correction property
   private int colorCorrectionParameterUniform;
+
+  // Shader location: object color property (to change the primary color of the object).
+  private int colorUniform;
 
   private BlendMode blendMode = null;
 
@@ -140,6 +144,7 @@ public class ObjectRenderer {
     materialParametersUniform = GLES20.glGetUniformLocation(program, "u_MaterialParameters");
     colorCorrectionParameterUniform =
         GLES20.glGetUniformLocation(program, "u_ColorCorrectionParameters");
+    colorUniform = GLES20.glGetUniformLocation(program, "u_ObjColor");
 
     ShaderUtil.checkGLError(TAG, "Program parameters");
 
@@ -281,6 +286,14 @@ public class ObjectRenderer {
    * @see android.opengl.Matrix
    */
   public void draw(float[] cameraView, float[] cameraPerspective, float[] colorCorrectionRgba) {
+    draw(cameraView, cameraPerspective, colorCorrectionRgba, DEFAULT_COLOR);
+  }
+
+  public void draw(
+      float[] cameraView,
+      float[] cameraPerspective,
+      float[] colorCorrectionRgba,
+      float[] objColor) {
 
     ShaderUtil.checkGLError(TAG, "Before draw");
 
@@ -300,13 +313,10 @@ public class ObjectRenderer {
         viewLightDirection[1],
         viewLightDirection[2],
         1.f);
+    GLES20.glUniform4fv(colorCorrectionParameterUniform, 1, colorCorrectionRgba, 0);
 
-    GLES20.glUniform4f(
-        colorCorrectionParameterUniform,
-        colorCorrectionRgba[0],
-        colorCorrectionRgba[1],
-        colorCorrectionRgba[2],
-        colorCorrectionRgba[3]);
+    // Set the object color property.
+    GLES20.glUniform4fv(colorUniform, 1, objColor, 0);
 
     // Set the object material properties.
     GLES20.glUniform4f(materialParametersUniform, ambient, diffuse, specular, specularPower);

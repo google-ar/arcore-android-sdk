@@ -44,7 +44,6 @@ inline glm::vec3 GetRandomPlaneColor() {
 
 HelloArApplication::HelloArApplication(AAssetManager* asset_manager)
     : asset_manager_(asset_manager) {
-  LOGI("OnCreate()");
 }
 
 HelloArApplication::~HelloArApplication() {
@@ -107,8 +106,8 @@ void HelloArApplication::OnResume(void* env, void* context, void* activity) {
 void HelloArApplication::OnSurfaceCreated() {
   LOGI("OnSurfaceCreated()");
 
-  background_renderer_.InitializeGlContent();
-  point_cloud_renderer_.InitializeGlContent();
+  background_renderer_.InitializeGlContent(asset_manager_);
+  point_cloud_renderer_.InitializeGlContent(asset_manager_);
   andy_renderer_.InitializeGlContent(asset_manager_, "models/andy.obj",
                                      "models/andy.png");
   plane_renderer_.InitializeGlContent(asset_manager_);
@@ -190,14 +189,16 @@ void HelloArApplication::OnDrawFrame() {
 
   // Render Andy objects.
   glm::mat4 model_mat(1.0f);
-  for (const auto& obj_iter : tracked_obj_set_) {
+  for (const auto& colored_anchor : anchors_) {
     ArTrackingState tracking_state = AR_TRACKING_STATE_STOPPED;
-    ArAnchor_getTrackingState(ar_session_, obj_iter, &tracking_state);
+    ArAnchor_getTrackingState(ar_session_, colored_anchor.anchor,
+                              &tracking_state);
     if (tracking_state == AR_TRACKING_STATE_TRACKING) {
       // Render object only if the tracking state is AR_TRACKING_STATE_TRACKING.
-      util::GetTransformMatrixFromAnchor(ar_session_, obj_iter, &model_mat);
-      andy_renderer_.Draw(projection_mat, view_mat, model_mat,
-                          color_correction);
+      util::GetTransformMatrixFromAnchor(*colored_anchor.anchor, ar_session_,
+                                         &model_mat);
+      andy_renderer_.Draw(projection_mat, view_mat, model_mat, color_correction,
+                          colored_anchor.color);
     }
   }
 
@@ -255,7 +256,7 @@ void HelloArApplication::OnDrawFrame() {
         plane_color_map_.insert({ar_plane, color});
       }
 
-      plane_renderer_.Draw(projection_mat, view_mat, ar_session_, ar_plane,
+      plane_renderer_.Draw(projection_mat, view_mat, *ar_session_, *ar_plane,
                            color);
     }
   }
@@ -290,6 +291,7 @@ void HelloArApplication::OnTouched(float x, float y) {
     // responding to user input.
 
     ArHitResult* ar_hit_result = nullptr;
+    ArTrackableType trackable_type = AR_TRACKABLE_NOT_VALID;
     for (int32_t i = 0; i < hit_result_list_size; ++i) {
       ArHitResult* ar_hit = nullptr;
       ArHitResult_create(ar_session_, &ar_hit);
@@ -322,7 +324,7 @@ void HelloArApplication::OnTouched(float x, float y) {
         ArCamera_getPose(ar_session_, ar_camera, camera_pose);
         ArCamera_release(ar_camera);
         float normal_distance_to_plane = util::CalculateDistanceToPlane(
-            ar_session_, *hit_pose, *camera_pose);
+            *ar_session_, *hit_pose, *camera_pose);
 
         ArPose_destroy(hit_pose);
         ArPose_destroy(camera_pose);
@@ -332,6 +334,7 @@ void HelloArApplication::OnTouched(float x, float y) {
         }
 
         ar_hit_result = ar_hit;
+        trackable_type = ar_trackable_type;
         break;
       } else if (AR_TRACKABLE_POINT == ar_trackable_type) {
         ArPoint* ar_point = ArAsPoint(ar_trackable);
@@ -339,6 +342,7 @@ void HelloArApplication::OnTouched(float x, float y) {
         ArPoint_getOrientationMode(ar_session_, ar_point, &mode);
         if (AR_POINT_ORIENTATION_ESTIMATED_SURFACE_NORMAL == mode) {
           ar_hit_result = ar_hit;
+          trackable_type = ar_trackable_type;
           break;
         }
       }
@@ -362,12 +366,29 @@ void HelloArApplication::OnTouched(float x, float y) {
         return;
       }
 
-      if (tracked_obj_set_.size() >= kMaxNumberOfAndroidsToRender) {
-        ArAnchor_release(tracked_obj_set_[0]);
-        tracked_obj_set_.erase(tracked_obj_set_.begin());
+      if (anchors_.size() >= kMaxNumberOfAndroidsToRender) {
+        ArAnchor_release(anchors_[0].anchor);
+        anchors_.erase(anchors_.begin());
       }
 
-      tracked_obj_set_.push_back(anchor);
+      // Assign a color to the object for rendering based on the trackable type
+      // this anchor attached to. For AR_TRACKABLE_POINT, it's blue color, and
+      // for AR_TRACKABLE_PLANE, it's green color.
+      ColoredAnchor colored_anchor;
+      colored_anchor.anchor = anchor;
+      switch (trackable_type) {
+        case AR_TRACKABLE_POINT:
+          SetColor(66.0f, 133.0f, 244.0f, 255.0f, colored_anchor.color);
+          break;
+        case AR_TRACKABLE_PLANE:
+          SetColor(139.0f, 195.0f, 74.0f, 255.0f, colored_anchor.color);
+          break;
+        default:
+          SetColor(0.0f, 0.0f, 0.0f, 0.0f, colored_anchor.color);
+          break;
+      }
+      anchors_.push_back(colored_anchor);
+
       ArHitResult_destroy(ar_hit_result);
       ar_hit_result = nullptr;
 
@@ -377,4 +398,11 @@ void HelloArApplication::OnTouched(float x, float y) {
   }
 }
 
+void HelloArApplication::SetColor(float r, float g, float b, float a,
+                                  float* color4f) {
+  *(color4f) = r;
+  *(color4f + 1) = g;
+  *(color4f + 2) = b;
+  *(color4f + 3) = a;
+}
 }  // namespace hello_ar

@@ -19,7 +19,9 @@
 
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#include <android/asset_manager.h>
 #include <android/log.h>
+#include <string>
 
 #include "arcore_c_api.h"
 
@@ -81,7 +83,18 @@ void CheckGlError(const char* operation);
 // @param vertex_source, the vertex shader source.
 // @param fragment_source, the fragment shader source.
 // @return
-GLuint CreateProgram(const char* vertex_source, const char* fragment_source);
+GLuint CreateProgram(AAssetManager* mgr, const char* vertex_shader_file_name,
+                     const char* fragment_shader_file_name);
+
+// Load a text file from assets folder.
+//
+// @param mgr, AAssetManager pointer.
+// @param file_name, path to the file, relative to the assets folder.
+// @param out_string, output string.
+// @return true if the file is loaded correctly, otherwise false.
+bool LoadTextFileFromAssetManager(AAssetManager* mgr, const char* file_name,
+                                  std::string* out_file_text_string);
+
 }  // namespace util
 }  // namespace computer_vision
 

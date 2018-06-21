@@ -19,6 +19,7 @@
 
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#include <android/asset_manager.h>
 #include <media/NdkImage.h>
 #include <memory>
 
@@ -36,7 +37,7 @@ class CpuImageRenderer {
 
   // Sets up OpenGL state.  Must be called on the OpenGL thread and before any
   // other methods below.
-  void InitializeGlContent();
+  void InitializeGlContent(AAssetManager* asset_manager);
 
   // Draws the pass through camera image and CPU image.
   void Draw(const ArSession* session, const ArFrame* frame,

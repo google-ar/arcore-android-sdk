@@ -2,6 +2,7 @@ package com.google.ar.core.examples.c.computervision;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.res.AssetManager;
 
 /** JNI interface to native layer. */
 public class JniInterface {
@@ -10,7 +11,7 @@ public class JniInterface {
   }
 
   /** Creates the native application to demo CPU Image access from ARCore. */
-  static native long createNativeApplication();
+  static native long createNativeApplication(AssetManager assetManager);
 
   /**
    * Destroys the native application, clean up data and states.
@@ -56,4 +57,13 @@ public class JniInterface {
    * @param splitPosition the current screen split position in proportion to the whole screen.
    */
   static native void onGlSurfaceDrawFrame(long nativeApplication, float splitPosition);
+
+  /**
+   * Retrieves the text for the intrinsic values of the current camera configuration.
+   *
+   * @param nativeApplication the native application handle.
+   * @param showCpuIntrinsics if true, retrieves the text for the CPU image's intrinsics. Otherwise,
+   * retrieves the text for the GPU texture's intrinsics.
+   */
+  static native String getCameraIntrinsicsText(long nativeApplication, boolean showCpuIntrinsics);
 }

@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-precision highp float;
-precision highp int;
-uniform sampler2D texture;
-uniform vec3 color;
-varying vec2 v_textureCoords;
-varying float v_alpha;
+#extension GL_OES_EGL_image_external : require
+precision mediump float;
+varying vec2 v_TexCoord;
+varying vec2 v_ImgCoord;
+uniform float s_SplitterPosition;
+uniform samplerExternalOES TexVideo;
+uniform sampler2D TexCpuImageGrayscale;
 
 void main() {
-  float r = texture2D(texture, v_textureCoords).r;
-  gl_FragColor = vec4(color.xyz, r * v_alpha);
+  if (v_TexCoord.x < s_SplitterPosition) {
+    gl_FragColor = texture2D(TexVideo, v_TexCoord);
+  } else {
+    gl_FragColor= texture2D(TexCpuImageGrayscale, v_ImgCoord);
+  }
 }
