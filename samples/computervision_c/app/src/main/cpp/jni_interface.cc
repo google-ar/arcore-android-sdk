@@ -27,7 +27,7 @@
 extern "C" {
 
 namespace {
-// maintain a reference to the JVM so we can use it later.
+// Maintain a reference to the JVM so we can use it later.
 static JavaVM *g_vm = nullptr;
 
 inline jlong jptr(computer_vision::ComputerVisionApplication
@@ -97,12 +97,35 @@ jclass FindClass(const char *classname) {
   return env->FindClass(classname);
 }
 
-JNI_METHOD(jstring, getCameraIntrinsicsText)
-(JNIEnv *env, jclass, jlong native_application, jboolean show_cpu_intrinsics) {
+JNI_METHOD(jstring, getCameraConfigLabel)
+(JNIEnv *env, jclass, jlong native_application, jboolean is_low_resolution) {
   auto label =
-      native(native_application)
-          ->GetCameraIntrinsicsText(static_cast<bool>(show_cpu_intrinsics));
+      native(native_application)->getCameraConfigLabel(is_low_resolution);
   return env->NewStringUTF(label.c_str());
+}
+
+JNI_METHOD(jint, setCameraConfig)
+(JNIEnv *env, jclass, jlong native_application, jboolean is_low_resolution) {
+  ArStatus status =
+      native(native_application)->setCameraConfig(is_low_resolution);
+  return static_cast<jint>(status);
+}
+
+JNI_METHOD(jstring, getCameraIntrinsicsText)
+(JNIEnv *env, jclass, jlong native_application, jboolean for_gpu_texture) {
+  auto label =
+      native(native_application)->GetCameraIntrinsicsText(for_gpu_texture);
+  return env->NewStringUTF(label.c_str());
+}
+
+JNI_METHOD(void, setFocusMode)
+(JNIEnv *, jclass, jlong native_application, jboolean enable_auto_focus) {
+  native(native_application)->SetFocusMode(enable_auto_focus);
+}
+
+JNI_METHOD(jboolean, getFocusMode)
+(JNIEnv *, jclass, jlong native_application) {
+  return native(native_application)->GetFocusMode();
 }
 
 }  // extern "C"

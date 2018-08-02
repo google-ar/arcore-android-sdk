@@ -4,6 +4,36 @@
 #include "util.h"
 
 namespace cloud_anchor {
+namespace {
+
+#define CASE_VALUE_RETURN_STRING(_value) \
+  case _value:                           \
+    return #_value;
+
+std::string CloudAnchorStateString(ArCloudAnchorState cloud_state) {
+  switch (cloud_state) {
+    CASE_VALUE_RETURN_STRING(AR_CLOUD_ANCHOR_STATE_SUCCESS);
+    CASE_VALUE_RETURN_STRING(AR_CLOUD_ANCHOR_STATE_ERROR_INTERNAL);
+    CASE_VALUE_RETURN_STRING(AR_CLOUD_ANCHOR_STATE_TASK_IN_PROGRESS);
+    CASE_VALUE_RETURN_STRING(
+        AR_CLOUD_ANCHOR_STATE_ERROR_HOSTING_DATASET_PROCESSING_FAILED);
+    CASE_VALUE_RETURN_STRING(AR_CLOUD_ANCHOR_STATE_ERROR_SERVICE_UNAVAILABLE);
+    CASE_VALUE_RETURN_STRING(AR_CLOUD_ANCHOR_STATE_ERROR_RESOURCE_EXHAUSTED);
+    CASE_VALUE_RETURN_STRING(AR_CLOUD_ANCHOR_STATE_ERROR_CLOUD_ID_NOT_FOUND);
+    CASE_VALUE_RETURN_STRING(AR_CLOUD_ANCHOR_STATE_ERROR_NOT_AUTHORIZED);
+    CASE_VALUE_RETURN_STRING(
+        AR_CLOUD_ANCHOR_STATE_ERROR_RESOLVING_LOCALIZATION_NO_MATCH);
+    CASE_VALUE_RETURN_STRING(
+        AR_CLOUD_ANCHOR_STATE_ERROR_RESOLVING_SDK_VERSION_TOO_NEW);
+    CASE_VALUE_RETURN_STRING(
+        AR_CLOUD_ANCHOR_STATE_ERROR_RESOLVING_SDK_VERSION_TOO_OLD);
+    CASE_VALUE_RETURN_STRING(AR_CLOUD_ANCHOR_STATE_NONE);
+  }
+}
+
+#undef CASE_VALUE_RETURN_STRING
+
+}  // namespace
 
 CloudAnchorManager::CloudAnchorManager()
     : host_resolve_mode_(HostResolveMode::NONE) {}
@@ -53,20 +83,7 @@ void CloudAnchorManager::SetTrackedCloudAnchor(ArAnchor* anchor) {
     ArAnchor_release(ar_cloud_anchor_);
   }
   ar_cloud_anchor_ = anchor;
-
   pending_anchor_ = nullptr;
-}
-
-bool CloudAnchorManager::PromotePendingAnchorToCloudAnchor() {
-  // Note:  This function is private and it is assumed the write lock is held.
-  if (!pending_anchor_) {
-    return false;
-  }
-  if (AnchorInReturnableState(pending_anchor_)) {
-    SetTrackedCloudAnchor(pending_anchor_);
-    return true;
-  }
-  return false;
 }
 
 void CloudAnchorManager::OnHostButtonPress() {
@@ -85,7 +102,7 @@ void CloudAnchorManager::OnHostButtonPress() {
     case HostResolveMode::HOSTING:
       // When the host button is pressed in hosting state, it cancels.
       SetTrackedCloudAnchor(nullptr);
-      host_resolve_mode_ = HostResolveMode::NONE,
+      host_resolve_mode_ = HostResolveMode::NONE;
       util::SetHostAndResolveButtonVisibility(
           util::HostResolveVisibilityEnum::ALL);
       util::UpdateFirebaseRoomCode(false, 0);
@@ -168,9 +185,21 @@ void CloudAnchorManager::OnUpdate(const ArFrame* ar_frame) {
   CHECK(ar_session_);
   CHECK(ar_frame);
 
-  if (PromotePendingAnchorToCloudAnchor()) {
-    util::MaybeUpdateFirebase(GetCloudAnchorId());
+  if (pending_anchor_ == nullptr || !AnchorInReturnableState(pending_anchor_)) {
+    return;
   }
+
+  ArCloudAnchorState cloud_state;
+  ArAnchor_getCloudAnchorState(ar_session_, pending_anchor_, &cloud_state);
+  if (cloud_state == AR_CLOUD_ANCHOR_STATE_SUCCESS) {
+    SetTrackedCloudAnchor(pending_anchor_);
+    util::MaybeUpdateFirebase(GetCloudAnchorId());
+  } else {
+    SetTrackedCloudAnchor(nullptr);
+    util::DisplayMessageOnLowerSnackbar("Error while hosting anchor: " +
+                                        CloudAnchorStateString(cloud_state));
+  }
+  host_resolve_mode_ = HostResolveMode::NONE;
 }
 
 const ArAnchor* CloudAnchorManager::GetCloudAnchor() const {

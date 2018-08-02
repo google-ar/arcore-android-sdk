@@ -18,6 +18,8 @@
 #include <media/NdkImage.h>
 #include <array>
 #include <cmath>
+#include <iomanip>
+#include <sstream>
 
 #include "util.h"
 
@@ -51,9 +53,17 @@ ComputerVisionApplication::ComputerVisionApplication(
     : asset_manager_(asset_manager) {}
 
 ComputerVisionApplication::~ComputerVisionApplication() {
-  ArSession_destroy(ar_session_);
-  ArFrame_destroy(ar_frame_);
-  ArCameraIntrinsics_destroy(ar_camera_intrinsics_);
+  if (ar_session_ != nullptr) {
+    destroyCameraConfigs();
+    ArSession_destroy(ar_session_);
+    ArConfig_destroy(ar_config_);
+  }
+  if (ar_frame_ != nullptr) {
+    ArFrame_destroy(ar_frame_);
+  }
+  if (ar_camera_intrinsics_ != nullptr) {
+    ArCameraIntrinsics_destroy(ar_camera_intrinsics_);
+  }
 }
 
 void ComputerVisionApplication::OnPause() {
@@ -96,8 +106,13 @@ void ComputerVisionApplication::OnResume(void* env, void* context,
     CHECK(ArSession_create(env, context, &ar_session_) == AR_SUCCESS);
     CHECK(ar_session_);
 
+    ArConfig_create(ar_session_, &ar_config_);
+    CHECK(ar_config_);
+
     ArFrame_create(ar_session_, &ar_frame_);
     CHECK(ar_frame_);
+
+    obtainCameraConfigs();
 
     ArCameraIntrinsics_create(ar_session_, &ar_camera_intrinsics_);
     CHECK(ar_camera_intrinsics_);
@@ -158,21 +173,172 @@ void ComputerVisionApplication::OnDrawFrame(float split_position) {
         "ComputerVisionApplication::OnDrawFrame acquire camera image not "
         "ready.");
   }
+
   cpu_image_renderer_.Draw(ar_session_, ar_frame_, ndk_image, aspect_ratio_,
                            camera_to_display_rotation_, split_position);
 }
 
+std::string ComputerVisionApplication::getCameraConfigLabel(
+    bool is_low_resolution) {
+  if (is_low_resolution && cpu_low_resolution_camera_config_ptr_ != nullptr) {
+    return "Low Resolution" +
+           cpu_low_resolution_camera_config_ptr_->config_label;
+  } else if (!is_low_resolution &&
+             cpu_high_resolution_camera_config_ptr_ != nullptr) {
+    return "High Resolution" +
+           cpu_high_resolution_camera_config_ptr_->config_label;
+  } else {
+    return "";
+  }
+}
+
+ArStatus ComputerVisionApplication::setCameraConfig(bool is_low_resolution) {
+  // To change the AR camera config - first we pause the AR session, set the
+  // desired camera config and then resume the AR session.
+  CHECK(ar_session_)
+
+  ArSession_pause(ar_session_);
+
+  if (is_low_resolution) {
+    ArSession_setCameraConfig(ar_session_,
+                              cpu_low_resolution_camera_config_ptr_->config);
+  } else {
+    ArSession_setCameraConfig(ar_session_,
+                              cpu_high_resolution_camera_config_ptr_->config);
+  }
+
+  ArStatus status = ArSession_resume(ar_session_);
+  if (status != ArStatus::AR_SUCCESS) {
+    // In a rare case (such as another camera app launching) the camera may be
+    // given to a different app and so may not be available to this app. Handle
+    // this properly and recreate the session at the next iteration.
+    ArSession_destroy(ar_session_);
+    ArConfig_destroy(ar_config_);
+    ArFrame_destroy(ar_frame_);
+  }
+
+  return status;
+}
+
+void ComputerVisionApplication::SetFocusMode(bool enable_auto_focus) {
+  CHECK(ar_session_);
+  CHECK(ar_config_);
+
+  ArConfig_setFocusMode(
+      ar_session_, ar_config_,
+      enable_auto_focus ? AR_FOCUS_MODE_AUTO : AR_FOCUS_MODE_FIXED);
+
+  CHECK(ArSession_configure(ar_session_, ar_config_) == AR_SUCCESS);
+}
+
+bool ComputerVisionApplication::GetFocusMode() {
+  CHECK(ar_session_);
+  CHECK(ar_config_);
+
+  ArFocusMode focus_mode;
+  ArConfig_getFocusMode(ar_session_, ar_config_, &focus_mode);
+
+  return (focus_mode == AR_FOCUS_MODE_AUTO);
+}
+
+void ComputerVisionApplication::obtainCameraConfigs() {
+  // Retrieve supported camera configs.
+  ArCameraConfigList* all_camera_configs = nullptr;
+  int32_t num_configs = 0;
+  ArCameraConfigList_create(ar_session_, &all_camera_configs);
+  ArSession_getSupportedCameraConfigs(ar_session_, all_camera_configs);
+  ArCameraConfigList_getSize(ar_session_, all_camera_configs, &num_configs);
+
+  if (num_configs < 1) {
+    LOGE("No camera config found");
+    return;
+  }
+
+  camera_configs_.resize(num_configs);
+  for (int i = 0; i < num_configs; ++i) {
+    copyCameraConfig(ar_session_, all_camera_configs, i, num_configs,
+                     &camera_configs_[i]);
+  }
+
+  // Determine the highest and lowest CPU resolutions.
+  cpu_low_resolution_camera_config_ptr_ = nullptr;
+  cpu_high_resolution_camera_config_ptr_ = nullptr;
+  getCameraConfigLowestAndHighestResolutions(
+      &cpu_low_resolution_camera_config_ptr_,
+      &cpu_high_resolution_camera_config_ptr_);
+
+  // Cleanup the list obtained as it is safe to destroy the list as camera
+  // config instances were explicitly created and copied. Refer to the
+  // previous comment.
+  ArCameraConfigList_destroy(all_camera_configs);
+}
+
+void ComputerVisionApplication::getCameraConfigLowestAndHighestResolutions(
+    CameraConfig** lowest_resolution_config,
+    CameraConfig** highest_resolution_config) {
+  if (camera_configs_.empty()) {
+    return;
+  }
+
+  int low_resolution_config_idx = 0;
+  int high_resolution_config_idx = 0;
+  int32_t smallest_height = camera_configs_[0].height;
+  int32_t largest_height = camera_configs_[0].height;
+
+  for (int i = 1; i < camera_configs_.size(); ++i) {
+    int32_t image_height = camera_configs_[i].height;
+    if (image_height < smallest_height) {
+      smallest_height = image_height;
+      low_resolution_config_idx = i;
+    } else if (image_height > largest_height) {
+      largest_height = image_height;
+      high_resolution_config_idx = i;
+    }
+  }
+
+  if (low_resolution_config_idx == high_resolution_config_idx) {
+    *lowest_resolution_config = &camera_configs_[low_resolution_config_idx];
+  } else {
+    *lowest_resolution_config = &camera_configs_[low_resolution_config_idx];
+    *highest_resolution_config = &camera_configs_[high_resolution_config_idx];
+  }
+}
+
+void ComputerVisionApplication::copyCameraConfig(
+    const ArSession* ar_session, const ArCameraConfigList* all_configs,
+    int index, int num_configs, CameraConfig* camera_config) {
+  if (camera_config != nullptr && index >= 0 && index < num_configs) {
+    ArCameraConfig_create(ar_session, &camera_config->config);
+    ArCameraConfigList_getItem(ar_session, all_configs, index,
+                               camera_config->config);
+    ArCameraConfig_getImageDimensions(ar_session, camera_config->config,
+                                      &camera_config->width,
+                                      &camera_config->height);
+    camera_config->config_label = "(" + std::to_string(camera_config->width) +
+                                  "x" + std::to_string(camera_config->height) +
+                                  ")";
+  }
+}
+
+void ComputerVisionApplication::destroyCameraConfigs() {
+  for (int i = 0; i < camera_configs_.size(); ++i) {
+    if (camera_configs_[i].config != nullptr) {
+      ArCameraConfig_destroy(camera_configs_[i].config);
+    }
+  }
+}
+
 std::string ComputerVisionApplication::GetCameraIntrinsicsText(
-    bool show_cpu_intrinsics) {
+    bool for_gpu_texture) {
   if (ar_session_ == nullptr) return "";
 
   ArCamera* ar_camera;
   ArFrame_acquireCamera(ar_session_, ar_frame_, &ar_camera);
-  if (show_cpu_intrinsics) {
-    ArCamera_getImageIntrinsics(ar_session_, ar_camera, ar_camera_intrinsics_);
-  } else {
+  if (for_gpu_texture) {
     ArCamera_getTextureIntrinsics(ar_session_, ar_camera,
                                   ar_camera_intrinsics_);
+  } else {
+    ArCamera_getImageIntrinsics(ar_session_, ar_camera, ar_camera_intrinsics_);
   }
 
   float fx;
@@ -196,15 +362,17 @@ std::string ComputerVisionApplication::GetCameraIntrinsicsText(
   fov_x *= kRadiansToDegrees;
   fov_y *= kRadiansToDegrees;
 
-  std::string intrinsics_type_label(show_cpu_intrinsics ? "Image" : "Texture");
+  std::ostringstream intrinsics_text;
+  intrinsics_text << std::fixed << std::setprecision(2) << "Unrotated Camera "
+                  << (for_gpu_texture ? "GPU Texture" : "CPU Image")
+                  << " Intrinsics:\n\tFocal Length: (" << fx << ", " << fy
+                  << ")\n\tPrincipal Point: (" << cx << ", " << cy << ")\n\t"
+                  << (for_gpu_texture ? "GPU" : "CPU") << " Image Dimensions: ("
+                  << image_width << ", " << image_height
+                  << ")\n\tUnrotated Field of View: (" << fov_x << "º, "
+                  << fov_y << "º)";
 
-  return "Unrotated Camera " + intrinsics_type_label +
-         " Intrinsics:\n\tFocal Length: (" + std::to_string(fx) + ", " +
-         std::to_string(fy) + ")\n\tPrincipal Point: (" + std::to_string(cx) +
-         ", " + std::to_string(cy) + ")\n\tImage Dimensions: (" +
-         std::to_string(image_width) + ", " + std::to_string(image_height) +
-         ")\n\tUnrotated Field of View: (" + std::to_string(fov_x) + "º, " +
-         std::to_string(fov_y) + "º)";
+  return intrinsics_text.str();
 }
 
 }  // namespace computer_vision

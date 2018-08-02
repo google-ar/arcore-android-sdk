@@ -88,12 +88,7 @@ public class HelloArActivity extends AppCompatActivity
               @Override
               public boolean onSingleTapUp(final MotionEvent e) {
                 surfaceView.queueEvent(
-                    new Runnable() {
-                      @Override
-                      public void run() {
-                        JniInterface.onTouched(nativeApplication, e.getX(), e.getY());
-                      }
-                    });
+                    () -> JniInterface.onTouched(nativeApplication, e.getX(), e.getY()));
                 return true;
               }
 
@@ -104,12 +99,7 @@ public class HelloArActivity extends AppCompatActivity
             });
 
     surfaceView.setOnTouchListener(
-        new View.OnTouchListener() {
-          @Override
-          public boolean onTouch(View v, MotionEvent event) {
-            return gestureDetector.onTouchEvent(event);
-          }
-        });
+        (View v, MotionEvent event) -> gestureDetector.onTouchEvent(event));
 
     // Set up renderer.
     surfaceView.setPreserveEGLContextOnPause(true);

@@ -63,12 +63,6 @@ class CloudAnchorManager {
   // anchor will become unset.
   void SetTrackedCloudAnchor(ArAnchor* anchor);
 
-  // If there is a pending anchor and it has reached a valid tracking state then
-  // the current cloud anchor will be updated and this will return true.  If
-  // this function returns false there either was no anchor pending or the
-  // anchor is not in a tracking state.
-  bool PromotePendingAnchorToCloudAnchor();
-
   // This pointer is owned by the application context.
   ArSession* ar_session_ = nullptr;
 

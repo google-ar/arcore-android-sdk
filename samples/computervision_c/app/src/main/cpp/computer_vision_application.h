@@ -25,6 +25,7 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "arcore_c_api.h"
 #include "cpu_image_renderer.h"
@@ -62,11 +63,22 @@ class ComputerVisionApplication {
   // OnDrawFrame is called on the OpenGL thread to render the next frame.
   void OnDrawFrame(float split_position);
 
+  // Get the text label of a camera config.
+  // Return an empty string if the camera config is not available.
+  std::string getCameraConfigLabel(bool is_low_resolution);
+
+  // Set camera config with low or high resolution.
+  ArStatus setCameraConfig(bool is_low_resolution);
+
+  void SetFocusMode(bool enable_auto_focus);
+  bool GetFocusMode();
+
   // Get the text logs for the camera intrinsics.
-  std::string GetCameraIntrinsicsText(bool show_cpu_intrinsics);
+  std::string GetCameraIntrinsicsText(bool for_gpu_texture);
 
  private:
   ArSession* ar_session_ = nullptr;
+  ArConfig* ar_config_ = nullptr;
   ArFrame* ar_frame_ = nullptr;
   ArCameraIntrinsics* ar_camera_intrinsics_ = nullptr;
 
@@ -80,6 +92,35 @@ class ComputerVisionApplication {
   AAssetManager* const asset_manager_;
 
   CpuImageRenderer cpu_image_renderer_;
+
+  struct CameraConfig {
+    int32_t width = 0;
+    int32_t height = 0;
+    std::string config_label;
+    ArCameraConfig* config = nullptr;
+  };
+
+  std::vector<CameraConfig> camera_configs_;
+  CameraConfig* cpu_low_resolution_camera_config_ptr_ = nullptr;
+  CameraConfig* cpu_high_resolution_camera_config_ptr_ = nullptr;
+
+  // Obtain all camera configs (and update camera_configs_) and sort out the
+  // configs with lowest and highest image resolutions.
+  void obtainCameraConfigs();
+
+  // Copy one camera config from ArCameraConfigList to a CameraConfig.
+  void copyCameraConfig(const ArSession* ar_session,
+                        const ArCameraConfigList* all_configs, int index,
+                        int num_configs, CameraConfig* camera_config);
+
+  // Release memory in camera_configs_.
+  void destroyCameraConfigs();
+
+  // Help function (called by obtainCameraConfigs()) to return pointers to
+  // camera_configs_ the lowest and highest resolutions configs.
+  void getCameraConfigLowestAndHighestResolutions(
+      CameraConfig** lowest_resolution_config,
+      CameraConfig** highest_resolution_config);
 };
 }  // namespace computer_vision
 

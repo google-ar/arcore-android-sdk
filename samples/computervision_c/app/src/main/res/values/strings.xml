@@ -16,4 +16,9 @@
 -->
 <resources>
   <string name="app_name">CV C</string>
+
+  <!-- Radio button labels for Camera Config. -->
+  <string name="label_low_res">Low Resolution</string>
+  <string name="label_high_res">High Resolution</string>
+  <string name="switch_focus_mode">Auto Focus</string>
 </resources>

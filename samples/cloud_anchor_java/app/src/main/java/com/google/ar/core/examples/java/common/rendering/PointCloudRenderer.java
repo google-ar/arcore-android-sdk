@@ -123,7 +123,7 @@ public class PointCloudRenderer {
   }
 
   /**
-   * Renders the point cloud. ArCore point cloud is given in world space.
+   * Renders the point cloud. ARCore point cloud is given in world space.
    *
    * @param cameraView the camera view matrix for this frame, typically from {@link
    *     com.google.ar.core.Camera#getViewMatrix(float[], int)}.

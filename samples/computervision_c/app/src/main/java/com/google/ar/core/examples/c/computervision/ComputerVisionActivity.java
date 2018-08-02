@@ -27,6 +27,10 @@ import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.CompoundButton;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -48,29 +52,32 @@ public class ComputerVisionActivity extends AppCompatActivity
   private int viewportHeight;
   // Using float value to set the splitter position in shader in native code.
   private float splitterPosition = 0.0f;
+  private boolean isLowResolutionSelected = true;
 
   // Camera intrinsics text elements.
   private TextView cameraIntrinsicsTextView;
-  private boolean isShowingCpuIntrinsics = true;
+
+  private Switch focusModeSwitch;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
     cameraIntrinsicsTextView = findViewById(R.id.camera_intrinsics_view);
+    focusModeSwitch = (Switch) findViewById(R.id.switch_focus_mode);
+    focusModeSwitch.setOnCheckedChangeListener(this::onFocusModeChanged);
 
     surfaceView = findViewById(R.id.surfaceview);
     surfaceView.setOnTouchListener(
-        new View.OnTouchListener() {
-          @Override
-          public boolean onTouch(View view, MotionEvent motionEvent) {
-            if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
-              isShowingCpuIntrinsics = (splitterPosition > 0.5f);
-              splitterPosition = isShowingCpuIntrinsics ? 0.0f : 1.0f;
-            }
+        (View view, MotionEvent motionEvent) -> {
+          if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
+            splitterPosition = (splitterPosition < 0.5f) ? 1.0f : 0.0f;
 
-            return true;
+            // Turn off the CPU resolution radio buttons if CPU image is not displayed.
+            showCameraConfigMenu(splitterPosition < 0.5f);
           }
+
+          return true;
         });
 
     // Set up renderer.
@@ -95,6 +102,24 @@ public class ComputerVisionActivity extends AppCompatActivity
 
     JniInterface.onResume(nativeApplication, getApplicationContext(), this);
     surfaceView.onResume();
+
+    // Update the radio buttons with the resolution info.
+    String lowResLabel = JniInterface.getCameraConfigLabel(nativeApplication, true);
+    String highResLabel = JniInterface.getCameraConfigLabel(nativeApplication, false);
+    RadioButton lowResolutionRadioButton = (RadioButton) findViewById(R.id.radio_low_res);
+    RadioButton highResolutionRadioButton = (RadioButton) findViewById(R.id.radio_high_res);
+    if (!lowResLabel.isEmpty()) {
+      lowResolutionRadioButton.setText(lowResLabel);
+    } else {
+      lowResolutionRadioButton.setVisibility(View.INVISIBLE);
+    }
+    if (!highResLabel.isEmpty()) {
+      highResolutionRadioButton.setText(highResLabel);
+    } else {
+      highResolutionRadioButton.setVisibility(View.INVISIBLE);
+    }
+
+    focusModeSwitch.setChecked(JniInterface.getFocusMode(nativeApplication));
 
     // Listen to display changed events to detect 180° rotation, which does not cause a config
     // change or view resize.
@@ -219,16 +244,13 @@ public class ComputerVisionActivity extends AppCompatActivity
             viewportHeight);
         viewportChanged = false;
       }
+
       JniInterface.onGlSurfaceDrawFrame(nativeApplication, splitterPosition);
       final String cameraIntrinsicsText =
-          JniInterface.getCameraIntrinsicsText(nativeApplication, isShowingCpuIntrinsics);
-      runOnUiThread(
-          new Runnable() {
-            @Override
-            public void run() {
-              cameraIntrinsicsTextView.setText(cameraIntrinsicsText);
-            }
-          });
+          JniInterface.getCameraIntrinsicsText(
+              nativeApplication, /*forGpuTexture=*/ (splitterPosition > 0.5f));
+
+      runOnUiThread(() -> cameraIntrinsicsTextView.setText(cameraIntrinsicsText));
     }
   }
 
@@ -255,5 +277,43 @@ public class ComputerVisionActivity extends AppCompatActivity
   @Override
   public void onDisplayChanged(int displayId) {
     viewportChanged = true;
+  }
+
+  public void onLowResolutionRadioButtonClicked(View view) {
+    boolean checked = ((RadioButton) view).isChecked();
+    if (checked && !isLowResolutionSelected) {
+      // Display low resolution.
+      isLowResolutionSelected = true;
+      String label = (String) ((RadioButton) view).getText();
+      onCameraConfigChanged(isLowResolutionSelected, label);
+    }
+  }
+
+  public void onHighResolutionRadioButtonClicked(View view) {
+    boolean checked = ((RadioButton) view).isChecked();
+    if (checked && isLowResolutionSelected) {
+      // Display high resolution
+      isLowResolutionSelected = false;
+      String label = (String) ((RadioButton) view).getText();
+      onCameraConfigChanged(isLowResolutionSelected, label);
+    }
+  }
+
+  private void onFocusModeChanged(CompoundButton unusedButton, boolean isChecked) {
+    JniInterface.setFocusMode(nativeApplication, isChecked);
+  }
+
+  private void onCameraConfigChanged(boolean isLowResolution, String label) {
+    int status = JniInterface.setCameraConfig(nativeApplication, isLowResolution);
+    if (status == 0) {
+      // Let the user know that the camera config is set.
+      String message = "Set the camera config with " + label;
+      Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+  }
+
+  private void showCameraConfigMenu(boolean show) {
+    RadioGroup radioGroup = (RadioGroup) findViewById(R.id.radio_camera_configs);
+    radioGroup.setVisibility(show ? View.VISIBLE : View.INVISIBLE);
   }
 }

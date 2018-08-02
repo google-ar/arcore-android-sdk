@@ -25,6 +25,35 @@
       android:layout_height="fill_parent"
       android:layout_gravity="top"/>
 
+  <RadioGroup android:id="@+id/radio_camera_configs"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:checkedButton="@+id/radio_low_res"
+      android:orientation="vertical">
+      <RadioButton
+          android:id="@+id/radio_low_res"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:onClick="onLowResolutionRadioButtonClicked"
+          android:text="@string/label_low_res"/>
+      <RadioButton
+          android:id="@+id/radio_high_res"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:onClick="onHighResolutionRadioButtonClicked"
+          android:text="@string/label_high_res"/>
+  </RadioGroup>
+
+  <Switch
+    android:id="@+id/switch_focus_mode"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_alignParentRight="true"
+    android:layout_alignParentTop="true"
+    android:checked="false"
+    android:text="@string/switch_focus_mode"
+    android:textColor="#ffffff" />
+
   <TextView
       android:id="@+id/camera_intrinsics_view"
       android:layout_width="wrap_content"

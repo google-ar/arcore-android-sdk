@@ -23,11 +23,18 @@ import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.util.Size;
+import android.view.View;
+import android.widget.CompoundButton;
+import android.widget.RadioButton;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
+import com.google.ar.core.CameraConfig;
 import com.google.ar.core.CameraIntrinsics;
+import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.Session;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
@@ -41,6 +48,7 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -48,8 +56,10 @@ import javax.microedition.khronos.opengles.GL10;
 public class ComputerVisionActivity extends AppCompatActivity implements GLSurfaceView.Renderer {
   private static final String TAG = ComputerVisionActivity.class.getSimpleName();
   private static final String CAMERA_INTRINSICS_TEXT_FORMAT =
-      "Unrotated Camera %s Intrinsics:\n\tFocal Length: (%.2f, %.2f)\n\tPrincipal Point: "
-          + "(%.2f, %.2f)\n\tImage Dimensions: (%d, %d)\n\tUnrotated Field of View: (%.2fº, %.2fº)";
+      "Unrotated Camera %s %s Intrinsics:\n\tFocal Length: (%.2f, %.2f)"
+          + "\n\tPrincipal Point: (%.2f, %.2f)"
+          + "\n\t%s Image Dimensions: (%d, %d)"
+          + "\n\tUnrotated Field of View: (%.2fº, %.2fº)";
   private static final float RADIANS_TO_DEGREES = (float) (180 / Math.PI);
 
   // This app demonstrates two approaches to obtaining image data accessible on CPU:
@@ -68,6 +78,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
   // Session management and rendering.
   private GLSurfaceView surfaceView;
   private Session session;
+  private Config config;
   private boolean installRequested;
   private final SnackbarHelper messageSnackbarHelper = new SnackbarHelper();
   private CpuImageDisplayRotationHelper cpuImageDisplayRotationHelper;
@@ -90,14 +101,25 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
   private static final int IMAGE_WIDTH = 1280;
   private static final int IMAGE_HEIGHT = 720;
 
+  // For Camera Configuration APIs usage.
+  private boolean isLowResolutionSelected;
+  private CameraConfig cpuLowResolutionCameraConfig;
+  private CameraConfig cpuHighResolutionCameraConfig;
+
+  private Switch focusModeSwitch;
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
+    surfaceView = findViewById(R.id.surfaceview);
     cameraIntrinsicsTextView = findViewById(R.id.camera_intrinsics_view);
     surfaceView = findViewById(R.id.surfaceview);
+    focusModeSwitch = (Switch) findViewById(R.id.switch_focus_mode);
+    focusModeSwitch.setOnCheckedChangeListener(this::onFocusModeChanged);
+
     cpuImageDisplayRotationHelper = new CpuImageDisplayRotationHelper(/*context=*/ this);
-    cpuImageTouchListener = new CpuImageTouchListener(cpuImageRenderer);
+    cpuImageTouchListener = new CpuImageTouchListener(cpuImageRenderer, /*context=*/ this);
 
     // Setup a touch listener to control the texture splitter position.
     surfaceView.setOnTouchListener(cpuImageTouchListener);
@@ -136,6 +158,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
         }
 
         session = new Session(/* context= */ this);
+        config = new Config(session);
       } catch (UnavailableArcoreNotInstalledException
           | UnavailableUserDeclinedInstallationException e) {
         message = "Please install ARCore";
@@ -157,6 +180,10 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
         return;
       }
     }
+
+    obtainCameraConfigs();
+
+    focusModeSwitch.setChecked(config.getFocusMode() != Config.FocusMode.FIXED);
 
     // Note that order matters - see the note in onPause(), the reverse applies here.
     try {
@@ -259,13 +286,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
       }
 
       // Update the camera intrinsics' text.
-      runOnUiThread(
-          new Runnable() {
-            @Override
-            public void run() {
-              cameraIntrinsicsTextView.setText(getCameraIntrinsicsText(frame));
-            }
-          });
+      runOnUiThread(() -> cameraIntrinsicsTextView.setText(getCameraIntrinsicsText(frame)));
     } catch (Exception t) {
       // Avoid crashing the application due to unhandled exceptions.
       Log.e(TAG, "Exception on the OpenGL thread", t);
@@ -337,13 +358,112 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
         textureReader.submitFrame(cpuImageRenderer.getTextureId(), TEXTURE_WIDTH, TEXTURE_HEIGHT);
   }
 
+  public void onLowResolutionRadioButtonClicked(View view) {
+    boolean checked = ((RadioButton) view).isChecked();
+    if (checked && !isLowResolutionSelected) {
+      // Display low resolution
+      onCameraConfigChanged(cpuLowResolutionCameraConfig);
+      isLowResolutionSelected = true;
+    }
+  }
+
+  public void onHighResolutionRadioButtonClicked(View view) {
+    boolean checked = ((RadioButton) view).isChecked();
+    if (checked && isLowResolutionSelected) {
+      // Display high resolution
+      onCameraConfigChanged(cpuHighResolutionCameraConfig);
+      isLowResolutionSelected = false;
+    }
+  }
+
+  private void onFocusModeChanged(CompoundButton unusedButton, boolean isChecked) {
+    config.setFocusMode(isChecked ? Config.FocusMode.AUTO : Config.FocusMode.FIXED);
+    session.configure(config);
+  }
+
+  private void onCameraConfigChanged(CameraConfig cameraConfig) {
+    // To change the AR camera config - first we pause the AR session, set the desired camera
+    // config and then resume the AR session.
+    if (session != null) {
+      session.pause();
+      session.setCameraConfig(cameraConfig);
+      try {
+        session.resume();
+      } catch (CameraNotAvailableException ex) {
+        // In a rare case (such as another camera app launching) the camera may be given to a
+        // different app and so may not be available to this app. Handle this properly by showing a
+        // message and recreate the session at the next iteration.
+        messageSnackbarHelper.showError(this, "Camera not available. Please restart the app.");
+        session = null;
+        return;
+      }
+
+      // Let the user know that the camera config is set.
+      String toastMessage =
+          "Set the camera config with CPU image resolution of "
+              + cameraConfig.getImageSize().getWidth()
+              + "x"
+              + cameraConfig.getImageSize().getHeight()
+              + ".";
+      Toast.makeText(this, toastMessage, Toast.LENGTH_LONG).show();
+    }
+  }
+
+  // Obtains the supported camera configs and build the list of radio button one for each camera
+  // config.
+  private void obtainCameraConfigs() {
+    // First obtain the session handle before getting the list of various camera configs.
+    if (session != null) {
+      List<CameraConfig> cameraConfigs = session.getSupportedCameraConfigs();
+
+      // Determine the highest and lowest CPU resolutions.
+      cpuLowResolutionCameraConfig =
+          getCameraConfigWithLowestOrHighestResolution(cameraConfigs, true);
+      cpuHighResolutionCameraConfig =
+          getCameraConfigWithLowestOrHighestResolution(cameraConfigs, false);
+
+      // Update the radio buttons with the resolution info.
+      updateRadioButtonText(
+          R.id.radio_low_res, cpuLowResolutionCameraConfig, getString(R.string.label_low_res));
+      updateRadioButtonText(
+          R.id.radio_high_res, cpuHighResolutionCameraConfig, getString(R.string.label_high_res));
+      isLowResolutionSelected = true;
+    }
+  }
+
+  private void updateRadioButtonText(int id, CameraConfig cameraConfig, String prefix) {
+    RadioButton radioButton = (RadioButton) findViewById(id);
+    Size resolution = cameraConfig.getImageSize();
+    radioButton.setText(prefix + " (" + resolution.getWidth() + "x" + resolution.getHeight() + ")");
+  }
+
+  private CameraConfig getCameraConfigWithLowestOrHighestResolution(
+      List<CameraConfig> cameraConfigs, boolean lowest) {
+    CameraConfig cameraConfig = cameraConfigs.get(0);
+    for (int index = 1; index < cameraConfigs.size(); index++) {
+      if (lowest) {
+        if (cameraConfigs.get(index).getImageSize().getHeight()
+            < cameraConfig.getImageSize().getHeight()) {
+          cameraConfig = cameraConfigs.get(index);
+        }
+      } else {
+        if (cameraConfigs.get(index).getImageSize().getHeight()
+            > cameraConfig.getImageSize().getHeight()) {
+          cameraConfig = cameraConfigs.get(index);
+        }
+      }
+    }
+    return cameraConfig;
+  }
+
   private String getCameraIntrinsicsText(Frame frame) {
     Camera camera = frame.getCamera();
 
-    boolean shouldShowCpuIntrinsics = (cpuImageRenderer.getSplitterPosition() < 0.5f);
+    boolean forGpuTexture = (cpuImageRenderer.getSplitterPosition() > 0.5f);
     CameraIntrinsics intrinsics =
-        shouldShowCpuIntrinsics ? camera.getImageIntrinsics() : camera.getTextureIntrinsics();
-    String intrinsicsLabel = shouldShowCpuIntrinsics ? "Image" : "Texture";
+        forGpuTexture ? camera.getTextureIntrinsics() : camera.getImageIntrinsics();
+    String intrinsicsLabel = forGpuTexture ? "Texture" : "Image";
+    String imageType = forGpuTexture ? "GPU" : "CPU";
 
     float[] focalLength = intrinsics.getFocalLength();
     float[] principalPoint = intrinsics.getPrincipalPoint();
@@ -356,11 +476,13 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
 
     return String.format(
         CAMERA_INTRINSICS_TEXT_FORMAT,
+        imageType,
         intrinsicsLabel,
         focalLength[0],
         focalLength[1],
         principalPoint[0],
         principalPoint[1],
+        imageType,
         imageSize[0],
         imageSize[1],
         fovX,

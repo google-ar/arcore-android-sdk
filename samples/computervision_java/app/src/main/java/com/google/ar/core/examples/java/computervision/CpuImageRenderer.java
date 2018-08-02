@@ -292,7 +292,7 @@ public class CpuImageRenderer {
     }
 
     // Crop the CPU image to fit the screen aspect ratio.
-    float imageAspectRatio = (float) (imageWidth) / imageHeight;
+    float imageAspectRatio = (float) imageWidth / imageHeight;
     float croppedWidth = 0.f;
     float croppedHeight = 0.f;
     if (screenAspectRatio < imageAspectRatio) {

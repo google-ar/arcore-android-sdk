@@ -34,7 +34,7 @@ public class EdgeDetector {
    */
   public synchronized ByteBuffer detect(int width, int height, int stride, ByteBuffer input) {
     // Reallocate input byte array if its size is different from the required size.
-    if (stride * height != inputPixels.length) {
+    if (stride * height > inputPixels.length) {
       inputPixels = new byte[stride * height];
     }
 
@@ -44,7 +44,12 @@ public class EdgeDetector {
     // Copy input buffer into a java array for ease of access. This is not the most optimal
     // way to process an image, but used here for simplicity.
     input.position(0);
-    input.get(inputPixels);
+
+    // Note: On certain devices with specific resolution where the stride is not equal to the width.
+    // In such situation the memory allocated for the frame may not be exact multiple of stride x
+    // height hence the capacity of the ByteBuffer could be less. To handle such situations it will
+    // be better to transfer the exact amount of image bytes to the destination bytes.
+    input.get(inputPixels, 0, input.capacity());
 
     // Detect edges.
     for (int j = 1; j < height - 1; j++) {
@@ -53,14 +58,14 @@ public class EdgeDetector {
         int offset = (j * stride) + i;
 
         // Neighbour pixels around the pixel at [i, j].
-        int a00 = inputPixels[offset - width - 1];
-        int a01 = inputPixels[offset - width];
-        int a02 = inputPixels[offset - width + 1];
+        int a00 = inputPixels[offset - stride - 1];
+        int a01 = inputPixels[offset - stride];
+        int a02 = inputPixels[offset - stride + 1];
         int a10 = inputPixels[offset - 1];
         int a12 = inputPixels[offset + 1];
-        int a20 = inputPixels[offset + width - 1];
-        int a21 = inputPixels[offset + width];
-        int a22 = inputPixels[offset + width + 1];
+        int a20 = inputPixels[offset + stride - 1];
+        int a21 = inputPixels[offset + stride];
+        int a22 = inputPixels[offset + stride + 1];
 
         // Sobel X filter:
         //   -1, 0, 1,

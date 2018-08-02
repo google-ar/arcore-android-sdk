@@ -412,8 +412,8 @@ public class TextureReader {
     if (keepAspectRatio) {
       int renderWidth = 0;
       int renderHeight = 0;
-      float textureAspectRatio = (float) (textureWidth) / textureHeight;
-      float imageAspectRatio = (float) (imageWidth) / imageHeight;
+      float textureAspectRatio = (float) textureWidth / textureHeight;
+      float imageAspectRatio = (float) imageWidth / imageHeight;
       if (textureAspectRatio < imageAspectRatio) {
         renderWidth = imageWidth;
         renderHeight = textureHeight * imageWidth / textureWidth;

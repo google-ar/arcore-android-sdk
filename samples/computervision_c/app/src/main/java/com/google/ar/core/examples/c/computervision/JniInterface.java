@@ -58,12 +58,20 @@ public class JniInterface {
    */
   static native void onGlSurfaceDrawFrame(long nativeApplication, float splitPosition);
 
+  static native String getCameraConfigLabel(
+      long nativeApplication, boolean isLowResolutionSelected);
+
+  static native int setCameraConfig(long nativeApplication, boolean isLowResolutionSelected);
+
   /**
    * Retrieves the text for the intrinsic values of the current camera configuration.
    *
    * @param nativeApplication the native application handle.
-   * @param showCpuIntrinsics if true, retrieves the text for the CPU image's intrinsics. Otherwise,
-   * retrieves the text for the GPU texture's intrinsics.
+   * @param forGpuTexture is the intrinsic text required for GPU texture or for CPU image.
    */
-  static native String getCameraIntrinsicsText(long nativeApplication, boolean showCpuIntrinsics);
+  static native String getCameraIntrinsicsText(long nativeApplication, boolean forGpuTexture);
+
+  static native void setFocusMode(long nativeApplication, boolean isFixedFocus);
+
+  static native boolean getFocusMode(long nativeApplication);
 }

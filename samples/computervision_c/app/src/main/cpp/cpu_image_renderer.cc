@@ -96,14 +96,14 @@ bool DetectEdge(const AImage* ndk_image, int32_t width, int32_t height,
       int offset = (j * stride) + i;
 
       // Neighbour pixels around the pixel at [i, j].
-      int a00 = input_pixels[offset - width - 1];
-      int a01 = input_pixels[offset - width];
-      int a02 = input_pixels[offset - width + 1];
+      int a00 = input_pixels[offset - stride - 1];
+      int a01 = input_pixels[offset - stride];
+      int a02 = input_pixels[offset - stride + 1];
       int a10 = input_pixels[offset - 1];
       int a12 = input_pixels[offset + 1];
-      int a20 = input_pixels[offset + width - 1];
-      int a21 = input_pixels[offset + width];
-      int a22 = input_pixels[offset + width + 1];
+      int a20 = input_pixels[offset + stride - 1];
+      int a21 = input_pixels[offset + stride];
+      int a22 = input_pixels[offset + stride + 1];
 
       // Sobel X filter:
       //   -1, 0, 1,
