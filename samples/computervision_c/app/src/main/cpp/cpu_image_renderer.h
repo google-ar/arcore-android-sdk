@@ -58,8 +58,6 @@ class CpuImageRenderer {
 
   GLuint texture_id_;
   GLuint overlay_texture_id_;
-  GLuint u_texture_id_;
-  GLuint v_texture_id_;
 
   GLuint attribute_position_;
   GLuint attribute_tex_coord_;

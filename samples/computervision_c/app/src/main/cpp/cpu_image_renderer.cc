@@ -37,7 +37,6 @@ const GLfloat kUvs[] = {
 constexpr int kSobelEdgeThreshold = 128 * 128;
 constexpr int kCoordsPerVertex = 3;
 constexpr int kTexCoordsPerVertex = 2;
-constexpr int kTextureCount = 4;
 constexpr char kVertexShaderFilename[] = "shaders/cpu_image.vert";
 constexpr char kFragmentShaderFilename[] = "shaders/cpu_image.frag";
 
@@ -130,8 +129,8 @@ bool DetectEdge(const AImage* ndk_image, int32_t width, int32_t height,
 }  // namespace
 
 void CpuImageRenderer::InitializeGlContent(AAssetManager* asset_manager) {
-  GLuint textures[kTextureCount];
-  glGenTextures(kTextureCount, textures);
+  GLuint textures[2];
+  glGenTextures(2, textures);
 
   texture_id_ = textures[0];
   glBindTexture(GL_TEXTURE_EXTERNAL_OES, texture_id_);
@@ -142,18 +141,6 @@ void CpuImageRenderer::InitializeGlContent(AAssetManager* asset_manager) {
 
   overlay_texture_id_ = textures[1];
   glBindTexture(GL_TEXTURE_2D, overlay_texture_id_);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-  u_texture_id_ = textures[2];
-  glBindTexture(GL_TEXTURE_2D, u_texture_id_);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-  v_texture_id_ = textures[3];
-  glBindTexture(GL_TEXTURE_2D, v_texture_id_);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);

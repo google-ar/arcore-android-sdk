@@ -23,8 +23,15 @@ cmake_minimum_required(VERSION 3.4.1)
 # Import the ARCore library.
 add_library(arcore SHARED IMPORTED)
 set_target_properties(arcore PROPERTIES IMPORTED_LOCATION
-                      ${ARCORE_LIBPATH}/${ANDROID_ABI}/libarcore_sdk_c.so)
+                      ${ARCORE_LIBPATH}/${ANDROID_ABI}/libarcore_sdk_c.so
+                      INTERFACE_INCLUDE_DIRECTORIES ${ARCORE_INCLUDE}
+)
 
+# Import the glm header file from the NDK.
+add_library( glm INTERFACE )
+set_target_properties( glm PROPERTIES
+                       INTERFACE_INCLUDE_DIRECTORIES ${ANDROID_NDK}/sources/third_party/vulkan/src/libs/glm
+)
 # This is the main app library.
 add_library(augmented_image_native SHARED
            src/main/cpp/augmented_image_application.cc
@@ -35,13 +42,12 @@ add_library(augmented_image_native SHARED
            src/main/cpp/util.cc)
 
 target_include_directories(augmented_image_native PRIVATE
-           src/main/cpp
-            ${ARCORE_INCLUDE}
-            ${ANDROID_NDK}/sources/third_party/vulkan/src/libs/glm)
+           src/main/cpp)
 
 target_link_libraries(augmented_image_native
                       android
                       jnigraphics
                       log
                       GLESv2
+                      glm
                       arcore)

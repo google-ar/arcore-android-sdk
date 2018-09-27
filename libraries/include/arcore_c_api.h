@@ -285,7 +285,7 @@ typedef struct ArPointCloud_ ArPointCloud;
 /// Release with ArImageMetadata_release()
 typedef struct ArImageMetadata_ ArImageMetadata;
 
-/// Accessing CPU image from the tracking camera
+/// Accessing CPU image from the camera
 /// (@ref ownership "reference type, large data").
 ///
 /// Acquire with ArFrame_acquireCameraImage()<br>
@@ -890,8 +890,8 @@ void ArCoreApk_checkAvailability(void *env,
 /// If ARCore is not currently installed or the installed version not
 /// compatible, the function will set @c out_install_status to
 /// #AR_INSTALL_STATUS_INSTALL_REQUESTED and return immediately. Your current
-/// activity will then pause while the user is informed about the requierment of
-/// ARCore and offered the opportunity to install it.
+/// activity will then pause while the user is offered the opportunity to
+/// install it.
 ///
 /// When your activity resumes, you should call this method again, this time
 /// with @c user_requested_install = 0. This will either set
@@ -933,7 +933,7 @@ void ArCoreApk_checkAvailability(void *env,
 ///     installation.
 ArStatus ArCoreApk_requestInstall(void *env,
                                   void *application_activity,
-                                  bool user_requested_install,
+                                  int32_t user_requested_install,
                                   ArInstallStatus *out_install_status);
 
 /// Initiates installation of ARCore if required, with configurable behavior.
@@ -1482,8 +1482,14 @@ void ArPose_getMatrix(const ArSession *session,
 /// Sets @c out_pose to the pose of the user's device in the world coordinate
 /// space at the time of capture of the current camera texture. The position and
 /// orientation of the pose follow the device's physical camera (they are not
-/// affected by display orientation) and uses OpenGL camera conventions (+X
-/// right, +Y up, -Z in the direction the camera is looking).
+/// affected by display orientation), <b>but are rotated around the Z axis by a
+/// multiple of 90&deg; to (approximately) align the axes with those of the <a
+/// href="https://developer.android.com/guide/topics/sensors/sensors_overview.html#sensors-coords"
+/// >Android Sensor Coordinate System</a></b>.
+///
+/// This function will be deprecated in a future version of ARCore and replaced
+/// with one that returns the camera's actual physical pose without the 90&deg;
+/// rotation.
 ///
 /// Note: This pose is only useful when ArCamera_getTrackingState() returns
 /// #AR_TRACKING_STATE_TRACKING and otherwise should not be used.
@@ -1776,8 +1782,8 @@ ArStatus ArFrame_acquireImageMetadata(const ArSession *session,
                                       const ArFrame *frame,
                                       ArImageMetadata **out_metadata);
 
-/// Gets the image of the tracking camera relative to the input session and
-/// frame. Caller is responsible for later releasing the image with @c
+/// Returns the CPU image for the current frame.
+/// Caller is responsible for later releasing the image with @c
 /// ArImage_release.
 /// Return values:
 /// @returns #AR_SUCCESS or any of:
@@ -1818,6 +1824,7 @@ void ArFrame_getUpdatedTrackables(const ArSession *session,
                                   const ArFrame *frame,
                                   ArTrackableType filter_type,
                                   ArTrackableList *out_trackable_list);
+
 /// @}
 
 // === ArPointCloud methods ===
@@ -1840,13 +1847,36 @@ void ArPointCloud_getNumberOfPoints(const ArSession *session,
 /// >DEPTH_POINT_CLOUD</a>.
 ///
 /// The pointer returned by this function is valid until ArPointCloud_release()
-/// is called. The application must copy the data if they wish to retain it for
-/// longer. The points are in world coordinates consistent with the frame it was
-/// obtained from. If the number of points is zero, then the value of
-/// @c *out_point_cloud_data should is undefined.
+/// is called. If the number of points is zero, then the value of
+/// @c *out_point_cloud_data is undefined.
+///
+/// If your app needs to keep some point cloud data, for example to compare
+/// point cloud data frame to frame, consider copying just the data points your
+/// app needs, and then calling ArPointCloud_release() to reduce the amount of
+/// memory required.
 void ArPointCloud_getData(const ArSession *session,
                           const ArPointCloud *point_cloud,
                           const float **out_point_cloud_data);
+
+/// Retrieves a pointer to the point cloud point IDs. The number of IDs is the
+/// same as number of points, and is given by
+/// @c ArPointCloud_getNumberOfPoints().
+///
+/// Each point has a unique identifier (within a session) that is persistent
+/// across frames. That is, if a point from point cloud 1 has the same id as the
+/// point from point cloud 2, then it represents the same point in space.
+///
+/// The pointer returned by this function is valid until ArPointCloud_release()
+/// is called. If the number of points is zero, then the value of
+/// @c *out_point_ids is undefined.
+///
+/// If your app needs to keep some point cloud data, for example to compare
+/// point cloud data frame to frame, consider copying just the data points your
+/// app needs, and then calling ArPointCloud_release() to reduce the amount of
+/// memory required.
+void ArPointCloud_getPointIds(const ArSession *session,
+                              const ArPointCloud *point_cloud,
+                              const int32_t **out_point_ids);
 
 /// Returns the timestamp in nanoseconds when this point cloud was observed.
 /// This timestamp uses the same time base as ArFrame_getTimestamp().
@@ -1891,6 +1921,7 @@ void ArImage_getNdkImage(const ArImage *image, const AImage **out_ndk_image);
 
 /// Releases an instance of ArImage returned by ArFrame_acquireCameraImage().
 void ArImage_release(ArImage *image);
+
 /// @}
 
 // === ArLightEstimate methods ===

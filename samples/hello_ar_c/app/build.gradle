@@ -51,16 +51,18 @@ android {
 
 dependencies {
     // ARCore library
-    implementation 'com.google.ar:core:1.4.0'
-    natives 'com.google.ar:core:1.4.0'
+    implementation 'com.google.ar:core:1.5.0'
+    natives 'com.google.ar:core:1.5.0'
 
-    implementation 'com.android.support:appcompat-v7:27.0.2'
-    implementation 'com.android.support:design:27.0.2'
+    implementation 'com.android.support:appcompat-v7:27.1.1'
+    implementation 'com.android.support:design:27.1.1'
 }
 
 // Extracts the shared libraries from aars in the natives configuration.
 // This is done so that NDK builds can access these libraries.
 task extractNativeLibraries() {
+    // Always extract, this insures the native libs are updated if the version changes.
+    outputs.upToDateWhen { false }
     doFirst {
         configurations.natives.files.each { f ->
             copy {

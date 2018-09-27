@@ -86,6 +86,10 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
   private final CpuImageRenderer cpuImageRenderer = new CpuImageRenderer();
   private final EdgeDetector edgeDetector = new EdgeDetector();
 
+  // This lock prevents changing resolution as the frame is being rendered. ARCore requires all
+  // cpu images to be released before changing resolution.
+  private final Object frameImageInUseLock = new Object();
+
   // Camera intrinsics text view.
   private TextView cameraIntrinsicsTextView;
 
@@ -295,31 +299,36 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
 
   /* Demonstrates how to access a CPU image directly from ARCore. */
   private void renderProcessedImageCpuDirectAccess(Frame frame) {
-    try (Image image = frame.acquireCameraImage()) {
-      if (image.getFormat() != ImageFormat.YUV_420_888) {
-        throw new IllegalArgumentException(
-            "Expected image in YUV_420_888 format, got format " + image.getFormat());
+    // Lock the image use to avoid pausing & resuming session when the image is in use. This is
+    // because switching resolutions requires all images to be released before session.resume() is
+    // called.
+    synchronized (frameImageInUseLock) {
+      try (Image image = frame.acquireCameraImage()) {
+        if (image.getFormat() != ImageFormat.YUV_420_888) {
+          throw new IllegalArgumentException(
+              "Expected image in YUV_420_888 format, got format " + image.getFormat());
+        }
+
+        ByteBuffer processedImageBytesGrayscale =
+            edgeDetector.detect(
+                image.getWidth(),
+                image.getHeight(),
+                image.getPlanes()[0].getRowStride(),
+                image.getPlanes()[0].getBuffer());
+
+        cpuImageRenderer.drawWithCpuImage(
+            frame,
+            image.getWidth(),
+            image.getHeight(),
+            processedImageBytesGrayscale,
+            cpuImageDisplayRotationHelper.getViewportAspectRatio(),
+            cpuImageDisplayRotationHelper.getCameraToDisplayRotation());
+
+      } catch (NotYetAvailableException e) {
+        // This exception will routinely happen during startup, and is expected. cpuImageRenderer
+        // will handle null image properly, and will just render the background.
+        cpuImageRenderer.drawWithoutCpuImage();
       }
-
-      ByteBuffer processedImageBytesGrayscale =
-          edgeDetector.detect(
-              image.getWidth(),
-              image.getHeight(),
-              image.getPlanes()[0].getRowStride(),
-              image.getPlanes()[0].getBuffer());
-
-      cpuImageRenderer.drawWithCpuImage(
-          frame,
-          image.getWidth(),
-          image.getHeight(),
-          processedImageBytesGrayscale,
-          cpuImageDisplayRotationHelper.getViewportAspectRatio(),
-          cpuImageDisplayRotationHelper.getCameraToDisplayRotation());
-
-    } catch (NotYetAvailableException e) {
-      // This exception will routinely happen during startup, and is expected. cpuImageRenderer
-      // will handle null image properly, and will just render the background.
-      cpuImageRenderer.drawWithoutCpuImage();
     }
   }
 
@@ -385,17 +394,20 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
     // To change the AR camera config - first we pause the AR session, set the desired camera
     // config and then resume the AR session.
     if (session != null) {
-      session.pause();
-      session.setCameraConfig(cameraConfig);
-      try {
-        session.resume();
-      } catch (CameraNotAvailableException ex) {
-        // In a rare case (such as another camera app launching) the camera may be given to a
-        // different app and so may not be available to this app. Handle this properly by showing a
-        // message and recreate the session at the next iteration.
-        messageSnackbarHelper.showError(this, "Camera not available. Please restart the app.");
-        session = null;
-        return;
+      // Block here if the image is still being used.
+      synchronized (frameImageInUseLock) {
+        session.pause();
+        session.setCameraConfig(cameraConfig);
+        try {
+          session.resume();
+        } catch (CameraNotAvailableException ex) {
+          // In a rare case (such as another camera app launching) the camera may be given to a
+          // different app and so may not be available to this app. Handle this properly by showing
+          // a message and recreate the session at the next iteration.
+          messageSnackbarHelper.showError(this, "Camera not available. Please restart the app.");
+          session = null;
+          return;
+        }
       }
 
       // Let the user know that the camera config is set.

@@ -39,7 +39,6 @@ public class CpuImageRenderer {
   private static final int COORDS_PER_VERTEX = 3;
   private static final int TEXCOORDS_PER_VERTEX = 2;
   private static final int FLOAT_SIZE = 4;
-  private static final int TEXTURE_COUNT = 4;
 
   private FloatBuffer quadVertices;
   private FloatBuffer quadTexCoord;
@@ -54,8 +53,6 @@ public class CpuImageRenderer {
   private int quadSplitterUniform;
   private int backgroundTextureId = -1;
   private int overlayTextureId = -1;
-  private int uTextureId = -1;
-  private int vTextureId = -1;
   private float splitterPosition = 0.0f;
 
   public int getTextureId() {
@@ -70,12 +67,11 @@ public class CpuImageRenderer {
    * @param context Needed to access shader source.
    */
   public void createOnGlThread(Context context) throws IOException {
-    // Generate the background texture.
-    int[] textures = new int[TEXTURE_COUNT];
-    GLES20.glGenTextures(TEXTURE_COUNT, textures, 0);
+    int[] textures = new int[2];
+    GLES20.glGenTextures(2, textures, 0);
 
-    int index = 0;
-    backgroundTextureId = textures[index++];
+    // Generate the background texture.
+    backgroundTextureId = textures[0];
     GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, backgroundTextureId);
     GLES20.glTexParameteri(
         GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
@@ -86,20 +82,9 @@ public class CpuImageRenderer {
     GLES20.glTexParameteri(
         GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
 
-    overlayTextureId = textures[index++];
+    // Generate the CPU Image overlay texture.
+    overlayTextureId = textures[1];
     GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, overlayTextureId);
-    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
-    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
-    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
-
-    uTextureId = textures[index++];
-    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, uTextureId);
-    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
-    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
-    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
-
-    vTextureId = textures[index++];
-    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, vTextureId);
     GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
     GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
     GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);

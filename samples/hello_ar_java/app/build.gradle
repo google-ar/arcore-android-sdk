@@ -5,7 +5,8 @@ android {
     defaultConfig {
         applicationId "com.google.ar.core.examples.java.helloar"
 
-        // 24 is the minimum since ARCore only works with 24 and higher.
+        // AR Optional apps must declare minSdkVersion >= 14.
+        // AR Required apps must declare minSdkVersion >= 24.
         minSdkVersion 24
         targetSdkVersion 27
         versionCode 1
@@ -25,7 +26,7 @@ android {
 
 dependencies {
     // ARCore library
-    implementation 'com.google.ar:core:1.4.0'
+    implementation 'com.google.ar:core:1.5.0'
 
     // Obj - a simple Wavefront OBJ file loader
     // https://github.com/javagl/Obj

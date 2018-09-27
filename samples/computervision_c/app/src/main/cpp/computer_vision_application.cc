@@ -161,13 +161,17 @@ void ComputerVisionApplication::OnDrawFrame(float split_position) {
     LOGE("ComputerVisionApplication::OnDrawFrame ArSession_update error");
   }
 
-  ArImage* ar_image;
+  // Lock the image use to avoid pausing & resuming session when the image is in
+  // use. This is because switching resolutions requires all images to be
+  // released before session.resume() is called.
+  std::lock_guard<std::mutex> lock(frame_image_in_use_mutex_);
+
+  ArImage* ar_image = nullptr;
   const AImage* ndk_image = nullptr;
   ArStatus status =
       ArFrame_acquireCameraImage(ar_session_, ar_frame_, &ar_image);
   if (status == AR_SUCCESS) {
     ArImage_getNdkImage(ar_image, &ndk_image);
-    ArImage_release(ar_image);
   } else {
     LOGW(
         "ComputerVisionApplication::OnDrawFrame acquire camera image not "
@@ -176,6 +180,7 @@ void ComputerVisionApplication::OnDrawFrame(float split_position) {
 
   cpu_image_renderer_.Draw(ar_session_, ar_frame_, ndk_image, aspect_ratio_,
                            camera_to_display_rotation_, split_position);
+  ArImage_release(ar_image);
 }
 
 std::string ComputerVisionApplication::getCameraConfigLabel(
@@ -196,6 +201,9 @@ ArStatus ComputerVisionApplication::setCameraConfig(bool is_low_resolution) {
   // To change the AR camera config - first we pause the AR session, set the
   // desired camera config and then resume the AR session.
   CHECK(ar_session_)
+
+  // Block here if the image is still being used.
+  std::lock_guard<std::mutex> lock(frame_image_in_use_mutex_);
 
   ArSession_pause(ar_session_);
 

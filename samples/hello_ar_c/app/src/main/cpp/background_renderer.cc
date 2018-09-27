@@ -71,6 +71,15 @@ void BackgroundRenderer::Draw(const ArSession* session, const ArFrame* frame) {
     uvs_initialized_ = true;
   }
 
+  int64_t frame_timestamp;
+  ArFrame_getTimestamp(session, frame, &frame_timestamp);
+  if (frame_timestamp == 0) {
+    // Suppress rendering if the camera did not produce the first frame yet.
+    // This is to avoid drawing possible leftover data from previous sessions if
+    // the texture is reused.
+    return;
+  }
+
   glUseProgram(shader_program_);
   glDepthMask(GL_FALSE);
 

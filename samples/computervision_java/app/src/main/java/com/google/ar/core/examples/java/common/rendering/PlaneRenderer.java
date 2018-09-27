@@ -399,6 +399,7 @@ public class PlaneRenderer {
     GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
     GLES20.glDisable(GLES20.GL_BLEND);
     GLES20.glDepthMask(true);
+    GLES20.glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
     ShaderUtil.checkGLError(TAG, "Cleaning up after drawing planes");
   }

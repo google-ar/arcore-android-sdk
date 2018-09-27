@@ -133,6 +133,12 @@ public class BackgroundRenderer {
       frame.transformDisplayUvCoords(quadTexCoord, quadTexCoordTransformed);
     }
 
+    if (frame.getTimestamp() == 0) {
+      // Suppress rendering if the camera did not produce the first frame yet. This is to avoid
+      // drawing possible leftover data from previous sessions if the texture is reused.
+      return;
+    }
+
     // No need to test or write depth, the screen quad has arbitrary depth, and is expected
     // to be drawn first.
     GLES20.glDisable(GLES20.GL_DEPTH_TEST);
