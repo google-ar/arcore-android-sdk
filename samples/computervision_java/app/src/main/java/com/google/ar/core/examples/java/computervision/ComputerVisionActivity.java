@@ -24,9 +24,12 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Size;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -82,9 +85,9 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
   private boolean installRequested;
   private final SnackbarHelper messageSnackbarHelper = new SnackbarHelper();
   private CpuImageDisplayRotationHelper cpuImageDisplayRotationHelper;
-  private CpuImageTouchListener cpuImageTouchListener;
   private final CpuImageRenderer cpuImageRenderer = new CpuImageRenderer();
   private final EdgeDetector edgeDetector = new EdgeDetector();
+  private GestureDetector gestureDetector;
 
   // This lock prevents changing resolution as the frame is being rendered. ARCore requires all
   // cpu images to be released before changing resolution.
@@ -123,10 +126,31 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
     focusModeSwitch.setOnCheckedChangeListener(this::onFocusModeChanged);
 
     cpuImageDisplayRotationHelper = new CpuImageDisplayRotationHelper(/*context=*/ this);
-    cpuImageTouchListener = new CpuImageTouchListener(cpuImageRenderer, /*context=*/ this);
+
+    gestureDetector =
+        new GestureDetector(
+            this,
+            new GestureDetector.SimpleOnGestureListener() {
+              @Override
+              public boolean onSingleTapUp(MotionEvent e) {
+                float newPosition = (cpuImageRenderer.getSplitterPosition() < 0.5f) ? 1.0f : 0.0f;
+                cpuImageRenderer.setSplitterPosition(newPosition);
+
+                // Display the CPU resolution related UI only when CPU image is being displayed.
+                boolean show = (newPosition < 0.5f);
+                RadioGroup radioGroup = (RadioGroup) findViewById(R.id.radio_camera_configs);
+                radioGroup.setVisibility(show ? View.VISIBLE : View.INVISIBLE);
+                return true;
+              }
+
+              @Override
+              public boolean onDown(MotionEvent e) {
+                return true;
+              }
+            });
 
     // Setup a touch listener to control the texture splitter position.
-    surfaceView.setOnTouchListener(cpuImageTouchListener);
+    surfaceView.setOnTouchListener((unusedView, event) -> gestureDetector.onTouchEvent(event));
 
     // Set up renderer.
     surfaceView.setPreserveEGLContextOnPause(true);
@@ -134,6 +158,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
     surfaceView.setEGLConfigChooser(8, 8, 8, 8, 16, 0); // Alpha used for plane blending.
     surfaceView.setRenderer(this);
     surfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
+    surfaceView.setWillNotDraw(false);
 
     installRequested = false;
   }

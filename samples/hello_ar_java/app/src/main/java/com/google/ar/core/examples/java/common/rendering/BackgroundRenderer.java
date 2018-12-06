@@ -124,19 +124,22 @@ public class BackgroundRenderer {
    * accurately follow static physical objects. This must be called <b>before</b> drawing virtual
    * content.
    *
-   * @param frame The last {@code Frame} returned by {@link Session#update()}.
+   * @param frame The last {@code Frame} returned by {@link Session#update()} or null when ARCore is
+   *     paused. See shared_camera_java sample details.
    */
   public void draw(Frame frame) {
-    // If display rotation changed (also includes view size change), we need to re-query the uv
-    // coordinates for the screen rect, as they may have changed as well.
-    if (frame.hasDisplayGeometryChanged()) {
-      frame.transformDisplayUvCoords(quadTexCoord, quadTexCoordTransformed);
-    }
+    if (frame != null) {
+      // If display rotation changed (also includes view size change), we need to re-query the uv
+      // coordinates for the screen rect, as they may have changed as well.
+      if (frame.hasDisplayGeometryChanged()) {
+        frame.transformDisplayUvCoords(quadTexCoord, quadTexCoordTransformed);
+      }
 
-    if (frame.getTimestamp() == 0) {
-      // Suppress rendering if the camera did not produce the first frame yet. This is to avoid
-      // drawing possible leftover data from previous sessions if the texture is reused.
-      return;
+      if (frame.getTimestamp() == 0) {
+        // Suppress rendering if the camera did not produce the first frame yet. This is to avoid
+        // drawing possible leftover data from previous sessions if the texture is reused.
+        return;
+      }
     }
 
     // No need to test or write depth, the screen quad has arbitrary depth, and is expected

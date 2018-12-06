@@ -114,6 +114,7 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     surfaceView.setEGLConfigChooser(8, 8, 8, 8, 16, 0); // Alpha used for plane blending.
     surfaceView.setRenderer(this);
     surfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
+    surfaceView.setWillNotDraw(false);
 
     installRequested = false;
   }

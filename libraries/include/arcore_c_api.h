@@ -119,7 +119,7 @@
 /// @defgroup hit HitResult
 /// Defines an intersection between a ray and estimated real-world geometry.
 
-/// @defgroup image ImageMetadata
+/// @defgroup image Image
 /// Provides access to metadata from the camera image capture result.
 
 /// @defgroup intrinsics Intrinsics
@@ -385,9 +385,13 @@ typedef struct ArAugmentedImageDatabase_ ArAugmentedImageDatabase;
 /// A position in space attached to a trackable
 /// (@ref ownership "reference type, long-lived").
 ///
-/// Create with ArSession_acquireNewAnchor() or
-///     ArHitResult_acquireNewAnchor()<br>
-/// Release with ArAnchor_release()
+/// To create a new anchor call ArSession_acquireNewAnchor() or
+///     ArHitResult_acquireNewAnchor().<br>
+/// To have ARCore stop tracking the anchor, call ArAnchor_detach().<br>
+/// To release the memory associated with this anchor reference, call
+/// ArAnchor_release(). Note that, this will not cause ARCore to stop tracking
+/// the anchor. Other references to the same anchor acquired through
+/// ArAnchorList_acquireItem() are unaffected.
 typedef struct ArAnchor_ ArAnchor;
 
 /// A list of anchors (@ref ownership "value type").
@@ -977,10 +981,17 @@ ArStatus ArCoreApk_requestInstallCustom(void *env,
 /// @addtogroup session
 /// @{
 
-/// Attempts to create a new ARCore session.
+/// Creates a new ARCore session.  Prior to calling this function, your app must
+/// check that ARCore is installed by verifying that either:
 ///
-/// This is the entry point of ARCore.  This function MUST be the first ARCore
-/// call made by an application.
+/// - ArCoreApk_requestInstall() or ArCoreApk_requestInstallCustom() returns
+///   #AR_INSTALL_STATUS_INSTALLED, or
+/// - ArCoreApk_checkAvailability() returns
+///   #AR_AVAILABILITY_SUPPORTED_INSTALLED.
+///
+/// This check must be performed prior to creating an ArSession, otherwise
+/// ArSession creation will fail, and subsequent installation or upgrade of
+/// ARCore will require an app restart and might cause Android to kill your app.
 ///
 /// @param[in]  env                 The application's @c JNIEnv object
 /// @param[in]  application_context A @c jobject referencing the application's
@@ -988,11 +999,22 @@ ArStatus ArCoreApk_requestInstallCustom(void *env,
 /// @param[out] out_session_pointer A pointer to an @c ArSession* to receive
 ///     the address of the newly allocated session.
 /// @return #AR_SUCCESS or any of:
-/// - #AR_UNAVAILABLE_ARCORE_NOT_INSTALLED
-/// - #AR_UNAVAILABLE_DEVICE_NOT_COMPATIBLE
-/// - #AR_UNAVAILABLE_APK_TOO_OLD
-/// - #AR_UNAVAILABLE_SDK_TOO_OLD
-/// - #AR_ERROR_CAMERA_PERMISSION_NOT_GRANTED
+/// - #AR_ERROR_FATAL if an internal error occurred while creating the session.
+///   `adb logcat` may contain useful information.
+/// - #AR_ERROR_CAMERA_PERMISSION_NOT_GRANTED if your app does not have the
+///   [CAMERA](https://developer.android.com/reference/android/Manifest.permission.html#CAMERA)
+///   permission.
+/// - #AR_UNAVAILABLE_ARCORE_NOT_INSTALLED if the ARCore APK is not present.
+///   This can be prevented by the installation check described above.
+/// - #AR_UNAVAILABLE_DEVICE_NOT_COMPATIBLE if the device is not compatible with
+///   ARCore.  If encountered after completing the installation check, this
+///   usually indicates a user has side-loaded ARCore onto an incompatible
+///   device.
+/// - #AR_UNAVAILABLE_APK_TOO_OLD if the installed ARCore APK is too old for the
+///   ARCore SDK with which this application was built. This can be prevented by
+///   the installation check described above.
+/// - #AR_UNAVAILABLE_SDK_TOO_OLD if the ARCore SDK that this app was built with
+///   is too old and no longer supported by the installed ARCore APK.
 ArStatus ArSession_create(void *env,
                           void *application_context,
                           ArSession **out_session_pointer);
@@ -1384,10 +1406,13 @@ ArStatus ArSession_resolveAndAcquireNewCloudAnchor(ArSession *session,
 ///
 /// The list will always return 3 camera configs. The GPU texture resolutions
 /// are the same in all three configs. Currently, most devices provide GPU
-/// texture resolution of 1920 x 1080, but devices might provide higher or lower
-/// resolution textures, depending on device capabilities. The CPU image
-/// resolutions returned are VGA, 720p, and a resolution matching the GPU
-/// texture.
+/// texture resolution of 1920 x 1080 but this may vary with device
+/// capabilities. The CPU image resolutions returned are VGA, a middle
+/// resolution, and a large resolution matching the GPU texture. The middle
+/// resolution will often be 1280 x 720, but may vary with device capabilities.
+///
+/// Note: Prior to ARCore 1.6 the middle CPU image resolution was guaranteed to
+/// be 1280 x 720 on all devices.
 ///
 /// @param[in]    session          The ARCore session
 /// @param[inout] list             The list to fill. This list must have already
@@ -1479,17 +1504,28 @@ void ArPose_getMatrix(const ArSession *session,
 /// @addtogroup camera
 /// @{
 
-/// Sets @c out_pose to the pose of the user's device in the world coordinate
-/// space at the time of capture of the current camera texture. The position and
-/// orientation of the pose follow the device's physical camera (they are not
-/// affected by display orientation), <b>but are rotated around the Z axis by a
-/// multiple of 90&deg; to (approximately) align the axes with those of the <a
-/// href="https://developer.android.com/guide/topics/sensors/sensors_overview.html#sensors-coords"
-/// >Android Sensor Coordinate System</a></b>.
+/// Sets @c out_pose to the pose of the physical camera in world space for the
+/// latest frame. This is an OpenGL camera pose with +X pointing right, +Y
+/// pointing right up, -Z pointing in the direction the camera is looking, with
+/// "right" and "up" being relative to the image readout in the usual
+/// left-to-right top-to-bottom order. Specifically, this is the camera pose at
+/// the center of exposure of the center row of the image.
 ///
-/// This function will be deprecated in a future version of ARCore and replaced
-/// with one that returns the camera's actual physical pose without the 90&deg;
-/// rotation.
+/// <b>For applications using the SDK for ARCore 1.5 and earlier</b>, the
+/// returned pose is rotated around the Z axis by a multiple of 90 degrees so
+/// that the axes correspond approximately to those of the <a
+/// href="https://developer.android.com/guide/topics/sensors/sensors_overview#sensors-coords">Android
+/// Sensor Coordinate System</a>.
+///
+/// See Also:
+///
+/// * ArCamera_getDisplayOrientedPose() for the pose of the virtual camera. It
+///   will differ by a local rotation about the Z axis by a multiple of 90
+///   degrees.
+/// * ArFrame_getAndroidSensorPose() for the pose of the Android sensor frame.
+///   It will differ in both orientation and location.
+/// * ArFrame_transformDisplayUvCoords() to convert viewport coordinates to
+///   texture coordinates.
 ///
 /// Note: This pose is only useful when ArCamera_getTrackingState() returns
 /// #AR_TRACKING_STATE_TRACKING and otherwise should not be used.
@@ -1502,17 +1538,23 @@ void ArCamera_getPose(const ArSession *session,
                       const ArCamera *camera,
                       ArPose *out_pose);
 
-/// Sets @c out_pose to the pose of the user's device in the world coordinate
-/// space at the time of capture of the current camera texture. The position of
-/// the pose is located at the device's camera, while the orientation
-/// approximately matches the orientation of the display (considering display
-/// rotation), using OpenGL camera conventions (+X right, +Y up, -Z in the
-/// direction the camera is looking).
+/// Sets @c out_pose to the virtual camera pose in world space for rendering AR
+/// content onto the latest frame. This is an OpenGL camera pose with +X
+/// pointing right, +Y pointing up, and -Z pointing in the direction the camera
+/// is looking, with "right" and "up" being relative to current logical display
+/// orientation.
+///
+/// See Also:
+///
+/// * ArCamera_getViewMatrix() to conveniently compute the OpenGL View Matrix.
+/// * ArCamera_getPose() for the physical pose of the camera. It will differ by
+///   a local rotation about the Z axis by a multiple of 90 degrees.
+/// * ArFrame_getAndroidSensorPose() for the pose of the android sensor frame.
+///   It will differ in both orientation and location.
+/// * ArSession_setDisplayGeometry() to update the display rotation.
 ///
 /// Note: This pose is only useful when ArCamera_getTrackingState() returns
 /// #AR_TRACKING_STATE_TRACKING and otherwise should not be used.
-///
-/// See also: ArCamera_getViewMatrix()
 ///
 /// @param[in]    session  The ARCore session
 /// @param[in]    camera   The session's camera (retrieved from any frame).
@@ -1560,16 +1602,23 @@ void ArCamera_getProjectionMatrix(const ArSession *session,
                                   float *dest_col_major_4x4);
 
 /// Retrieves the unrotated and uncropped intrinsics for the image (CPU) stream.
-/// @param camera The intrinsics may change per frame, so this should be called
+/// The intrinsics may change per frame, so this should be called
 /// on each frame to get the intrinsics for the current frame.
+///
+/// @param[in]    session                The ARCore session
+/// @param[in]    camera                 The session's camera.
+/// @param[inout] out_camera_intrinsics  The camera_intrinsics data.
 void ArCamera_getImageIntrinsics(const ArSession *session,
                                  const ArCamera *camera,
                                  ArCameraIntrinsics *out_camera_intrinsics);
 
 /// Retrieves the unrotated and uncropped intrinsics for the texture (GPU)
-/// stream.
-/// @param camera The intrinsics may change per frame, so this should be called
+/// stream.  The intrinsics may change per frame, so this should be called
 /// on each frame to get the intrinsics for the current frame.
+///
+/// @param[in]    session                The ARCore session
+/// @param[in]    camera                 The session's camera.
+/// @param[inout] out_camera_intrinsics  The camera_intrinsics data.
 void ArCamera_getTextureIntrinsics(const ArSession *session,
                                    const ArCamera *camera,
                                    ArCameraIntrinsics *out_camera_intrinsics);
@@ -1587,6 +1636,9 @@ void ArCamera_release(ArCamera *camera);
 /// @{
 
 /// Allocates a camera intrinstics object.
+///
+/// @param[in]    session                The ARCore session
+/// @param[inout] out_camera_intrinsics  The camera_intrinsics data.
 void ArCameraIntrinsics_create(const ArSession *session,
                                ArCameraIntrinsics **out_camera_intrinsics);
 
@@ -1647,10 +1699,18 @@ void ArFrame_getTimestamp(const ArSession *session,
                           int64_t *out_timestamp_ns);
 
 /// Sets @c out_pose to the pose of the <a
-/// href="https://developer.android.com/guide/topics/sensors/sensors_overview.html#sensors-coords"
-/// >Android Sensor Coordinate System</a> in the world coordinate space at the
-/// time of capture of the current camera texture. The orientation follows the
-/// device's "native" orientation (it is not affected by display orientation).
+/// href="https://developer.android.com/guide/topics/sensors/sensors_overview#sensors-coords">Android
+/// Sensor Coordinate System</a> in the world coordinate space for this frame.
+/// The orientation follows the device's "native" orientation (it is not
+/// affected by display rotation) with all axes corresponding to those of the
+/// Android sensor coordinates.
+///
+/// See Also:
+///
+/// * ArCamera_getDisplayOrientedPose() for the pose of the virtual camera.
+/// * ArCamera_getPose() for the pose of the physical camera.
+/// * ArFrame_getTimestamp() for the system time that this pose was estimated
+///   for.
 ///
 /// Note: This pose is only useful when ArCamera_getTrackingState() returns
 /// #AR_TRACKING_STATE_TRACKING and otherwise should not be used.
@@ -2036,13 +2096,12 @@ void ArAnchor_getTrackingState(const ArSession *session,
                                ArTrackingState *out_tracking_state);
 
 /// Tells ARCore to stop tracking and forget this anchor.  This call does not
-/// release the reference to the anchor - that must be done separately using
+/// release any references to the anchor - that must be done separately using
 /// ArAnchor_release().
 void ArAnchor_detach(ArSession *session, ArAnchor *anchor);
 
-/// Releases a reference to an anchor. This does not mean that the anchor will
-/// stop tracking, as it will be obtainable from e.g. ArSession_getAllAnchors()
-/// if any other references exist.
+/// Releases a reference to an anchor. To stop tracking for this anchor, call
+/// ArAnchor_detach() first.
 ///
 /// This method may safely be called with @c nullptr - it will do nothing.
 void ArAnchor_release(ArAnchor *anchor);

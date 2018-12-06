@@ -29,7 +29,7 @@ android {
             }
         }
         ndk {
-            abiFilters "arm64-v8a", "x86"
+            abiFilters "arm64-v8a", "armeabi-v7a", "x86"
         }
     }
     compileOptions {
@@ -51,8 +51,8 @@ android {
 
 dependencies {
     // ARCore library
-    implementation 'com.google.ar:core:1.5.0'
-    natives 'com.google.ar:core:1.5.0'
+    implementation 'com.google.ar:core:1.6.0'
+    natives 'com.google.ar:core:1.6.0'
 
     implementation 'com.android.support:appcompat-v7:27.1.1'
     implementation 'com.android.support:design:27.1.1'
