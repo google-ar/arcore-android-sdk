@@ -29,6 +29,7 @@ public final class SnackbarHelper {
   private Snackbar messageSnackbar;
   private enum DismissBehavior { HIDE, SHOW, FINISH };
   private int maxLines = 2;
+  private String lastMessage = "";
 
   public boolean isShowing() {
     return messageSnackbar != null;
@@ -36,7 +37,10 @@ public final class SnackbarHelper {
 
   /** Shows a snackbar with a given message. */
   public void showMessage(Activity activity, String message) {
-    show(activity, message, DismissBehavior.HIDE);
+    if (!message.isEmpty() && (!isShowing() || !lastMessage.equals(message))) {
+      lastMessage = message;
+      show(activity, message, DismissBehavior.HIDE);
+    }
   }
 
   /** Shows a snackbar with a given message, and a dismiss button. */
@@ -57,14 +61,17 @@ public final class SnackbarHelper {
    * call even if snackbar is not shown.
    */
   public void hide(Activity activity) {
+    if (!isShowing()) {
+      return;
+    }
+    lastMessage = "";
+    Snackbar messageSnackbarToHide = messageSnackbar;
+    messageSnackbar = null;
     activity.runOnUiThread(
         new Runnable() {
           @Override
           public void run() {
-            if (messageSnackbar != null) {
-              messageSnackbar.dismiss();
-            }
-            messageSnackbar = null;
+            messageSnackbarToHide.dismiss();
           }
         });
   }

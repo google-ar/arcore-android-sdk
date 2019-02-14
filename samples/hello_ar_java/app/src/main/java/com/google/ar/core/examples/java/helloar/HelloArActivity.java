@@ -84,6 +84,8 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
   private final float[] anchorMatrix = new float[16];
   private static final float[] DEFAULT_COLOR = new float[] {0f, 0f, 0f, 0f};
 
+  private static final String SEARCHING_PLANE_MESSAGE = "Searching for surfaces...";
+
   // Anchors created from taps used for object placing with a given color.
   private static class ColoredAnchor {
     public final Anchor anchor;
@@ -184,8 +186,6 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
 
     surfaceView.onResume();
     displayRotationHelper.onResume();
-
-    messageSnackbarHelper.showMessage(this, "Searching for surfaces...");
   }
 
   @Override
@@ -274,11 +274,13 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
       // Handle one tap per frame.
       handleTap(frame, camera);
 
-      // Draw background.
+      // If frame is ready, render camera preview image to the GL surface.
       backgroundRenderer.draw(frame);
 
-      // If not tracking, don't draw 3d objects.
+      // If not tracking, don't draw 3D objects, show tracking failure reason instead.
       if (camera.getTrackingState() == TrackingState.PAUSED) {
+        messageSnackbarHelper.showMessage(
+            this, TrackingStateHelper.getTrackingFailureReasonString(camera));
         return;
       }
 
@@ -297,22 +299,18 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
       frame.getLightEstimate().getColorCorrection(colorCorrectionRgba, 0);
 
       // Visualize tracked points.
-      PointCloud pointCloud = frame.acquirePointCloud();
-      pointCloudRenderer.update(pointCloud);
-      pointCloudRenderer.draw(viewmtx, projmtx);
+      // Use try-with-resources to automatically release the point cloud.
+      try (PointCloud pointCloud = frame.acquirePointCloud()) {
+        pointCloudRenderer.update(pointCloud);
+        pointCloudRenderer.draw(viewmtx, projmtx);
+      }
 
-      // Application is responsible for releasing the point cloud resources after
-      // using it.
-      pointCloud.release();
-
-      // Check if we detected at least one plane. If so, hide the loading message.
-      if (messageSnackbarHelper.isShowing()) {
-        for (Plane plane : session.getAllTrackables(Plane.class)) {
-          if (plane.getTrackingState() == TrackingState.TRACKING) {
-            messageSnackbarHelper.hide(this);
-            break;
-          }
-        }
+      // No tracking error at this point. If we detected any plane, then hide the
+      // message UI, otherwise show searchingPlane message.
+      if (hasTrackingPlane()) {
+        messageSnackbarHelper.hide(this);
+      } else {
+        messageSnackbarHelper.showMessage(this, SEARCHING_PLANE_MESSAGE);
       }
 
       // Visualize planes.
@@ -384,5 +382,15 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
         }
       }
     }
+  }
+
+  /** Checks if we detected at least one plane. */
+  private boolean hasTrackingPlane() {
+    for (Plane plane : session.getAllTrackables(Plane.class)) {
+      if (plane.getTrackingState() == TrackingState.TRACKING) {
+        return true;
+      }
+    }
+    return false;
   }
 }

@@ -55,14 +55,16 @@ import java.util.List;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-/** This is a simple example that demonstrates cpu image access with ARCore. */
+/** This is a simple example that demonstrates CPU image access with ARCore. */
 public class ComputerVisionActivity extends AppCompatActivity implements GLSurfaceView.Renderer {
   private static final String TAG = ComputerVisionActivity.class.getSimpleName();
   private static final String CAMERA_INTRINSICS_TEXT_FORMAT =
       "Unrotated Camera %s %s Intrinsics:\n\tFocal Length: (%.2f, %.2f)"
           + "\n\tPrincipal Point: (%.2f, %.2f)"
           + "\n\t%s Image Dimensions: (%d, %d)"
-          + "\n\tUnrotated Field of View: (%.2fº, %.2fº)";
+          + "\n\tUnrotated Field of View: (%.2f˚, %.2f˚)"
+          + "\n\tRender frame time: %.1f ms (%.0ffps)"
+          + "\n\tCPU image frame time: %.1f ms (%.0ffps)";
   private static final float RADIANS_TO_DEGREES = (float) (180 / Math.PI);
 
   // This app demonstrates two approaches to obtaining image data accessible on CPU:
@@ -73,7 +75,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
   private enum ImageAcquisitionPath {
     CPU_DIRECT_ACCESS,
     GPU_DOWNLOAD
-  };
+  }
 
   // Select the image acquisition path here.
   private final ImageAcquisitionPath imageAcquisitionPath = ImageAcquisitionPath.CPU_DIRECT_ACCESS;
@@ -90,7 +92,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
   private GestureDetector gestureDetector;
 
   // This lock prevents changing resolution as the frame is being rendered. ARCore requires all
-  // cpu images to be released before changing resolution.
+  // CPU images to be released before changing resolution.
   private final Object frameImageInUseLock = new Object();
 
   // Camera intrinsics text view.
@@ -114,6 +116,9 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
   private CameraConfig cpuHighResolutionCameraConfig;
 
   private Switch focusModeSwitch;
+
+  private final FrameTimeHelper renderFrameTimeHelper = new FrameTimeHelper();
+  private final FrameTimeHelper cpuImageFrameTimeHelper = new FrameTimeHelper();
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -159,6 +164,9 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
     surfaceView.setRenderer(this);
     surfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
     surfaceView.setWillNotDraw(false);
+
+    getLifecycle().addObserver(renderFrameTimeHelper);
+    getLifecycle().addObserver(cpuImageFrameTimeHelper);
 
     installRequested = false;
   }
@@ -305,6 +313,8 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
       session.setCameraTextureName(cpuImageRenderer.getTextureId());
       final Frame frame = session.update();
 
+      renderFrameTimeHelper.nextFrame();
+
       switch (imageAcquisitionPath) {
         case CPU_DIRECT_ACCESS:
           renderProcessedImageCpuDirectAccess(frame);
@@ -349,6 +359,8 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
             cpuImageDisplayRotationHelper.getViewportAspectRatio(),
             cpuImageDisplayRotationHelper.getCameraToDisplayRotation());
 
+        // Measure frame time since last successful execution of drawWithCpuImage().
+        cpuImageFrameTimeHelper.nextFrame();
       } catch (NotYetAvailableException e) {
         // This exception will routinely happen during startup, and is expected. cpuImageRenderer
         // will handle null image properly, and will just render the background.
@@ -357,7 +369,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
     }
   }
 
-  /* Demonstrates how to access a CPU image using a download from GPU */
+  /* Demonstrates how to access a CPU image using a download from GPU. */
   private void renderProcessedImageGpuDownload(Frame frame) {
     // If there is a frame being requested previously, acquire the pixels and process it.
     if (gpuDownloadFrameBufferIndex >= 0) {
@@ -383,6 +395,8 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
           cpuImageDisplayRotationHelper.getViewportAspectRatio(),
           cpuImageDisplayRotationHelper.getCameraToDisplayRotation());
 
+      // Measure frame time since last successful execution of drawWithCpuImage().
+      cpuImageFrameTimeHelper.nextFrame();
     } else {
       cpuImageRenderer.drawWithoutCpuImage();
     }
@@ -395,7 +409,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
   public void onLowResolutionRadioButtonClicked(View view) {
     boolean checked = ((RadioButton) view).isChecked();
     if (checked && !isLowResolutionSelected) {
-      // Display low resolution
+      // Display low resolution.
       onCameraConfigChanged(cpuLowResolutionCameraConfig);
       isLowResolutionSelected = true;
     }
@@ -404,7 +418,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
   public void onHighResolutionRadioButtonClicked(View view) {
     boolean checked = ((RadioButton) view).isChecked();
     if (checked && isLowResolutionSelected) {
-      // Display high resolution
+      // Display high resolution.
       onCameraConfigChanged(cpuHighResolutionCameraConfig);
       isLowResolutionSelected = false;
     }
@@ -523,6 +537,10 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
         imageSize[0],
         imageSize[1],
         fovX,
-        fovY);
+        fovY,
+        renderFrameTimeHelper.getSmoothedFrameTime(),
+        renderFrameTimeHelper.getSmoothedFrameRate(),
+        cpuImageFrameTimeHelper.getSmoothedFrameTime(),
+        cpuImageFrameTimeHelper.getSmoothedFrameRate());
   }
 }

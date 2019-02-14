@@ -377,7 +377,7 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
       // Handle user input.
       handleTap(frame, cameraTrackingState);
 
-      // Draw background.
+      // If frame is ready, render camera preview image to the GL surface.
       backgroundRenderer.draw(frame);
 
       // If not tracking, don't draw 3d objects.
@@ -390,12 +390,11 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
       camera.getProjectionMatrix(projectionMatrix, 0, 0.1f, 100.0f);
 
       // Visualize tracked points.
-      PointCloud pointCloud = frame.acquirePointCloud();
-      pointCloudRenderer.update(pointCloud);
-      pointCloudRenderer.draw(viewMatrix, projectionMatrix);
-
-      // Application is responsible for releasing the point cloud resources after using it.
-      pointCloud.release();
+      // Use try-with-resources to automatically release the point cloud.
+      try (PointCloud pointCloud = frame.acquirePointCloud()) {
+        pointCloudRenderer.update(pointCloud);
+        pointCloudRenderer.draw(viewMatrix, projectionMatrix);
+      }
 
       // Visualize planes.
       planeRenderer.drawPlanes(

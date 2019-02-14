@@ -18,7 +18,7 @@ import android.content.Context;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
-import android.view.Surface;
+import com.google.ar.core.Coordinates2d;
 import com.google.ar.core.Frame;
 import com.google.ar.core.Session;
 import com.google.ar.core.examples.java.common.rendering.ShaderUtil;
@@ -36,14 +36,13 @@ import javax.microedition.khronos.opengles.GL10;
 public class CpuImageRenderer {
   private static final String TAG = CpuImageRenderer.class.getSimpleName();
 
-  private static final int COORDS_PER_VERTEX = 3;
+  private static final int COORDS_PER_VERTEX = 2;
   private static final int TEXCOORDS_PER_VERTEX = 2;
   private static final int FLOAT_SIZE = 4;
 
-  private FloatBuffer quadVertices;
-  private FloatBuffer quadTexCoord;
-  private FloatBuffer quadTexCoordTransformed;
-  private FloatBuffer quadImgCoordTransformed;
+  private FloatBuffer quadCoords;
+  private FloatBuffer quadTexCoords;
+  private FloatBuffer quadImgCoords;
 
   private int quadProgram;
 
@@ -90,28 +89,21 @@ public class CpuImageRenderer {
     GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
 
     int numVertices = QUAD_COORDS.length / COORDS_PER_VERTEX;
-    ByteBuffer bbVertices = ByteBuffer.allocateDirect(QUAD_COORDS.length * FLOAT_SIZE);
-    bbVertices.order(ByteOrder.nativeOrder());
-    quadVertices = bbVertices.asFloatBuffer();
-    quadVertices.put(QUAD_COORDS);
-    quadVertices.position(0);
+    ByteBuffer bbCoords = ByteBuffer.allocateDirect(QUAD_COORDS.length * FLOAT_SIZE);
+    bbCoords.order(ByteOrder.nativeOrder());
+    quadCoords = bbCoords.asFloatBuffer();
+    quadCoords.put(QUAD_COORDS);
+    quadCoords.position(0);
 
     ByteBuffer bbTexCoords =
         ByteBuffer.allocateDirect(numVertices * TEXCOORDS_PER_VERTEX * FLOAT_SIZE);
     bbTexCoords.order(ByteOrder.nativeOrder());
-    quadTexCoord = bbTexCoords.asFloatBuffer();
-    quadTexCoord.put(QUAD_TEXCOORDS);
-    quadTexCoord.position(0);
+    quadTexCoords = bbTexCoords.asFloatBuffer();
 
-    ByteBuffer bbTexCoordsTransformed =
+    ByteBuffer bbImgCoords =
         ByteBuffer.allocateDirect(numVertices * TEXCOORDS_PER_VERTEX * FLOAT_SIZE);
-    bbTexCoordsTransformed.order(ByteOrder.nativeOrder());
-    quadTexCoordTransformed = bbTexCoordsTransformed.asFloatBuffer();
-
-    ByteBuffer bbImgCoordsTransformed =
-        ByteBuffer.allocateDirect(numVertices * TEXCOORDS_PER_VERTEX * FLOAT_SIZE);
-    bbImgCoordsTransformed.order(ByteOrder.nativeOrder());
-    quadImgCoordTransformed = bbImgCoordsTransformed.asFloatBuffer();
+    bbImgCoords.order(ByteOrder.nativeOrder());
+    quadImgCoords = bbImgCoords.asFloatBuffer();
 
     int vertexShader =
         ShaderUtil.loadGLShader(
@@ -200,8 +192,7 @@ public class CpuImageRenderer {
           processedImageBytesGrayscale);
     }
 
-    updateTextureCoordinates(
-        frame, imageWidth, imageHeight, screenAspectRatio, cameraToDisplayRotation);
+    updateTextureCoordinates(frame);
 
     // Rest of the draw code is shared between the two functions.
     drawWithoutCpuImage();
@@ -224,28 +215,18 @@ public class CpuImageRenderer {
 
     // Set the vertex positions.
     GLES20.glVertexAttribPointer(
-        quadPositionAttrib, COORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, quadVertices);
+        quadPositionAttrib, COORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, quadCoords);
 
     // Set splitter position.
     GLES20.glUniform1f(quadSplitterUniform, splitterPosition);
 
     // Set the GPU image texture coordinates.
     GLES20.glVertexAttribPointer(
-        quadTexCoordAttrib,
-        TEXCOORDS_PER_VERTEX,
-        GLES20.GL_FLOAT,
-        false,
-        0,
-        quadTexCoordTransformed);
+        quadTexCoordAttrib, TEXCOORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, quadTexCoords);
 
     // Set the CPU image texture coordinates.
     GLES20.glVertexAttribPointer(
-        quadImgCoordAttrib,
-        TEXCOORDS_PER_VERTEX,
-        GLES20.GL_FLOAT,
-        false,
-        0,
-        quadImgCoordTransformed);
+        quadImgCoordAttrib, TEXCOORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, quadImgCoords);
 
     // Enable vertex arrays
     GLES20.glEnableVertexAttribArray(quadPositionAttrib);
@@ -266,67 +247,28 @@ public class CpuImageRenderer {
     ShaderUtil.checkGLError(TAG, "Draw");
   }
 
-  private void updateTextureCoordinates(
-      Frame frame,
-      int imageWidth,
-      int imageHeight,
-      float screenAspectRatio,
-      int cameraToDisplayRotation) {
+  private void updateTextureCoordinates(Frame frame) {
     if (frame == null) {
       return;
     }
 
-    // Crop the CPU image to fit the screen aspect ratio.
-    float imageAspectRatio = (float) imageWidth / imageHeight;
-    float croppedWidth = 0.f;
-    float croppedHeight = 0.f;
-    if (screenAspectRatio < imageAspectRatio) {
-      croppedWidth = imageHeight * screenAspectRatio;
-      croppedHeight = imageHeight;
-    } else {
-      croppedWidth = imageWidth;
-      croppedHeight = imageWidth / screenAspectRatio;
-    }
-
-    float u = (imageWidth - croppedWidth) / imageWidth / 2.f;
-    float v = (imageHeight - croppedHeight) / imageHeight / 2.f;
-
-    float[] texCoords;
-    switch (cameraToDisplayRotation) {
-      case Surface.ROTATION_90:
-        texCoords = new float[] {1 - u, 1 - v, u, 1 - v, 1 - u, v, u, v};
-        break;
-      case Surface.ROTATION_180:
-        texCoords = new float[] {1 - u, v, 1 - u, 1 - v, u, v, u, 1 - v};
-        break;
-      case Surface.ROTATION_270:
-        texCoords = new float[] {u, v, 1 - u, v, u, 1 - v, 1 - u, 1 - v};
-        break;
-      case Surface.ROTATION_0:
-
-      default:
-        texCoords = new float[] {u, 1 - v, u, v, 1 - u, 1 - v, 1 - u, v};
-        break;
-    }
-
-    // Save CPU image texture coordinates.
-    quadImgCoordTransformed.put(texCoords);
-    quadImgCoordTransformed.position(0);
+    // Update GPU image texture coordinates.
+    frame.transformCoordinates2d(
+        Coordinates2d.OPENGL_NORMALIZED_DEVICE_COORDINATES,
+        quadCoords,
+        Coordinates2d.IMAGE_NORMALIZED,
+        quadImgCoords);
 
     // Update GPU image texture coordinates.
-    frame.transformDisplayUvCoords(quadTexCoord, quadTexCoordTransformed);
+    frame.transformCoordinates2d(
+        Coordinates2d.OPENGL_NORMALIZED_DEVICE_COORDINATES,
+        quadCoords,
+        Coordinates2d.TEXTURE_NORMALIZED,
+        quadTexCoords);
   }
 
   private static final float[] QUAD_COORDS =
       new float[] {
-        -1.0f, -1.0f, 0.0f, -1.0f, +1.0f, 0.0f, +1.0f, -1.0f, 0.0f, +1.0f, +1.0f, 0.0f,
-      };
-
-  private static final float[] QUAD_TEXCOORDS =
-      new float[] {
-        0.0f, 1.0f,
-        0.0f, 0.0f,
-        1.0f, 1.0f,
-        1.0f, 0.0f,
+        -1.0f, -1.0f, -1.0f, +1.0f, +1.0f, -1.0f, +1.0f, +1.0f,
       };
 }

@@ -18,8 +18,9 @@ import android.content.Context;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.support.annotation.NonNull;
+import com.google.ar.core.Coordinates2d;
 import com.google.ar.core.Frame;
-import com.google.ar.core.Session;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -36,21 +37,18 @@ public class BackgroundRenderer {
   private static final String VERTEX_SHADER_NAME = "shaders/screenquad.vert";
   private static final String FRAGMENT_SHADER_NAME = "shaders/screenquad.frag";
 
-  private static final int COORDS_PER_VERTEX = 3;
+  private static final int COORDS_PER_VERTEX = 2;
   private static final int TEXCOORDS_PER_VERTEX = 2;
   private static final int FLOAT_SIZE = 4;
 
-  private FloatBuffer quadVertices;
-  private FloatBuffer quadTexCoord;
-  private FloatBuffer quadTexCoordTransformed;
+  private FloatBuffer quadCoords;
+  private FloatBuffer quadTexCoords;
 
   private int quadProgram;
 
   private int quadPositionParam;
   private int quadTexCoordParam;
   private int textureId = -1;
-
-  public BackgroundRenderer() {}
 
   public int getTextureId() {
     return textureId;
@@ -72,31 +70,24 @@ public class BackgroundRenderer {
     GLES20.glBindTexture(textureTarget, textureId);
     GLES20.glTexParameteri(textureTarget, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
     GLES20.glTexParameteri(textureTarget, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
-    GLES20.glTexParameteri(textureTarget, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
-    GLES20.glTexParameteri(textureTarget, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
+    GLES20.glTexParameteri(textureTarget, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+    GLES20.glTexParameteri(textureTarget, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
 
     int numVertices = 4;
     if (numVertices != QUAD_COORDS.length / COORDS_PER_VERTEX) {
       throw new RuntimeException("Unexpected number of vertices in BackgroundRenderer.");
     }
 
-    ByteBuffer bbVertices = ByteBuffer.allocateDirect(QUAD_COORDS.length * FLOAT_SIZE);
-    bbVertices.order(ByteOrder.nativeOrder());
-    quadVertices = bbVertices.asFloatBuffer();
-    quadVertices.put(QUAD_COORDS);
-    quadVertices.position(0);
-
-    ByteBuffer bbTexCoords =
-        ByteBuffer.allocateDirect(numVertices * TEXCOORDS_PER_VERTEX * FLOAT_SIZE);
-    bbTexCoords.order(ByteOrder.nativeOrder());
-    quadTexCoord = bbTexCoords.asFloatBuffer();
-    quadTexCoord.put(QUAD_TEXCOORDS);
-    quadTexCoord.position(0);
+    ByteBuffer bbCoords = ByteBuffer.allocateDirect(QUAD_COORDS.length * FLOAT_SIZE);
+    bbCoords.order(ByteOrder.nativeOrder());
+    quadCoords = bbCoords.asFloatBuffer();
+    quadCoords.put(QUAD_COORDS);
+    quadCoords.position(0);
 
     ByteBuffer bbTexCoordsTransformed =
         ByteBuffer.allocateDirect(numVertices * TEXCOORDS_PER_VERTEX * FLOAT_SIZE);
     bbTexCoordsTransformed.order(ByteOrder.nativeOrder());
-    quadTexCoordTransformed = bbTexCoordsTransformed.asFloatBuffer();
+    quadTexCoords = bbTexCoordsTransformed.asFloatBuffer();
 
     int vertexShader =
         ShaderUtil.loadGLShader(TAG, context, GLES20.GL_VERTEX_SHADER, VERTEX_SHADER_NAME);
@@ -124,23 +115,85 @@ public class BackgroundRenderer {
    * accurately follow static physical objects. This must be called <b>before</b> drawing virtual
    * content.
    *
-   * @param frame The last {@code Frame} returned by {@link Session#update()} or null when ARCore is
-   *     paused. See shared_camera_java sample details.
+   * @param frame The current {@code Frame} as returned by {@link Session#update()}.
    */
-  public void draw(Frame frame) {
-    if (frame != null) {
-      // If display rotation changed (also includes view size change), we need to re-query the uv
-      // coordinates for the screen rect, as they may have changed as well.
-      if (frame.hasDisplayGeometryChanged()) {
-        frame.transformDisplayUvCoords(quadTexCoord, quadTexCoordTransformed);
-      }
-
-      if (frame.getTimestamp() == 0) {
-        // Suppress rendering if the camera did not produce the first frame yet. This is to avoid
-        // drawing possible leftover data from previous sessions if the texture is reused.
-        return;
-      }
+  public void draw(@NonNull Frame frame) {
+    // If display rotation changed (also includes view size change), we need to re-query the uv
+    // coordinates for the screen rect, as they may have changed as well.
+    if (frame.hasDisplayGeometryChanged()) {
+      frame.transformCoordinates2d(
+          Coordinates2d.OPENGL_NORMALIZED_DEVICE_COORDINATES,
+          quadCoords,
+          Coordinates2d.TEXTURE_NORMALIZED,
+          quadTexCoords);
     }
+
+    if (frame.getTimestamp() == 0) {
+      // Suppress rendering if the camera did not produce the first frame yet. This is to avoid
+      // drawing possible leftover data from previous sessions if the texture is reused.
+      return;
+    }
+
+    draw();
+  }
+
+  /**
+   * Draws the camera image using the currently configured {@link BackgroundRenderer#quadTexCoords}
+   * image texture coordinates.
+   *
+   * <p>The image will be center cropped if the camera sensor aspect ratio does not match the screen
+   * aspect ratio, which matches the cropping behavior of {@link
+   * Frame#transformCoordinates2d(Coordinates2d, float[], Coordinates2d, float[])}.
+   */
+  public void draw(
+      int imageWidth, int imageHeight, float screenAspectRatio, int cameraToDisplayRotation) {
+    // Crop the camera image to fit the screen aspect ratio.
+    float imageAspectRatio = (float) imageWidth / imageHeight;
+    float croppedWidth;
+    float croppedHeight;
+    if (screenAspectRatio < imageAspectRatio) {
+      croppedWidth = imageHeight * screenAspectRatio;
+      croppedHeight = imageHeight;
+    } else {
+      croppedWidth = imageWidth;
+      croppedHeight = imageWidth / screenAspectRatio;
+    }
+
+    float u = (imageWidth - croppedWidth) / imageWidth * 0.5f;
+    float v = (imageHeight - croppedHeight) / imageHeight * 0.5f;
+
+    float[] texCoordTransformed;
+    switch (cameraToDisplayRotation) {
+      case 90:
+        texCoordTransformed = new float[] {1 - u, 1 - v, u, 1 - v, 1 - u, v, u, v};
+        break;
+      case 180:
+        texCoordTransformed = new float[] {1 - u, v, 1 - u, 1 - v, u, v, u, 1 - v};
+        break;
+      case 270:
+        texCoordTransformed = new float[] {u, v, 1 - u, v, u, 1 - v, 1 - u, 1 - v};
+        break;
+      case 0:
+        texCoordTransformed = new float[] {u, 1 - v, u, v, 1 - u, 1 - v, 1 - u, v};
+        break;
+      default:
+        throw new IllegalArgumentException("Unhandled rotation: " + cameraToDisplayRotation);
+    }
+
+    // Write image texture coordinates.
+    quadTexCoords.position(0);
+    quadTexCoords.put(texCoordTransformed);
+
+    draw();
+  }
+
+  /**
+   * Draws the camera background image using the currently configured {@link
+   * BackgroundRenderer#quadTexCoords} image texture coordinates.
+   */
+  private void draw() {
+    // Ensure position is rewound before use.
+    quadTexCoords.position(0);
 
     // No need to test or write depth, the screen quad has arbitrary depth, and is expected
     // to be drawn first.
@@ -153,16 +206,11 @@ public class BackgroundRenderer {
 
     // Set the vertex positions.
     GLES20.glVertexAttribPointer(
-        quadPositionParam, COORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, quadVertices);
+        quadPositionParam, COORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, quadCoords);
 
     // Set the texture coordinates.
     GLES20.glVertexAttribPointer(
-        quadTexCoordParam,
-        TEXCOORDS_PER_VERTEX,
-        GLES20.GL_FLOAT,
-        false,
-        0,
-        quadTexCoordTransformed);
+        quadTexCoordParam, TEXCOORDS_PER_VERTEX, GLES20.GL_FLOAT, false, 0, quadTexCoords);
 
     // Enable vertex arrays
     GLES20.glEnableVertexAttribArray(quadPositionParam);
@@ -178,19 +226,11 @@ public class BackgroundRenderer {
     GLES20.glDepthMask(true);
     GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 
-    ShaderUtil.checkGLError(TAG, "Draw");
+    ShaderUtil.checkGLError(TAG, "BackgroundRendererDraw");
   }
 
   private static final float[] QUAD_COORDS =
       new float[] {
-        -1.0f, -1.0f, 0.0f, -1.0f, +1.0f, 0.0f, +1.0f, -1.0f, 0.0f, +1.0f, +1.0f, 0.0f,
-      };
-
-  private static final float[] QUAD_TEXCOORDS =
-      new float[] {
-        0.0f, 1.0f,
-        0.0f, 0.0f,
-        1.0f, 1.0f,
-        1.0f, 0.0f,
+        -1.0f, -1.0f, -1.0f, +1.0f, +1.0f, -1.0f, +1.0f, +1.0f,
       };
 }
