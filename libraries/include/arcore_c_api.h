@@ -526,7 +526,7 @@ inline ArAugmentedFace *ArAsFace(ArTrackable *trackable) {
 
 #if defined(__GNUC__) && !defined(AR_DEPRECATED_SUPPRESS)
 #define AR_DEPRECATED(_deprecation_string) \
-  __attribute__((deprecated(_deprecation_string)));
+  __attribute__((deprecated(_deprecation_string)))
 #else
 #define AR_DEPRECATED(_deprecation_string)
 #endif
@@ -858,7 +858,8 @@ AR_DEFINE_ENUM(ArLightEstimationMode){
     AR_LIGHT_ESTIMATION_MODE_DISABLED = 0,
     /// Lighting estimation is enabled, generating a single-value intensity
     /// estimate.
-    AR_LIGHT_ESTIMATION_MODE_AMBIENT_INTENSITY = 1};
+    AR_LIGHT_ESTIMATION_MODE_AMBIENT_INTENSITY = 1,
+};
 
 /// @ingroup config
 /// Select the behavior of the plane detection subsystem.
@@ -901,9 +902,9 @@ AR_DEFINE_ENUM(ArAugmentedFaceMode){
 };
 
 /// @ingroup augmented_face
-/// Defines face regions for which the pose can be queried. Left and right
-/// are defined relative to the person that the mesh belongs to. To retrieve the
-/// center pose use #ArAugmentedFace_getCenterPose().
+/// Defines face regions to query the pose for. Left and right are defined
+/// relative to the person that the mesh belongs to. To retrieve the center pose
+/// use #ArAugmentedFace_getCenterPose().
 AR_DEFINE_ENUM(ArAugmentedFaceRegionType){
     /// The region at the tip of the nose.
     AR_AUGMENTED_FACE_REGION_NOSE_TIP = 0,
@@ -914,37 +915,11 @@ AR_DEFINE_ENUM(ArAugmentedFaceRegionType){
 };
 
 /// @ingroup config
-/// Selects the desired behavior of the camera focus subsystem. Currently, the
-/// default focus mode is AR_FOCUS_MODE_FIXED, but this default might change in
-/// the future. Note, on devices where ARCore does not support Auto Focus due to
-/// the use of a fixed focus camera, setting AR_FOCUS_MODE_AUTO will be ignored.
-/// See the ARCore Supported Devices
-/// (https://developers.google.com/ar/discover/supported-devices) page for a
-/// list of affected devices.
-///
-/// For optimal AR tracking performance, use the focus mode provided by the
-/// default session config. While capturing pictures or video, use
-/// AR_FOCUS_MODE_AUTO. For optimal AR tracking, revert to the default focus
-/// mode once auto focus behavior is no longer needed. If your app requires
-/// fixed focus camera, call ArConfig_setFocusMode(…, …, AR_FOCUS_MODE_FIXED)
-/// before enabling the AR session. This will ensure that your app always uses
-/// fixed focus, even if the default camera config focus mode changes in a
-/// future release.
+/// Selects the desired behavior of the camera focus subsystem.
 AR_DEFINE_ENUM(ArFocusMode){/// Focus is fixed.
                             AR_FOCUS_MODE_FIXED = 0,
                             /// Auto-focus is enabled.
                             AR_FOCUS_MODE_AUTO = 1};
-
-/// Describes the direction a camera is facing relative to the device.  Used by
-/// ArCameraConfig_getFacingDirection().
-AR_DEFINE_ENUM(ArCameraConfigFacingDirection){
-    /// Camera looks out the back of the device (away from the user).
-    AR_CAMERA_CONFIG_FACING_DIRECTION_BACK = 0,
-    /// Camera looks out the front of the device (towards the user).  To create
-    /// a session using the front-facing (selfie) camera, include
-    /// #AR_SESSION_FEATURE_FRONT_CAMERA in the feature list passed to
-    /// ArSession_createWithFeatures().
-    AR_CAMERA_CONFIG_FACING_DIRECTION_FRONT = 1};
 
 /// @ingroup plane
 /// Simple summary of the normal vector of a plane, for filtering purposes.
@@ -1005,6 +980,22 @@ AR_DEFINE_ENUM(ArCoordinates2dType){
     AR_COORDINATES_2D_VIEW_NORMALIZED = 8,
 
 };
+
+/// @addtogroup cameraconfig
+/// @{
+
+/// Describes the direction a camera is facing relative to the device.  Used by
+/// ArCameraConfig_getFacingDirection().
+AR_DEFINE_ENUM(ArCameraConfigFacingDirection){
+    /// Camera looks out the back of the device (away from the user).
+    AR_CAMERA_CONFIG_FACING_DIRECTION_BACK = 0,
+    /// Camera looks out the front of the device (towards the user).  To create
+    /// a session using the front-facing (selfie) camera, include
+    /// #AR_SESSION_FEATURE_FRONT_CAMERA in the feature list passed to
+    /// ArSession_createWithFeatures().
+    AR_CAMERA_CONFIG_FACING_DIRECTION_FRONT = 1};
+
+/// @}
 
 #ifdef __cplusplus
 extern "C" {
@@ -1322,7 +1313,21 @@ void ArConfig_setAugmentedFaceMode(const ArSession *session,
                                    ArAugmentedFaceMode augmented_face_mode);
 
 /// Sets the focus mode that should be used. See ::ArFocusMode for available
-/// options.
+/// options. Currently, the default focus mode is AR_FOCUS_MODE_FIXED, but this
+/// default might change in the future. Note, on devices where ARCore does not
+/// support Auto Focus due to the use of a fixed focus camera, setting
+/// AR_FOCUS_MODE_AUTO will be ignored.  See the ARCore Supported Devices
+/// (https://developers.google.com/ar/discover/supported-devices) page for a
+/// list of affected devices.
+///
+/// For optimal AR tracking performance, use the focus mode provided by the
+/// default session config. While capturing pictures or video, use
+/// AR_FOCUS_MODE_AUTO. For optimal AR tracking, revert to the default focus
+/// mode once auto focus behavior is no longer needed. If your app requires
+/// fixed focus camera, call ArConfig_setFocusMode(…, …, AR_FOCUS_MODE_FIXED)
+/// when configuring the AR session. This will ensure that your app always uses
+/// fixed focus, even if the default camera config focus mode changes in a
+/// future release.
 void ArConfig_setFocusMode(const ArSession *session,
                            ArConfig *config,
                            ArFocusMode focus_mode);

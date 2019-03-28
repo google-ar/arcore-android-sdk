@@ -284,6 +284,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
   private void configureSession() {
     Config config = new Config(session);
+    config.setFocusMode(Config.FocusMode.AUTO);
     if (!setupAugmentedImageDatabase(config)) {
       messageSnackbarHelper.showError(this, "Could not setup augmented image database");
     }

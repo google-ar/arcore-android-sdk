@@ -44,8 +44,7 @@ constexpr bool kUseSingleImage = false;
 
 AugmentedImageApplication::AugmentedImageApplication(
     AAssetManager* asset_manager)
-    : asset_manager_(asset_manager) {
-}
+    : asset_manager_(asset_manager) {}
 
 AugmentedImageApplication::~AugmentedImageApplication() {
   if (ar_session_ != nullptr) {
@@ -103,6 +102,7 @@ void AugmentedImageApplication::OnResume(void* env, void* context,
     ArConfig_setAugmentedImageDatabase(ar_session_, ar_config,
                                        ar_augmented_image_database);
 
+    ArConfig_setFocusMode(ar_session_, ar_config, AR_FOCUS_MODE_AUTO);
     CHECK(ArSession_configure(ar_session_, ar_config) == AR_SUCCESS);
 
     ArAugmentedImageDatabase_destroy(ar_augmented_image_database);
