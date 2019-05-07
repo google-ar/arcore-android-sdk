@@ -31,7 +31,16 @@ import com.bumptech.glide.RequestManager;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-/** This is a simple example that shows how to use ARCore AugmentedImage C API. */
+/**
+ * This is a simple example that shows how to use ARCore AugmentedImage C API.
+ *
+ * <p>In this example, we assume all images are static or moving slowly with a large occupation of
+ * the screen. If the target is actively moving, we recommend to check
+ * ArAugmentedImage_getTrackingMethod() and render only when the tracking method equals to
+ * AR_AUGMENTED_IMAGE_TRACKING_METHOD_FULL_TRACKING. See details in <a
+ * href="https://developers.google.com/ar/develop/c/augmented-images/">Recognize and Augment
+ * Images</a>.
+ */
 public class AugmentedImageActivity extends AppCompatActivity
     implements GLSurfaceView.Renderer, DisplayManager.DisplayListener {
   private static final String TAG = AugmentedImageActivity.class.getSimpleName();

@@ -38,7 +38,6 @@ import com.google.ar.core.Camera;
 import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.Session;
-import com.google.ar.core.TrackingState;
 import com.google.ar.core.examples.java.augmentedimage.rendering.AugmentedImageRenderer;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
 import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
@@ -58,7 +57,16 @@ import java.util.Map;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-/** This app extends the HelloAR Java app to include image tracking functionality. */
+/**
+ * This app extends the HelloAR Java app to include image tracking functionality.
+ *
+ * <p>In this example, we assume all images are static or moving slowly with a large occupation of
+ * the screen. If the target is actively moving, we recommend to check
+ * AugmentedImage.getTrackingMethod() and render only when the tracking method equals to
+ * FULL_TRACKING. See details in <a
+ * href="https://developers.google.com/ar/develop/java/augmented-images/">Recognize and Augment
+ * Images</a>.
+ */
 public class AugmentedImageActivity extends AppCompatActivity implements GLSurfaceView.Renderer {
   private static final String TAG = AugmentedImageActivity.class.getSimpleName();
 
@@ -256,11 +264,6 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
       // If frame is ready, render camera preview image to the GL surface.
       backgroundRenderer.draw(frame);
-
-      // If not tracking, don't draw 3d objects.
-      if (camera.getTrackingState() == TrackingState.PAUSED) {
-        return;
-      }
 
       // Get projection matrix.
       float[] projmtx = new float[16];

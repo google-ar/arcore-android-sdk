@@ -226,11 +226,6 @@ void AugmentedImageApplication::OnDrawFrame(void* activity) {
 
   background_renderer_.Draw(ar_session_, ar_frame_);
 
-  // If the camera isn't tracking don't bother rendering other objects.
-  if (camera_tracking_state != AR_TRACKING_STATE_TRACKING) {
-    return;
-  }
-
   // Get light estimation value.
   ArLightEstimate* ar_light_estimate;
   ArLightEstimateState ar_light_estimate_state;

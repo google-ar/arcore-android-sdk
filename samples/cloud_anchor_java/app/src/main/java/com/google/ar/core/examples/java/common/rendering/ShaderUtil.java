@@ -33,7 +33,7 @@ public class ShaderUtil {
    */
   public static int loadGLShader(String tag, Context context, int type, String filename)
       throws IOException {
-    String code = readRawTextFileFromAssets(context, filename);
+    String code = readShaderFileFromAssets(context, filename);
     int shader = GLES20.glCreateShader(type);
     GLES20.glShaderSource(shader, code);
     GLES20.glCompileShader(shader);
@@ -76,19 +76,29 @@ public class ShaderUtil {
   }
 
   /**
-   * Converts a raw text file into a string.
+   * Converts a raw shader file into a string.
    *
-   * @param filename The filename of the asset file about to be turned into a shader.
+   * @param filename The filename of the shader file about to be turned into a shader.
    * @return The context of the text file, or null in case of error.
    */
-  private static String readRawTextFileFromAssets(Context context, String filename)
+  private static String readShaderFileFromAssets(Context context, String filename)
       throws IOException {
     try (InputStream inputStream = context.getAssets().open(filename);
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
       StringBuilder sb = new StringBuilder();
       String line;
       while ((line = reader.readLine()) != null) {
-        sb.append(line).append("\n");
+        String[] tokens = line.split(" ", -1);
+        if (tokens[0].equals("#include")) {
+          String includeFilename = tokens[1];
+          includeFilename = includeFilename.replace("\"", "");
+          if (includeFilename.equals(filename)) {
+            throw new IOException("Do not include the calling file.");
+          }
+          sb.append(readShaderFileFromAssets(context, includeFilename));
+        } else {
+          sb.append(line).append("\n");
+        }
       }
       return sb.toString();
     }

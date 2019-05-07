@@ -310,6 +310,10 @@ typedef struct ArImageMetadata_ ArImageMetadata;
 /// Release with ArImage_release().
 typedef struct ArImage_ ArImage;
 
+/// Convenient definition for cubemap image storage where it is a fixed size
+/// array of 6 ArImage.
+typedef ArImage *ArImageCubemap[6];
+
 /// Forward declaring the AImage struct from Android NDK, which is used
 /// in ArImage_getNdkImage().
 typedef struct AImage AImage;
@@ -901,6 +905,18 @@ AR_DEFINE_ENUM(ArAugmentedFaceMode){
     AR_AUGMENTED_FACE_MODE_MESH3D = 2,
 };
 
+/// @ingroup augmented_image
+/// Defines the current tracking mode for an Augmented Image. To retrieve the
+/// tracking mode for an image use #ArAugmentedImage_getTrackingMethod().
+AR_DEFINE_ENUM(ArAugmentedImageTrackingMethod){
+    // The Augmented Image is not currently being tracked.
+    AR_AUGMENTED_IMAGE_TRACKING_METHOD_NOT_TRACKING = 0,
+    // The Augmented Image is currently being tracked using the camera image.
+    AR_AUGMENTED_IMAGE_TRACKING_METHOD_FULL_TRACKING = 1,
+    // The Augmented Image is currently being tracked based on its last known
+    // pose, because it can no longer be tracked using the camera image.
+    AR_AUGMENTED_IMAGE_TRACKING_METHOD_LAST_KNOWN_POSE = 2};
+
 /// @ingroup augmented_face
 /// Defines face regions to query the pose for. Left and right are defined
 /// relative to the person that the mesh belongs to. To retrieve the center pose
@@ -1026,12 +1042,11 @@ extern "C" {
 /// May be called prior to ArSession_create().
 ///
 /// @param[in] env The application's @c JNIEnv object
-/// @param[in] application_context A @c jobject referencing the application's
-///     Android @c Context.
+/// @param[in] context A @c jobject for an Android @c Context.
 /// @param[out] out_availability A pointer to an ArAvailability to receive
 ///     the result.
 void ArCoreApk_checkAvailability(void *env,
-                                 void *application_context,
+                                 void *context,
                                  ArAvailability *out_availability);
 
 /// Initiates installation of ARCore if needed. When your apllication launches
@@ -1144,8 +1159,7 @@ ArStatus ArCoreApk_requestInstallCustom(void *env,
 /// ARCore will require an app restart and might cause Android to kill your app.
 ///
 /// @param[in]  env                 The application's @c JNIEnv object
-/// @param[in]  application_context A @c jobject referencing the application's
-///     Android @c Context
+/// @param[in]  context A @c jobject for an Android @c Context
 /// @param[out] out_session_pointer A pointer to an @c ArSession* to receive
 ///     the address of the newly allocated session.
 /// @return #AR_SUCCESS or any of:
@@ -1166,7 +1180,7 @@ ArStatus ArCoreApk_requestInstallCustom(void *env,
 /// - #AR_UNAVAILABLE_SDK_TOO_OLD if the ARCore SDK that this app was built with
 ///   is too old and no longer supported by the installed ARCore APK.
 ArStatus ArSession_create(void *env,
-                          void *application_context,
+                          void *context,
                           ArSession **out_session_pointer);
 
 /// Creates a new ARCore session requesting additional features.  Prior to
@@ -1183,8 +1197,7 @@ ArStatus ArSession_create(void *env,
 /// ARCore will require an app restart and might cause Android to kill your app.
 ///
 /// @param[in]  env                 The application's @c JNIEnv object
-/// @param[in]  application_context A @c jobject referencing the application's
-///     Android @c Context
+/// @param[in]  context A @c jobject for an Android @c Context
 /// @param[in]  features            The list of requested features, terminated
 ///     by with #AR_SESSION_FEATURE_END_OF_LIST.
 /// @param[out] out_session_pointer A pointer to an @c ArSession* to receive
@@ -1209,7 +1222,7 @@ ArStatus ArSession_create(void *env,
 /// - #AR_UNAVAILABLE_SDK_TOO_OLD if the ARCore SDK that this app was built with
 ///   is too old and no longer supported by the installed ARCore APK.
 ArStatus ArSession_createWithFeatures(void *env,
-                                      void *application_context,
+                                      void *context,
                                       const ArSessionFeature *features,
                                       ArSession **out_session_pointer);
 
@@ -1441,7 +1454,6 @@ ArStatus ArSession_checkSupported(const ArSession *session,
     AR_DEPRECATED(
         "deprecated in release 1.2.0. Please see function documentation");
 
-// TODO(b/122918249): Document here that MESH3D works only on FRONT_CAMERA
 /// Configures the session with the given config.
 /// Note: a session is always initially configured with the default config.
 /// This should be called if a configuration different than default is needed.
@@ -1648,26 +1660,39 @@ ArStatus ArSession_resolveAndAcquireNewCloudAnchor(ArSession *session,
                                                    const char *cloud_anchor_id,
                                                    ArAnchor **out_cloud_anchor);
 
-/// Enumerates the list of supported camera configs on the device.
-/// Can be called at any time.  The supported camera configs will be filled in
-/// the provided list after clearing it.
+/// Gets a list of camera configs supported by the camera being used by the
+/// session.
 ///
-/// The list will always return 3 camera configs. The GPU texture resolutions
-/// are the same in all three configs. Currently, most devices provide GPU
-/// texture resolution of 1920 x 1080 but this may vary with device
-/// capabilities. The CPU image resolutions returned are VGA, a middle
-/// resolution, and a large resolution matching the GPU texture. The middle
-/// resolution will often be 1280 x 720, but may vary with device capabilities.
+/// Can be called at any time. The provided list populated with the camera
+/// configs supported by the configured session and camera.
 ///
-/// Note: Prior to ARCore 1.6 the middle CPU image resolution was guaranteed to
-/// be 1280 x 720 on all devices.
+/// Each config will contain a different CPU resolution. The GPU texture
+/// resolutions will be the same in all configs. Most devices provide a GPU
+/// texture resolution of 1920 x 1080, but the actual resolution will vary with
+/// device capabilities.
+///
+/// When the session camera is a back-facing camera:
+/// - The list will always contain three camera configs.
+/// - The CPU image resolutions returned will be VGA, a middle resolution, and a
+///   large resolution matching the GPU texture resolution. The middle
+///   resolution is typically 1280 x 720, but the actual resolution will vary
+///   with device capabilities.
+///
+/// When the session camera is front-facing (selfie) camera, the list will
+/// contain at least one supported camera config.
+///
+/// Notes:
+/// - Prior to ARCore SDK 1.6, the middle CPU image resolution was guaranteed to
+///   be 1280 x 720 on all devices.
+/// - In ARCore SDK 1.7 and 1.8, when the session camera was a front-facing
+///   (selfie) camera, the list contained three identical camera configs.
 ///
 /// @param[in]    session          The ARCore session
 /// @param[inout] list             The list to fill. This list must have already
 ///      been allocated with ArCameraConfigList_create().  The list is cleared
 ///      to remove any existing elements.  Once it is no longer needed, the list
-///      must be destroyed using ArCameraConfigList_destroy to release allocated
-///      memory.
+///      must be destroyed using ArCameraConfigList_destroy() to release
+///      allocated memory.
 void ArSession_getSupportedCameraConfigs(const ArSession *session,
                                          ArCameraConfigList *list);
 
@@ -2721,6 +2746,12 @@ void ArAugmentedImage_getIndex(const ArSession *session,
 void ArAugmentedImage_acquireName(const ArSession *session,
                                   const ArAugmentedImage *augmented_image,
                                   char **out_augmented_image_name);
+
+/// Returns the current method being used to track this Augmented Image.
+void ArAugmentedImage_getTrackingMethod(
+    const ArSession *session,
+    const ArAugmentedImage *image,
+    ArAugmentedImageTrackingMethod *out_tracking_method);
 
 /// @}
 
