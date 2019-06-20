@@ -27,7 +27,7 @@ android {
 
 dependencies {
     // ARCore library
-    implementation 'com.google.ar:core:1.9.0'
+    implementation 'com.google.ar:core:1.10.0'
 
     // Obj - a simple Wavefront OBJ file loader
     // https://github.com/javagl/Obj
