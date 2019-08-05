@@ -36,9 +36,8 @@ thereof.
 
 ## User privacy requirements
 
-You must disclose the use of ARCore and how it collects and processes data,
-prominently in your application, easily accessible to users. You can do this by
-adding the following text on your main menu or notice screen: "This application
-runs on [ARCore](//play.google.com/store/apps/details?id=com.google.ar.core),
-which is provided by Google LLC and governed by the
-[Google Privacy Policy](//policies.google.com/privacy)".
+You must disclose the use of Google Play Services for AR (ARCore) and how it
+collects and processes data, prominently in your application, easily accessible
+to users. You can do this by adding the following text on your main menu or
+notice screen: "This application runs on [Google Play Services for AR](//play.google.com/store/apps/details?id=com.google.ar.core) (ARCore),
+which is provided by Google LLC and governed by the [Google Privacy Policy](//policies.google.com/privacy)".
