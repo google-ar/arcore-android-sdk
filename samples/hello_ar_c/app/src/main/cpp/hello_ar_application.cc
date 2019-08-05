@@ -25,21 +25,8 @@
 namespace hello_ar {
 namespace {
 constexpr size_t kMaxNumberOfAndroidsToRender = 20;
-constexpr int32_t kPlaneColorRgbaSize = 16;
 
 const glm::vec3 kWhite = {255, 255, 255};
-
-constexpr std::array<uint32_t, kPlaneColorRgbaSize> kPlaneColorRgba = {
-    {0xFFFFFFFF, 0xF44336FF, 0xE91E63FF, 0x9C27B0FF, 0x673AB7FF, 0x3F51B5FF,
-     0x2196F3FF, 0x03A9F4FF, 0x00BCD4FF, 0x009688FF, 0x4CAF50FF, 0x8BC34AFF,
-     0xCDDC39FF, 0xFFEB3BFF, 0xFFC107FF, 0xFF9800FF}};
-
-inline glm::vec3 GetRandomPlaneColor() {
-  const int32_t colorRgba = kPlaneColorRgba[std::rand() % kPlaneColorRgbaSize];
-  return glm::vec3(((colorRgba >> 24) & 0xff) / 255.0f,
-                   ((colorRgba >> 16) & 0xff) / 255.0f,
-                   ((colorRgba >> 8) & 0xff) / 255.0f);
-}
 }  // namespace
 
 HelloArApplication::HelloArApplication(AAssetManager* asset_manager)
@@ -237,27 +224,9 @@ void HelloArApplication::OnDrawFrame() {
     ArTrackable_getTrackingState(ar_session_, ArAsTrackable(ar_plane),
                                  &plane_tracking_state);
     if (plane_tracking_state == AR_TRACKING_STATE_TRACKING) {
-      const auto iter = plane_color_map_.find(ar_plane);
-      glm::vec3 color;
-      if (iter != plane_color_map_.end()) {
-        color = iter->second;
-
-        // If this is an already observed trackable release it so it doesn't
-        // leave an additional reference dangling.
-        ArTrackable_release(ar_trackable);
-      } else {
-        // The first plane is always white.
-        if (!first_plane_has_been_found_) {
-          first_plane_has_been_found_ = true;
-          color = kWhite;
-        } else {
-          color = GetRandomPlaneColor();
-        }
-        plane_color_map_.insert({ar_plane, color});
-      }
-
       plane_renderer_.Draw(projection_mat, view_mat, *ar_session_, *ar_plane,
-                           color);
+                           kWhite);
+      ArTrackable_release(ar_trackable);
     }
   }
 

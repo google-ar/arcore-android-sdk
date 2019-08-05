@@ -65,6 +65,7 @@ import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
 import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
 import com.google.ar.core.examples.java.common.helpers.SnackbarHelper;
 import com.google.ar.core.examples.java.common.helpers.TapHelper;
+import com.google.ar.core.examples.java.common.helpers.TrackingStateHelper;
 import com.google.ar.core.examples.java.common.rendering.BackgroundRenderer;
 import com.google.ar.core.examples.java.common.rendering.ObjectRenderer;
 import com.google.ar.core.examples.java.common.rendering.ObjectRenderer.BlendMode;
@@ -168,6 +169,7 @@ public class SharedCameraActivity extends AppCompatActivity
   // Various helper classes, see hello_ar_java sample to learn more.
   private final SnackbarHelper messageSnackbarHelper = new SnackbarHelper();
   private DisplayRotationHelper displayRotationHelper;
+  private final TrackingStateHelper trackingStateHelper = new TrackingStateHelper(this);
   private TapHelper tapHelper;
 
   // Renderers, see hello_ar_java sample to learn more.
@@ -852,6 +854,9 @@ public class SharedCameraActivity extends AppCompatActivity
 
     // If frame is ready, render camera preview image to the GL surface.
     backgroundRenderer.draw(frame);
+
+    // Keep the screen unlocked while tracking, but allow it to lock when tracking stops.
+    trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
 
     // If not tracking, don't draw 3D objects.
     if (camera.getTrackingState() == TrackingState.PAUSED) {

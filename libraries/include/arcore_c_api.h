@@ -33,8 +33,8 @@
 /// - Reference types are owned by ARCore. A reference is acquired by one of the
 ///   @c acquire methods.  For each call to the @c acquire method, the
 ///   application must call the matching @c release method. Note that even if
-///   last reference is released, ARCore may continue to hold a reference to the
-///   object at ARCore's discretion.
+///   the last reference is released, ARCore may continue to hold a reference to
+///   the object at ARCore's discretion.
 ///
 /// Reference types are further split into:
 ///
@@ -198,6 +198,20 @@ typedef struct ArCameraConfigList_ ArCameraConfigList;
 // object is being just transmitted we define a new typedef.
 //
 typedef void *ArJavaObject;
+
+// Camera config filters and camera config filters objects.
+
+/// @addtogroup cameraconfigfilter
+/// @{
+
+/// A camera config filter struct contains the filters that are desired
+/// by the application. (@ref ownership "value type").
+///
+/// Allocate with ArCameraConfigFilter_create()<br>
+/// Release with ArCameraConfigFilter_destroy()
+typedef struct ArCameraConfigFilter_ ArCameraConfigFilter;
+
+/// @}
 
 /// @addtogroup session
 /// @{
@@ -436,6 +450,8 @@ typedef struct ArAnchorList_ ArAnchorList;
 
 /// @}
 
+// Segment3D.
+
 // Hit result functionality.
 
 /// @addtogroup hit
@@ -515,6 +531,7 @@ inline ArTrackable *ArAsTrackable(ArAugmentedFace *face) {
 inline ArAugmentedFace *ArAsFace(ArTrackable *trackable) {
   return reinterpret_cast<ArAugmentedFace *>(trackable);
 }
+
 #endif  // __cplusplus
 /// @}
 
@@ -1414,6 +1431,23 @@ void ArCameraConfig_getTextureDimensions(const ArSession *session,
                                          int32_t *out_width,
                                          int32_t *out_height);
 
+/// Obtains the minimum and maximum camera capture rate in frames per second
+/// (fps) for the current camera config. Actual capture frame rate will vary
+/// within this range, depending on lighting conditions. Frame rates will
+/// generally be lower under poor lighting conditions to accommodate longer
+/// exposure times.
+void ArCameraConfig_getFpsRange(const ArSession *session,
+                                const ArCameraConfig *camera_config,
+                                int32_t *out_min_fps,
+                                int32_t *out_max_fps);
+
+/// Gets the depth sensor usage settings. out_depth_sensor_usage will contain
+/// one of the values from ArCameraConfigDepthSensorUsage enum.
+
+void ArCameraConfig_getDepthSensorUsage(const ArSession *session,
+                                        const ArCameraConfig *camera_config,
+                                        uint32_t *out_depth_sensor_usage);
+
 /// Obtains the camera id for the given camera config which is obtained from the
 /// list of ArCore compatible camera configs.
 void ArCameraConfig_getCameraId(const ArSession *session,
@@ -1426,6 +1460,95 @@ void ArCameraConfig_getFacingDirection(
     const ArCameraConfig *camera_config,
     ArCameraConfigFacingDirection *out_facing);
 /// @}
+
+// Camera config filters and camera config filters objects.
+
+/// @addtogroup cameraconfigfilter
+/// @{
+
+/// @}
+
+/// @ingroup cameraconfig
+/// Target camera capture frame rates.
+/// The target frame rate represents the maximum or desired frame rate. Actual
+/// camera capture frame rates can be lower than the target frame rate under low
+/// light conditions in order to accommodate longer exposure times.
+AR_DEFINE_ENUM(ArCameraConfigTargetFps){
+    /// Target 30fps camera capture frame rate.
+    ///
+    /// Available on all ARCore supported devices.
+    ///
+    /// Used as a camera filter, via @c ArCameraConfigFilter_setTargetFps().
+    AR_CAMERA_CONFIG_TARGET_FPS_30 = 0x0001,
+
+    /// Target 60fps camera capture frame rate.
+    ///
+    /// Increases power consumption and may increase app memory usage.
+    ///
+    /// See the ARCore Supported Devices
+    /// (https://developers.google.com/ar/discover/supported-devices)
+    /// page for a list of devices that currently support 60fps.
+    ///
+    /// Used as a camera filter, via @c ArCameraConfigFilter_setTargetFps().
+    AR_CAMERA_CONFIG_TARGET_FPS_60 = 0x0002,
+};
+
+/// @ingroup cameraconfig
+/// Depth sensor usage.
+AR_DEFINE_ENUM(ArCameraConfigDepthSensorUsage){
+    /// When used as a camera filter, via
+    /// ArCameraConfigFilter_setDepthSensorUsage(), filters for camera
+    /// configs that require a depth sensor to be present on the device, and
+    /// that will be used by ARCore.
+    ///
+    /// See the ARCore Supported Devices
+    /// (https://developers.google.com/ar/discover/supported-devices)
+    /// page for a list of devices that currently have supported depth sensors.
+    ///
+    /// When returned by ArCameraConfig_getDepthSensorUsage(), indicates
+    /// that a depth sensor is present, and that the camera config will use the
+    /// available depth sensor.
+    AR_CAMERA_CONFIG_DEPTH_SENSOR_USAGE_REQUIRE_AND_USE = 0x0001,
+
+    /// When used as a camera filter, via
+    /// ArCameraConfigFilter_setDepthSensorUsage(), filters for camera configs
+    /// where a depth sensor is not present, or is present but will not be used
+    /// by ARCore.
+    ///
+    /// Most commonly used to filter camera configurations when the app requires
+    /// exclusive access to the depth sensor outside of ARCore, for example to
+    /// support 3D mesh reconstruction. Available on all ARCore supported
+    /// devices.
+    ///
+    /// When returned by ArCameraConfig_getDepthSensorUsage(), indicates that
+    /// the camera config will not use a depth sensor, even if it is present.
+    AR_CAMERA_CONFIG_DEPTH_SENSOR_USAGE_DO_NOT_USE = 0x0002,
+};
+
+// Creates a camera config filters object with default values set for
+// backward compatibility. The caller can update the config filters it
+// wants and then get the matching camera configs.
+void ArCameraConfigFilter_create(const ArSession *session,
+                                 ArCameraConfigFilter **out_filter);
+
+/// Releases memory used by the provided camera config filters object.
+void ArCameraConfigFilter_destroy(ArCameraConfigFilter *filter);
+
+/// Sets the fps filter.
+void ArCameraConfigFilter_setTargetFps(const ArSession *session,
+                                       ArCameraConfigFilter *filter,
+                                       const uint32_t fps_filters);
+
+/// Gets the fps filter state.
+void ArCameraConfigFilter_getTargetFps(const ArSession *session,
+                                       ArCameraConfigFilter *filter,
+                                       uint32_t *out_fps_filters);
+
+/// Sets depth sensor usage filter. Default is to not filter.
+void ArCameraConfigFilter_setDepthSensorUsage(
+    const ArSession *session,
+    ArCameraConfigFilter *filter,
+    uint32_t depth_sensor_usage_filters);
 
 // === ArSession methods ===
 
@@ -1501,7 +1624,7 @@ void ArSession_getConfig(ArSession *session, ArConfig *out_config);
 /// there are open images, ArSession_resume will return AR_ERROR_ILLEGAL_STATE
 /// and the session will not resume.
 ///
-/// @returns #AR_SUCCESS or any of:
+/// @return #AR_SUCCESS or any of:
 /// - #AR_ERROR_FATAL
 /// - #AR_ERROR_CAMERA_PERMISSION_NOT_GRANTED
 /// - #AR_ERROR_CAMERA_NOT_AVAILABLE
@@ -1518,7 +1641,7 @@ ArStatus ArSession_resume(ArSession *session);
 /// Note that ARCore might continue consuming substantial computing resources
 /// for up to 10 seconds after calling this method.
 ///
-/// @returns #AR_SUCCESS or any of:
+/// @return #AR_SUCCESS or any of:
 /// - #AR_ERROR_FATAL
 ArStatus ArSession_pause(ArSession *session);
 
@@ -1702,21 +1825,29 @@ ArStatus ArSession_resolveAndAcquireNewCloudAnchor(ArSession *session,
 ///      to remove any existing elements.  Once it is no longer needed, the list
 ///      must be destroyed using ArCameraConfigList_destroy() to release
 ///      allocated memory.
+/// @deprecated in release 1.11.0. Please use instead: @code
+/// void ArSession_getSupportedCameraConfigsWithFilter(const ArSession* session,
+/// const ArCameraConfigFilter* filter, ArCameraConfigList* list); @endcode
 void ArSession_getSupportedCameraConfigs(const ArSession *session,
-                                         ArCameraConfigList *list);
+                                         ArCameraConfigList *list)
+    AR_DEPRECATED(
+        "deprecated in release 1.11.0. Please see function documentation.");
 
 /// Sets the ArCameraConfig that the ArSession should use.  Can only be called
 /// while the session is paused.  The provided ArCameraConfig must be one of the
-///  configs returned by ArSession_getSupportedCameraConfigs.
+///  configs returned by ArSession_getSupportedCameraConfigsWithFilter.
 ///
 /// The camera config will be applied once the session is resumed.
 /// All previously acquired frame images must be released via ArImage_release
 /// before calling resume(). Failure to do so will cause resume() to return
 /// AR_ERROR_ILLEGAL_STATE error.
 ///
+/// Starting in ARCore 1.12, changing the active camera config will make
+/// existing anchors and trackables fail to regain tracking.
+///
 /// @param[in]    session          The ARCore session
 /// @param[in]    camera_config    The provided ArCameraConfig must be from a
-///     list returned by ArSession_getSupportedCameraConfigs.
+///     list returned by ArSession_getSupportedCameraConfigsWithFilter.
 /// @return #AR_SUCCESS or any of:
 /// - #AR_ERROR_INVALID_ARGUMENT
 /// - #AR_ERROR_SESSION_NOT_PAUSED
@@ -1735,6 +1866,32 @@ ArStatus ArSession_setCameraConfig(const ArSession *session,
 ///      out_camera_config once it is no longer needed.
 void ArSession_getCameraConfig(const ArSession *session,
                                ArCameraConfig *out_camera_config);
+
+/// Enumerates the list of supported camera configs that satisfy the provided
+/// filter settings.
+///
+/// The returned camera configs might vary at runtime depending on device
+/// capabilities. Overly restrictive filtering can result in the returned list
+/// being empty on one or more devices.
+///
+/// Element 0 will contain the camera config that best matches the filter
+/// settings, according to the following priority:
+///
+/// 1. Prefer @c AR_CAMERA_CONFIG_TARGET_FPS_60 over
+///    @c AR_CAMERA_CONFIG_TARGET_FPS_30
+/// 2. Prefer @c AR_CAMERA_CONFIG_DEPTH_SENSOR_USAGE_REQUIRE_AND_USE over
+///    @c AR_CAMERA_CONFIG_DEPTH_SENSOR_USAGE_DO_NOT_USE
+///
+/// No guarantees are made about the order in which the remaining elements are
+/// returned.
+///
+/// Can be called at any time.
+///
+/// @return list of supported camera configs.
+void ArSession_getSupportedCameraConfigsWithFilter(
+    const ArSession *session,
+    const ArCameraConfigFilter *filter,
+    ArCameraConfigList *list);
 
 /// @}
 
@@ -2202,7 +2359,7 @@ ArStatus ArFrame_acquireImageMetadata(const ArSession *session,
 /// Not supported on all devices
 /// (see https://developers.google.com/ar/discover/supported-devices).
 /// Return values:
-/// @returns #AR_SUCCESS or any of:
+/// @return #AR_SUCCESS or any of:
 /// - #AR_ERROR_INVALID_ARGUMENT - one more input arguments are invalid.
 /// - #AR_ERROR_DEADLINE_EXCEEDED - the input frame is not the current frame.
 /// - #AR_ERROR_RESOURCE_EXHAUSTED - the caller app has exceeded maximum number
@@ -2683,6 +2840,8 @@ void ArAnchor_getCloudAnchorState(const ArSession *session,
                                   ArCloudAnchorState *out_state);
 
 /// @}
+
+// === ArSegment3D methods ===
 
 // === ArTrackableList methods ===
 

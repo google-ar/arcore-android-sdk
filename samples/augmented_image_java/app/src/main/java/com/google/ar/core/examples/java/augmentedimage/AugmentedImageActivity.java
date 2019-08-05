@@ -43,6 +43,7 @@ import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
 import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
 import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
 import com.google.ar.core.examples.java.common.helpers.SnackbarHelper;
+import com.google.ar.core.examples.java.common.helpers.TrackingStateHelper;
 import com.google.ar.core.examples.java.common.rendering.BackgroundRenderer;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
@@ -80,6 +81,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
   private Session session;
   private final SnackbarHelper messageSnackbarHelper = new SnackbarHelper();
   private DisplayRotationHelper displayRotationHelper;
+  private final TrackingStateHelper trackingStateHelper = new TrackingStateHelper(this);
 
   private final BackgroundRenderer backgroundRenderer = new BackgroundRenderer();
   private final AugmentedImageRenderer augmentedImageRenderer = new AugmentedImageRenderer();
@@ -261,6 +263,9 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
       // camera framerate.
       Frame frame = session.update();
       Camera camera = frame.getCamera();
+
+      // Keep the screen unlocked while tracking, but allow it to lock when tracking stops.
+      trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
 
       // If frame is ready, render camera preview image to the GL surface.
       backgroundRenderer.draw(frame);

@@ -46,6 +46,7 @@ import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
 import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
 import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
 import com.google.ar.core.examples.java.common.helpers.SnackbarHelper;
+import com.google.ar.core.examples.java.common.helpers.TrackingStateHelper;
 import com.google.ar.core.examples.java.common.rendering.BackgroundRenderer;
 import com.google.ar.core.examples.java.common.rendering.ObjectRenderer;
 import com.google.ar.core.examples.java.common.rendering.ObjectRenderer.BlendMode;
@@ -101,6 +102,7 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
   private GestureDetector gestureDetector;
   private final SnackbarHelper snackbarHelper = new SnackbarHelper();
   private DisplayRotationHelper displayRotationHelper;
+  private final TrackingStateHelper trackingStateHelper = new TrackingStateHelper(this);
   private Button hostButton;
   private Button resolveButton;
   private TextView roomCodeText;
@@ -379,6 +381,9 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
 
       // If frame is ready, render camera preview image to the GL surface.
       backgroundRenderer.draw(frame);
+
+      // Keep the screen unlocked while tracking, but allow it to lock when tracking stops.
+      trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
 
       // If not tracking, don't draw 3d objects.
       if (cameraTrackingState == TrackingState.PAUSED) {

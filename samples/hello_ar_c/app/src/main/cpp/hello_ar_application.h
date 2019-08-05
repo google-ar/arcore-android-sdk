@@ -93,13 +93,6 @@ class HelloArApplication {
 
   std::vector<ColoredAnchor> anchors_;
 
-  // Stores the randomly-selected color each plane is drawn with
-  std::unordered_map<ArPlane*, glm::vec3> plane_color_map_;
-
-  // The first plane is always rendered in white, if this is true then a plane
-  // at some point has been found.
-  bool first_plane_has_been_found_ = false;
-
   PointCloudRenderer point_cloud_renderer_;
   BackgroundRenderer background_renderer_;
   PlaneRenderer plane_renderer_;

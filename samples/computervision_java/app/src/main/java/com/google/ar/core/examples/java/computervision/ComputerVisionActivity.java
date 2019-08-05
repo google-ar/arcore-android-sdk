@@ -24,8 +24,6 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Size;
-import android.view.GestureDetector;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.RadioButton;
@@ -36,6 +34,7 @@ import android.widget.Toast;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
 import com.google.ar.core.CameraConfig;
+import com.google.ar.core.CameraConfigFilter;
 import com.google.ar.core.CameraIntrinsics;
 import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
@@ -43,6 +42,7 @@ import com.google.ar.core.Session;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
 import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
 import com.google.ar.core.examples.java.common.helpers.SnackbarHelper;
+import com.google.ar.core.examples.java.common.helpers.TrackingStateHelper;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
@@ -51,6 +51,7 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.EnumSet;
 import java.util.List;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -87,9 +88,9 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
   private boolean installRequested;
   private final SnackbarHelper messageSnackbarHelper = new SnackbarHelper();
   private CpuImageDisplayRotationHelper cpuImageDisplayRotationHelper;
+  private final TrackingStateHelper trackingStateHelper = new TrackingStateHelper(this);
   private final CpuImageRenderer cpuImageRenderer = new CpuImageRenderer();
   private final EdgeDetector edgeDetector = new EdgeDetector();
-  private GestureDetector gestureDetector;
 
   // This lock prevents changing resolution as the frame is being rendered. ARCore requires all
   // CPU images to be released before changing resolution.
@@ -115,6 +116,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
   private CameraConfig cpuLowResolutionCameraConfig;
   private CameraConfig cpuHighResolutionCameraConfig;
 
+  private Switch cvModeSwitch;
   private Switch focusModeSwitch;
 
   private final FrameTimeHelper renderFrameTimeHelper = new FrameTimeHelper();
@@ -127,35 +129,12 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
     surfaceView = findViewById(R.id.surfaceview);
     cameraIntrinsicsTextView = findViewById(R.id.camera_intrinsics_view);
     surfaceView = findViewById(R.id.surfaceview);
+    cvModeSwitch = (Switch) findViewById(R.id.switch_cv_mode);
+    cvModeSwitch.setOnCheckedChangeListener(this::onCVModeChanged);
     focusModeSwitch = (Switch) findViewById(R.id.switch_focus_mode);
     focusModeSwitch.setOnCheckedChangeListener(this::onFocusModeChanged);
 
     cpuImageDisplayRotationHelper = new CpuImageDisplayRotationHelper(/*context=*/ this);
-
-    gestureDetector =
-        new GestureDetector(
-            this,
-            new GestureDetector.SimpleOnGestureListener() {
-              @Override
-              public boolean onSingleTapUp(MotionEvent e) {
-                float newPosition = (cpuImageRenderer.getSplitterPosition() < 0.5f) ? 1.0f : 0.0f;
-                cpuImageRenderer.setSplitterPosition(newPosition);
-
-                // Display the CPU resolution related UI only when CPU image is being displayed.
-                boolean show = (newPosition < 0.5f);
-                RadioGroup radioGroup = (RadioGroup) findViewById(R.id.radio_camera_configs);
-                radioGroup.setVisibility(show ? View.VISIBLE : View.INVISIBLE);
-                return true;
-              }
-
-              @Override
-              public boolean onDown(MotionEvent e) {
-                return true;
-              }
-            });
-
-    // Setup a touch listener to control the texture splitter position.
-    surfaceView.setOnTouchListener((unusedView, event) -> gestureDetector.onTouchEvent(event));
 
     // Set up renderer.
     surfaceView.setPreserveEGLContextOnPause(true);
@@ -220,6 +199,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
 
     obtainCameraConfigs();
 
+    cvModeSwitch.setChecked(cpuImageRenderer.getSplitterPosition() < 0.5f);
     focusModeSwitch.setChecked(config.getFocusMode() != Config.FocusMode.FIXED);
 
     // Note that order matters - see the note in onPause(), the reverse applies here.
@@ -312,6 +292,10 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
     try {
       session.setCameraTextureName(cpuImageRenderer.getTextureId());
       final Frame frame = session.update();
+      final Camera camera = frame.getCamera();
+
+      // Keep the screen unlocked while tracking, but allow it to lock when tracking stops.
+      trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
 
       renderFrameTimeHelper.nextFrame();
 
@@ -424,6 +408,15 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
     }
   }
 
+  private void onCVModeChanged(CompoundButton unusedButton, boolean isChecked) {
+    cpuImageRenderer.setSplitterPosition(isChecked ? 0.0f : 1.0f);
+
+    // Display the CPU resolution related UI only when CPU image is being displayed.
+    boolean show = (cpuImageRenderer.getSplitterPosition() < 0.5f);
+    RadioGroup radioGroup = (RadioGroup) findViewById(R.id.radio_camera_configs);
+    radioGroup.setVisibility(show ? View.VISIBLE : View.INVISIBLE);
+  }
+
   private void onFocusModeChanged(CompoundButton unusedButton, boolean isChecked) {
     config.setFocusMode(isChecked ? Config.FocusMode.AUTO : Config.FocusMode.FIXED);
     session.configure(config);
@@ -452,9 +445,9 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
       // Let the user know that the camera config is set.
       String toastMessage =
           "Set the camera config with CPU image resolution of "
-              + cameraConfig.getImageSize().getWidth()
-              + "x"
-              + cameraConfig.getImageSize().getHeight()
+              + cameraConfig.getImageSize()
+              + " and fps "
+              + cameraConfig.getFpsRange()
               + ".";
       Toast.makeText(this, toastMessage, Toast.LENGTH_LONG).show();
     }
@@ -465,7 +458,14 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
   private void obtainCameraConfigs() {
     // First obtain the session handle before getting the list of various camera configs.
     if (session != null) {
-      List<CameraConfig> cameraConfigs = session.getSupportedCameraConfigs();
+      // Create filter here with desired fps filters.
+      CameraConfigFilter cameraConfigFilter =
+          new CameraConfigFilter(session)
+              .setTargetFps(
+                  EnumSet.of(
+                      CameraConfig.TargetFps.TARGET_FPS_30, CameraConfig.TargetFps.TARGET_FPS_60));
+      List<CameraConfig> cameraConfigs = session.getSupportedCameraConfigs(cameraConfigFilter);
+      Log.i(TAG, "Size of supported CameraConfigs list is " + cameraConfigs.size());
 
       // Determine the highest and lowest CPU resolutions.
       cpuLowResolutionCameraConfig =

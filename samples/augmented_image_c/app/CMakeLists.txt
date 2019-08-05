@@ -29,9 +29,8 @@ set_target_properties(arcore PROPERTIES IMPORTED_LOCATION
 
 # Import the glm header file from the NDK.
 add_library( glm INTERFACE )
-set_target_properties( glm PROPERTIES
-                       INTERFACE_INCLUDE_DIRECTORIES ${ANDROID_NDK}/sources/third_party/vulkan/src/libs/glm
-)
+set_target_properties( glm PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${GLM_INCLUDE})
+
 # This is the main app library.
 add_library(augmented_image_native SHARED
            src/main/cpp/augmented_image_application.cc

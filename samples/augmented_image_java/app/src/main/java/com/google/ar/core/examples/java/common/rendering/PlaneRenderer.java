@@ -101,7 +101,7 @@ public class PlaneRenderer {
   private final float[] modelMatrix = new float[16];
   private final float[] modelViewMatrix = new float[16];
   private final float[] modelViewProjectionMatrix = new float[16];
-  private final float[] planeColor = new float[4];
+  private final float[] planeColor = new float[] {1f, 1f, 1f, 1f};
   private final float[] planeAngleUvMatrix =
       new float[4]; // 2x2 rotation matrix applied to uv coords.
 
@@ -374,9 +374,7 @@ public class PlaneRenderer {
         planeIndexMap.put(plane, planeIndex);
       }
 
-      // Set plane color. Computed deterministically from the Plane index.
-      int colorIndex = planeIndex % PLANE_COLORS_RGBA.length;
-      colorRgbaToFloat(planeColor, PLANE_COLORS_RGBA[colorIndex]);
+      // Set plane color.
       GLES20.glUniform4fv(lineColorUniform, 1, planeColor, 0);
       GLES20.glUniform4fv(dotColorUniform, 1, planeColor, 0);
 
@@ -418,30 +416,4 @@ public class PlaneRenderer {
         + (cameraY - planePose.ty()) * normal[1]
         + (cameraZ - planePose.tz()) * normal[2];
   }
-
-  private static void colorRgbaToFloat(float[] planeColor, int colorRgba) {
-    planeColor[0] = ((float) ((colorRgba >> 24) & 0xff)) / 255.0f;
-    planeColor[1] = ((float) ((colorRgba >> 16) & 0xff)) / 255.0f;
-    planeColor[2] = ((float) ((colorRgba >> 8) & 0xff)) / 255.0f;
-    planeColor[3] = ((float) ((colorRgba >> 0) & 0xff)) / 255.0f;
-  }
-
-  private static final int[] PLANE_COLORS_RGBA = {
-    0xFFFFFFFF,
-    0xF44336FF,
-    0xE91E63FF,
-    0x9C27B0FF,
-    0x673AB7FF,
-    0x3F51B5FF,
-    0x2196F3FF,
-    0x03A9F4FF,
-    0x00BCD4FF,
-    0x009688FF,
-    0x4CAF50FF,
-    0x8BC34AFF,
-    0xCDDC39FF,
-    0xFFEB3BFF,
-    0xFFC107FF,
-    0xFF9800FF,
-  };
 }

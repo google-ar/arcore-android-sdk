@@ -254,7 +254,14 @@ void ComputerVisionApplication::obtainCameraConfigs() {
   ArCameraConfigList* all_camera_configs = nullptr;
   int32_t num_configs = 0;
   ArCameraConfigList_create(ar_session_, &all_camera_configs);
-  ArSession_getSupportedCameraConfigs(ar_session_, all_camera_configs);
+  // Create filter first to get both 30 and 60 fps.
+  ArCameraConfigFilter* camera_config_filter = nullptr;
+  ArCameraConfigFilter_create(ar_session_, &camera_config_filter);
+  ArCameraConfigFilter_setTargetFps(
+      ar_session_, camera_config_filter,
+      AR_CAMERA_CONFIG_TARGET_FPS_30 | AR_CAMERA_CONFIG_TARGET_FPS_60);
+  ArSession_getSupportedCameraConfigsWithFilter(
+      ar_session_, camera_config_filter, all_camera_configs);
   ArCameraConfigList_getSize(ar_session_, all_camera_configs, &num_configs);
 
   if (num_configs < 1) {
