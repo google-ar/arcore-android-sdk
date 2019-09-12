@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc. All Rights Reserved.
+ * Copyright 2019 Google LLC. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,14 @@
 
 package com.google.ar.core.examples.java.cloudanchor;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.support.annotation.GuardedBy;
+import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -42,6 +46,8 @@ import com.google.ar.core.PointCloud;
 import com.google.ar.core.Session;
 import com.google.ar.core.Trackable;
 import com.google.ar.core.TrackingState;
+import com.google.ar.core.examples.java.cloudanchor.PrivacyNoticeDialogFragment.HostResolveListener;
+import com.google.ar.core.examples.java.cloudanchor.PrivacyNoticeDialogFragment.NoticeDialogListener;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
 import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
 import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
@@ -69,7 +75,8 @@ import javax.microedition.khronos.opengles.GL10;
  * API calls. This app only has at most one anchor at a time, to focus more on the cloud aspect of
  * anchors.
  */
-public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceView.Renderer {
+public class CloudAnchorActivity extends AppCompatActivity
+    implements GLSurfaceView.Renderer, NoticeDialogListener {
   private static final String TAG = CloudAnchorActivity.class.getSimpleName();
   private static final float[] OBJECT_COLOR = new float[] {139.0f, 195.0f, 74.0f, 255.0f};
 
@@ -106,6 +113,9 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
   private Button hostButton;
   private Button resolveButton;
   private TextView roomCodeText;
+  private SharedPreferences sharedPreferences;
+  private static final String PREFERENCE_FILE_KEY = "allow_sharing_images";
+  private static final String ALLOW_SHARE_IMAGES_KEY = "ALLOW_SHARE_IMAGES";
 
   @GuardedBy("singleTapLock")
   private MotionEvent queuedSingleTap;
@@ -169,12 +179,22 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
     // Initialize Cloud Anchor variables.
     firebaseManager = new FirebaseManager(this);
     currentMode = HostResolveMode.NONE;
+    sharedPreferences = getSharedPreferences(PREFERENCE_FILE_KEY, Context.MODE_PRIVATE);
   }
 
   @Override
   protected void onResume() {
     super.onResume();
 
+    if (sharedPreferences.getBoolean(ALLOW_SHARE_IMAGES_KEY, false)) {
+      createSession();
+    }
+    snackbarHelper.showMessage(this, getString(R.string.snackbar_initial_message));
+    surfaceView.onResume();
+    displayRotationHelper.onResume();
+  }
+
+  private void createSession() {
     if (session == null) {
       Exception exception = null;
       int messageId = -1;
@@ -186,7 +206,6 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
           case INSTALLED:
             break;
         }
-
         // ARCore requires camera permissions to operate. If we did not yet obtain runtime
         // permission on Android M and above, now is a good time to ask the user for it.
         if (!CameraPermissionHelper.hasCameraPermission(this)) {
@@ -221,8 +240,6 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
 
       // Setting the session in the HostManager.
       cloudManager.setSession(session);
-      // Show the inital message only in the first resume.
-      snackbarHelper.showMessage(this, getString(R.string.snackbar_initial_message));
     }
 
     // Note that order matters - see the note in onPause(), the reverse applies here.
@@ -236,8 +253,6 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
       session = null;
       return;
     }
-    surfaceView.onResume();
-    displayRotationHelper.onResume();
   }
 
   @Override
@@ -451,6 +466,14 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
       return;
     }
 
+    if (!sharedPreferences.getBoolean(ALLOW_SHARE_IMAGES_KEY, false)) {
+      showNoticeDialog(this::onPrivacyAcceptedForHost);
+    } else {
+      onPrivacyAcceptedForHost();
+    }
+  }
+
+  private void onPrivacyAcceptedForHost() {
     if (hostListener != null) {
       return;
     }
@@ -468,6 +491,15 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
       resetMode();
       return;
     }
+
+    if (!sharedPreferences.getBoolean(ALLOW_SHARE_IMAGES_KEY, false)) {
+      showNoticeDialog(this::onPrivacyAcceptedForResolve);
+    } else {
+      onPrivacyAcceptedForResolve();
+    }
+  }
+
+  private void onPrivacyAcceptedForResolve() {
     ResolveDialogFragment dialogFragment = new ResolveDialogFragment();
     dialogFragment.setOkListener(this::onRoomCodeEntered);
     dialogFragment.show(getSupportFragmentManager(), "ResolveDialog");
@@ -499,29 +531,13 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
     // Register a new listener for the given room.
     firebaseManager.registerNewListenerForRoom(
         roomCode,
-        (cloudAnchorId) -> {
+        cloudAnchorId -> {
           // When the cloud anchor ID is available from Firebase.
+          CloudAnchorResolveStateListener resolveListener =
+              new CloudAnchorResolveStateListener(roomCode);
+          Preconditions.checkNotNull(resolveListener, "The resolve listener cannot be null.");
           cloudManager.resolveCloudAnchor(
-              cloudAnchorId,
-              (anchor) -> {
-                // When the anchor has been resolved, or had a final error state.
-                CloudAnchorState cloudState = anchor.getCloudAnchorState();
-                if (cloudState.isError()) {
-                  Log.w(
-                      TAG,
-                      "The anchor in room "
-                          + roomCode
-                          + " could not be resolved. The error state was "
-                          + cloudState);
-                  snackbarHelper.showMessageWithDismiss(
-                      CloudAnchorActivity.this,
-                      getString(R.string.snackbar_resolve_error, cloudState));
-                  return;
-                }
-                snackbarHelper.showMessageWithDismiss(
-                    CloudAnchorActivity.this, getString(R.string.snackbar_resolve_success));
-                setNewAnchor(anchor);
-              });
+              cloudAnchorId, resolveListener, SystemClock.uptimeMillis());
         });
   }
 
@@ -530,7 +546,7 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
    * the room code when both are available.
    */
   private final class RoomCodeAndCloudAnchorIdListener
-      implements CloudAnchorManager.CloudAnchorListener, FirebaseManager.RoomCodeListener {
+      implements CloudAnchorManager.CloudAnchorHostListener, FirebaseManager.RoomCodeListener {
 
     private Long roomCode;
     private String cloudAnchorId;
@@ -582,5 +598,54 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
       snackbarHelper.showMessageWithDismiss(
           CloudAnchorActivity.this, getString(R.string.snackbar_cloud_id_shared));
     }
+  }
+
+  private final class CloudAnchorResolveStateListener
+      implements CloudAnchorManager.CloudAnchorResolveListener {
+    private final long roomCode;
+
+    CloudAnchorResolveStateListener(long roomCode) {
+      this.roomCode = roomCode;
+    }
+
+    @Override
+    public void onCloudTaskComplete(Anchor anchor) {
+      // When the anchor has been resolved, or had a final error state.
+      CloudAnchorState cloudState = anchor.getCloudAnchorState();
+      if (cloudState.isError()) {
+        Log.w(
+            TAG,
+            "The anchor in room "
+                + roomCode
+                + " could not be resolved. The error state was "
+                + cloudState);
+        snackbarHelper.showMessageWithDismiss(
+            CloudAnchorActivity.this, getString(R.string.snackbar_resolve_error, cloudState));
+        return;
+      }
+      snackbarHelper.showMessageWithDismiss(
+          CloudAnchorActivity.this, getString(R.string.snackbar_resolve_success));
+      setNewAnchor(anchor);
+    }
+
+    @Override
+    public void onShowResolveMessage() {
+      snackbarHelper.setMaxLines(4);
+      snackbarHelper.showMessageWithDismiss(
+          CloudAnchorActivity.this, getString(R.string.snackbar_resolve_no_result_yet));
+    }
+  }
+
+  public void showNoticeDialog(HostResolveListener listener) {
+    DialogFragment dialog = PrivacyNoticeDialogFragment.createDialog(listener);
+    dialog.show(getSupportFragmentManager(), PrivacyNoticeDialogFragment.class.getName());
+  }
+
+  @Override
+  public void onDialogPositiveClick(DialogFragment dialog) {
+    if (!sharedPreferences.edit().putBoolean(ALLOW_SHARE_IMAGES_KEY, true).commit()) {
+      throw new AssertionError("Could not save the user preference to SharedPreferences!");
+    }
+    createSession();
   }
 }

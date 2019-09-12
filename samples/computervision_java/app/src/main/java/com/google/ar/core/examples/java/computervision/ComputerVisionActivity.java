@@ -117,6 +117,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
   private CameraConfig cpuHighResolutionCameraConfig;
 
   private Switch cvModeSwitch;
+  private boolean isCVModeOn = true;
   private Switch focusModeSwitch;
 
   private final FrameTimeHelper renderFrameTimeHelper = new FrameTimeHelper();
@@ -328,12 +329,16 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
               "Expected image in YUV_420_888 format, got format " + image.getFormat());
         }
 
-        ByteBuffer processedImageBytesGrayscale =
-            edgeDetector.detect(
-                image.getWidth(),
-                image.getHeight(),
-                image.getPlanes()[0].getRowStride(),
-                image.getPlanes()[0].getBuffer());
+        ByteBuffer processedImageBytesGrayscale = null;
+        // Do not process the image with edge dectection algorithm if it is not being displayed.
+        if (isCVModeOn) {
+          processedImageBytesGrayscale =
+              edgeDetector.detect(
+                  image.getWidth(),
+                  image.getHeight(),
+                  image.getPlanes()[0].getRowStride(),
+                  image.getPlanes()[0].getBuffer());
+        }
 
         cpuImageRenderer.drawWithCpuImage(
             frame,
@@ -410,6 +415,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
 
   private void onCVModeChanged(CompoundButton unusedButton, boolean isChecked) {
     cpuImageRenderer.setSplitterPosition(isChecked ? 0.0f : 1.0f);
+    isCVModeOn = isChecked;
 
     // Display the CPU resolution related UI only when CPU image is being displayed.
     boolean show = (cpuImageRenderer.getSplitterPosition() < 0.5f);

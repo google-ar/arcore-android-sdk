@@ -1,5 +1,15 @@
 apply plugin: 'com.android.application'
 
+def setVersionName = { ->
+    if (project.hasProperty("androidVersionName")) {
+        println("Replacing versionName with supplied build parameter: " +
+                "$androidVersionName")
+        return androidVersionName
+    } else {
+        return "1.0"
+    }
+}
+
 android {
     compileSdkVersion 28
     defaultConfig {
@@ -9,7 +19,7 @@ android {
         minSdkVersion 24
         targetSdkVersion 28
         versionCode 1
-        versionName "1.0"
+        versionName setVersionName()
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -25,7 +35,7 @@ android {
 
 dependencies {
     // ARCore library
-    implementation 'com.google.ar:core:1.11.0'
+    implementation 'com.google.ar:core:1.12.0'
 
     // Obj - a simple Wavefront OBJ file loader
     // https://github.com/javagl/Obj

@@ -452,6 +452,8 @@ typedef struct ArAnchorList_ ArAnchorList;
 
 // Segment3D.
 
+// SurfelList.
+
 // Hit result functionality.
 
 /// @addtogroup hit
@@ -782,12 +784,9 @@ AR_DEFINE_ENUM(ArCloudAnchorState){
     /// present in the manifest.
     AR_CLOUD_ANCHOR_STATE_ERROR_NOT_AUTHORIZED = -2,
 
-    /// The ARCore Cloud was unreachable. This can happen because of a number of
-    /// reasons. The request sent to the server could have timed out with no
-    /// response, there could be a bad network connection, DNS unavailability,
-    /// firewall issues, or anything that could affect the device's ability to
-    /// connect to the ARCore Cloud.
-    AR_CLOUD_ANCHOR_STATE_ERROR_SERVICE_UNAVAILABLE = -3,
+    AR_CLOUD_ANCHOR_STATE_ERROR_SERVICE_UNAVAILABLE AR_DEPRECATED(
+        "AR_CLOUD_ANCHOR_STATE_ERROR_SERVICE_UNAVAILABLE is deprecated in "
+        "ARCore SDK 1.12. See release notes to learn more.") = -3,
 
     /// The application has exhausted the request quota allotted to the given
     /// API key. The developer should request additional quota for the ARCore
@@ -803,11 +802,9 @@ AR_DEFINE_ENUM(ArCloudAnchorState){
     /// cloud anchor ID.
     AR_CLOUD_ANCHOR_STATE_ERROR_CLOUD_ID_NOT_FOUND = -6,
 
-    /// The server could not match the visual features provided by ARCore
-    /// against the localization dataset of the requested cloud anchor ID. This
-    /// means that the anchor pose being requested was likely not created in the
-    /// user's surroundings.
-    AR_CLOUD_ANCHOR_STATE_ERROR_RESOLVING_LOCALIZATION_NO_MATCH = -7,
+    AR_CLOUD_ANCHOR_STATE_ERROR_RESOLVING_LOCALIZATION_NO_MATCH AR_DEPRECATED(
+        "AR_CLOUD_ANCHOR_STATE_ERROR_RESOLVING_LOCALIZATION_NO_MATCH is "
+        "deprecated in ARCore SDK 1.12. See release notes to learn more.") = -7,
 
     /// The anchor could not be resolved because the SDK used to host the anchor
     /// was newer than and incompatible with the version being used to acquire
@@ -817,7 +814,17 @@ AR_DEFINE_ENUM(ArCloudAnchorState){
     /// The anchor could not be acquired because the SDK used to host the anchor
     /// was older than and incompatible with the version being used to acquire
     /// it.
-    AR_CLOUD_ANCHOR_STATE_ERROR_RESOLVING_SDK_VERSION_TOO_NEW = -9};
+    AR_CLOUD_ANCHOR_STATE_ERROR_RESOLVING_SDK_VERSION_TOO_NEW = -9,
+
+    /// The ARCore Cloud Anchor Service was unreachable. This can happen because
+    /// of a number of reasons. The device may is in airplane mode or does not
+    /// have a working internet connection. The request sent to the server could
+    /// have timed out with no response, there could be a bad network
+    /// connection, DNS unavailability, firewall issues, or anything that could
+    /// affect the device's ability to connect to the ARCore Cloud Anchor
+    /// service.
+    AR_CLOUD_ANCHOR_STATE_ERROR_HOSTING_SERVICE_UNAVAILABLE = -10,
+};
 
 /// @ingroup arcoreapk
 /// Describes the current state of ARCore availability on the device.
@@ -1275,8 +1282,8 @@ void ArConfig_getLightEstimationMode(
     const ArConfig *config,
     ArLightEstimationMode *light_estimation_mode);
 
-/// Sets the lighting estimation mode that should be used. See
-/// ::ArLightEstimationMode for available options.
+/// Sets the desired lighting estimation mode. See ::ArLightEstimationMode for
+/// available options.
 void ArConfig_setLightEstimationMode(
     const ArSession *session,
     ArConfig *config,
@@ -1288,8 +1295,8 @@ void ArConfig_getPlaneFindingMode(const ArSession *session,
                                   const ArConfig *config,
                                   ArPlaneFindingMode *plane_finding_mode);
 
-/// Sets the plane finding mode that should be used. See
-/// ::ArPlaneFindingMode for available options.
+/// Sets the desired plane finding mode. See ::ArPlaneFindingMode for available
+/// options.
 void ArConfig_setPlaneFindingMode(const ArSession *session,
                                   ArConfig *config,
                                   ArPlaneFindingMode plane_finding_mode);
@@ -1311,8 +1318,8 @@ void ArConfig_getCloudAnchorMode(const ArSession *session,
                                  const ArConfig *config,
                                  ArCloudAnchorMode *out_cloud_anchor_mode);
 
-/// Sets the cloud configuration that should be used. See ::ArCloudAnchorMode
-/// for available options.
+/// Sets the desired cloud configuration. See ::ArCloudAnchorMode for available
+/// options.
 void ArConfig_setCloudAnchorMode(const ArSession *session,
                                  ArConfig *config,
                                  ArCloudAnchorMode cloud_anchor_mode);
@@ -1343,7 +1350,7 @@ void ArConfig_getAugmentedFaceMode(const ArSession *session,
                                    const ArConfig *config,
                                    ArAugmentedFaceMode *augmented_face_mode);
 
-/// Sets the face mode that should be used. See @c ArAugmentedFaceMode for
+/// Sets the desired face mode. See @c ArAugmentedFaceMode for
 /// available options. Augmented Faces is currently only supported when using
 /// the front-facing (selfie) camera.  See #AR_SESSION_FEATURE_FRONT_CAMERA for
 /// details.
@@ -1351,20 +1358,22 @@ void ArConfig_setAugmentedFaceMode(const ArSession *session,
                                    ArConfig *config,
                                    ArAugmentedFaceMode augmented_face_mode);
 
-/// Sets the desired focus mode that should be used. See ::ArFocusMode for
-/// available options.
+/// Sets the desired focus mode. See ::ArFocusMode for available options.
 ///
-/// Currently, the default focus mode is AR_FOCUS_MODE_FIXED, but this default
-/// might change in the future. Note, on devices where ARCore does not support
-/// auto focus due to the use of a fixed focus camera, setting
-/// AR_FOCUS_MODE_AUTO will be ignored.
+/// The default focus mode varies by device and camera, and is set to optimize
+/// AR tracking. Currently the default on most ARCore devices and cameras is
+/// AR_FOCUS_MODE_FIXED, although this default might change in the future.
+///
+/// Note, on devices where ARCore does not support auto focus due to the use of
+/// a fixed focus camera, setting AR_FOCUS_MODE_AUTO will be ignored. Similarly,
+/// on devices where tracking requires auto focus, setting AR_FOCUS_MODE_FIXED
+/// will be ignored. See the ARCore supported devices
+/// (https://developers.google.com/ar/discover/supported-devices) page for a
+/// list of affected devices.
 ///
 /// To determine whether the configured ARCore camera supports auto focus, check
 /// ACAMERA_LENS_INFO_MINIMUM_FOCUS_DISTANCE, which is 0 for fixed-focus
-/// cameras. If the camera does not support different focus modes, this setting
-/// will be ignored. See the ARCore Supported Devices
-/// (https://developers.google.com/ar/discover/supported-devices) page for a
-/// list of affected devices.
+/// cameras.
 void ArConfig_setFocusMode(const ArSession *session,
                            ArConfig *config,
                            ArFocusMode focus_mode);
@@ -1485,7 +1494,7 @@ AR_DEFINE_ENUM(ArCameraConfigTargetFps){
     ///
     /// Increases power consumption and may increase app memory usage.
     ///
-    /// See the ARCore Supported Devices
+    /// See the ARCore supported devices
     /// (https://developers.google.com/ar/discover/supported-devices)
     /// page for a list of devices that currently support 60fps.
     ///
@@ -1501,7 +1510,7 @@ AR_DEFINE_ENUM(ArCameraConfigDepthSensorUsage){
     /// configs that require a depth sensor to be present on the device, and
     /// that will be used by ARCore.
     ///
-    /// See the ARCore Supported Devices
+    /// See the ARCore supported devices
     /// (https://developers.google.com/ar/discover/supported-devices)
     /// page for a list of devices that currently have supported depth sensors.
     ///
@@ -2397,6 +2406,8 @@ void ArFrame_getUpdatedTrackables(const ArSession *session,
                                   const ArFrame *frame,
                                   ArTrackableType filter_type,
                                   ArTrackableList *out_trackable_list);
+
+// === Scene Structure methods ===
 
 /// @}
 

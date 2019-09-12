@@ -1,5 +1,5 @@
 <!--
-   Copyright 2018 Google Inc.
+   Copyright 2019 Google LLC.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -30,6 +30,22 @@
   <!-- Application theme. -->
   <style name="AppTheme" parent="AppBaseTheme">
     <!-- All customizations that are NOT specific to a particular API-level can go here. -->
+  </style>
+
+  <style name="AlertDialogCustom" parent="Theme.AppCompat.Light.Dialog.Alert">
+    <item name="android:gravity">center</item>
+    <item name="android:windowBackground">@drawable/dialog_bg</item>
+    <item name="android:buttonBarNegativeButtonStyle">@style/NegativeButtonStyle</item>
+    <item name="android:buttonBarPositiveButtonStyle">@style/PositiveButtonStyle</item>
+  </style>
+
+  <style name="NegativeButtonStyle" parent="Widget.AppCompat.Button.ButtonBar.AlertDialog">
+    <item name="android:textColor">@android:color/darker_gray</item>
+  </style>
+
+  <style name="PositiveButtonStyle" parent="Widget.AppCompat.Button.ButtonBar.AlertDialog">
+    <item name="android:textColor">@android:color/white</item>
+    <item name="android:background">@drawable/button_bg</item>
   </style>
 
 </resources>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-   Copyright 2018 Google Inc.
+   Copyright 2019 Google LLC.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -46,4 +46,17 @@
   <string name="snackbar_resolve_error">Resolving Error: %1$s</string>
   <string name="snackbar_resolve_success">The anchor was successfully resolved.</string>
   <string name="snackbar_room_code_available">The room code is now available. Please place an anchor to host.</string>
+  <!-- Resolve anchor has no result yet. [CHAR_LIMIT=NONE] -->
+  <string name="snackbar_resolve_no_result_yet">Still resolving the anchor. Please make sure you\'re looking at where the Cloud Anchor was hosted. Or, try to re-join the room.</string>
+
+  <!-- Strings used in privacy notice dialog messages. [CHAR_LIMIT=NONE] -->
+  <string name="share_experience_title">Experience it together</string>
+  <!-- Privacy notice message. [CHAR_LIMIT=NONE] -->
+  <string name="share_experience_message">To power this session, Google will process visual data from your camera.</string>
+  <!-- Privacy notice accept. [CHAR_LIMIT=NONE] -->
+  <string name="agree_to_share">Start now</string>
+  <!-- Privacy notice learn more. [CHAR_LIMIT=NONE] -->
+  <string name="learn_more">Learn more</string>
+  <!-- Cloud anchor privacy website. [CHAR_LIMIT=NONE] -->
+  <string name="cloud_anchor_website">https://developers.google.com/ar/cloud-anchor-privacy</string>
 </resources>

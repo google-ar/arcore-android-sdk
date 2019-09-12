@@ -19,6 +19,7 @@
 #include "cpu_image_renderer.h"
 
 #include <stdint.h>
+
 #include <algorithm>
 
 namespace computer_vision {
@@ -163,7 +164,9 @@ void CpuImageRenderer::Draw(const ArSession* session, const ArFrame* frame,
   // Try to get the NDK image and get the post-processed edge detection image.
   int32_t format = 0, width = 0, height = 0, num_plane = 0, stride = 0;
   bool is_valid_cpu_image = false;
-  if (ndk_image != nullptr) {
+  // No need to compute edge detection as it is not being displayed if the
+  // splitter position is one.
+  if ((ndk_image != nullptr) && (splitter_pos < 1.0)) {
     if (GetNdkImageProperties(ndk_image, &format, &width, &height, &num_plane,
                               &stride)) {
       if (format == AIMAGE_FORMAT_YUV_420_888) {
