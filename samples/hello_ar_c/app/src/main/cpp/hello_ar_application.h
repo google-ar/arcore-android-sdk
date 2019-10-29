@@ -40,8 +40,7 @@ namespace hello_ar {
 class HelloArApplication {
  public:
   // Constructor and deconstructor.
-  HelloArApplication() = default;
-  HelloArApplication(AAssetManager* asset_manager);
+  explicit HelloArApplication(AAssetManager* asset_manager);
   ~HelloArApplication();
 
   // OnPause is called on the UI thread from the Activity's onPause method.

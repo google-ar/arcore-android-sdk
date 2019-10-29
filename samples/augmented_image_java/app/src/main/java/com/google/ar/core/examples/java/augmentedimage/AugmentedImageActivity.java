@@ -177,10 +177,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
     try {
       session.resume();
     } catch (CameraNotAvailableException e) {
-      // In some cases (such as another camera app launching) the camera may be given to
-      // a different app instead. Handle this properly by showing a message and recreate the
-      // session at the next iteration.
-      messageSnackbarHelper.showError(this, "Camera not available. Please restart the app.");
+      messageSnackbarHelper.showError(this, "Camera not available. Try restarting the app.");
       session = null;
       return;
     }

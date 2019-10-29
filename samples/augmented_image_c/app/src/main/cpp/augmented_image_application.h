@@ -38,8 +38,7 @@ namespace augmented_image {
 class AugmentedImageApplication {
  public:
   // Constructor and deconstructor.
-  AugmentedImageApplication() = default;
-  AugmentedImageApplication(AAssetManager* asset_manager);
+  explicit AugmentedImageApplication(AAssetManager* asset_manager);
   ~AugmentedImageApplication();
 
   // OnPause is called on the UI thread from the Activity's onPause method.

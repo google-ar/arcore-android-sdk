@@ -207,10 +207,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
     try {
       session.resume();
     } catch (CameraNotAvailableException e) {
-      // In some cases (such as another camera app launching) the camera may be given to
-      // a different app instead. Handle this properly by showing a message and recreate the
-      // session at the next iteration.
-      messageSnackbarHelper.showError(this, "Camera not available. Please restart the app.");
+      messageSnackbarHelper.showError(this, "Camera not available. Try restarting the app.");
       session = null;
       return;
     }
@@ -286,75 +283,74 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
     if (session == null) {
       return;
     }
-    // Notify ARCore session that the view size changed so that the perspective matrix and
-    // the video background can be properly adjusted.
-    cpuImageDisplayRotationHelper.updateSessionIfNeeded(session);
 
-    try {
-      session.setCameraTextureName(cpuImageRenderer.getTextureId());
-      final Frame frame = session.update();
-      final Camera camera = frame.getCamera();
+    // Synchronize here to avoid calling Session.update or Session.acquireCameraImage while paused.
+    synchronized (frameImageInUseLock) {
+      // Notify ARCore session that the view size changed so that the perspective matrix and
+      // the video background can be properly adjusted.
+      cpuImageDisplayRotationHelper.updateSessionIfNeeded(session);
 
-      // Keep the screen unlocked while tracking, but allow it to lock when tracking stops.
-      trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
+      try {
+        session.setCameraTextureName(cpuImageRenderer.getTextureId());
+        final Frame frame = session.update();
+        final Camera camera = frame.getCamera();
 
-      renderFrameTimeHelper.nextFrame();
+        // Keep the screen unlocked while tracking, but allow it to lock when tracking stops.
+        trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
 
-      switch (imageAcquisitionPath) {
-        case CPU_DIRECT_ACCESS:
-          renderProcessedImageCpuDirectAccess(frame);
-          break;
-        case GPU_DOWNLOAD:
-          renderProcessedImageGpuDownload(frame);
-          break;
+        renderFrameTimeHelper.nextFrame();
+
+        switch (imageAcquisitionPath) {
+          case CPU_DIRECT_ACCESS:
+            renderProcessedImageCpuDirectAccess(frame);
+            break;
+          case GPU_DOWNLOAD:
+            renderProcessedImageGpuDownload(frame);
+            break;
+        }
+
+        // Update the camera intrinsics' text.
+        runOnUiThread(() -> cameraIntrinsicsTextView.setText(getCameraIntrinsicsText(frame)));
+      } catch (Exception t) {
+        // Avoid crashing the application due to unhandled exceptions.
+        Log.e(TAG, "Exception on the OpenGL thread", t);
       }
-
-      // Update the camera intrinsics' text.
-      runOnUiThread(() -> cameraIntrinsicsTextView.setText(getCameraIntrinsicsText(frame)));
-    } catch (Exception t) {
-      // Avoid crashing the application due to unhandled exceptions.
-      Log.e(TAG, "Exception on the OpenGL thread", t);
     }
   }
 
   /* Demonstrates how to access a CPU image directly from ARCore. */
   private void renderProcessedImageCpuDirectAccess(Frame frame) {
-    // Lock the image use to avoid pausing & resuming session when the image is in use. This is
-    // because switching resolutions requires all images to be released before session.resume() is
-    // called.
-    synchronized (frameImageInUseLock) {
-      try (Image image = frame.acquireCameraImage()) {
-        if (image.getFormat() != ImageFormat.YUV_420_888) {
-          throw new IllegalArgumentException(
-              "Expected image in YUV_420_888 format, got format " + image.getFormat());
-        }
-
-        ByteBuffer processedImageBytesGrayscale = null;
-        // Do not process the image with edge dectection algorithm if it is not being displayed.
-        if (isCVModeOn) {
-          processedImageBytesGrayscale =
-              edgeDetector.detect(
-                  image.getWidth(),
-                  image.getHeight(),
-                  image.getPlanes()[0].getRowStride(),
-                  image.getPlanes()[0].getBuffer());
-        }
-
-        cpuImageRenderer.drawWithCpuImage(
-            frame,
-            image.getWidth(),
-            image.getHeight(),
-            processedImageBytesGrayscale,
-            cpuImageDisplayRotationHelper.getViewportAspectRatio(),
-            cpuImageDisplayRotationHelper.getCameraToDisplayRotation());
-
-        // Measure frame time since last successful execution of drawWithCpuImage().
-        cpuImageFrameTimeHelper.nextFrame();
-      } catch (NotYetAvailableException e) {
-        // This exception will routinely happen during startup, and is expected. cpuImageRenderer
-        // will handle null image properly, and will just render the background.
-        cpuImageRenderer.drawWithoutCpuImage();
+    try (Image image = frame.acquireCameraImage()) {
+      if (image.getFormat() != ImageFormat.YUV_420_888) {
+        throw new IllegalArgumentException(
+            "Expected image in YUV_420_888 format, got format " + image.getFormat());
       }
+
+      ByteBuffer processedImageBytesGrayscale = null;
+      // Do not process the image with edge dectection algorithm if it is not being displayed.
+      if (isCVModeOn) {
+        processedImageBytesGrayscale =
+            edgeDetector.detect(
+                image.getWidth(),
+                image.getHeight(),
+                image.getPlanes()[0].getRowStride(),
+                image.getPlanes()[0].getBuffer());
+      }
+
+      cpuImageRenderer.drawWithCpuImage(
+          frame,
+          image.getWidth(),
+          image.getHeight(),
+          processedImageBytesGrayscale,
+          cpuImageDisplayRotationHelper.getViewportAspectRatio(),
+          cpuImageDisplayRotationHelper.getCameraToDisplayRotation());
+
+      // Measure frame time since last successful execution of drawWithCpuImage().
+      cpuImageFrameTimeHelper.nextFrame();
+    } catch (NotYetAvailableException e) {
+      // This exception will routinely happen during startup, and is expected. cpuImageRenderer
+      // will handle null image properly, and will just render the background.
+      cpuImageRenderer.drawWithoutCpuImage();
     }
   }
 
@@ -439,10 +435,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
         try {
           session.resume();
         } catch (CameraNotAvailableException ex) {
-          // In a rare case (such as another camera app launching) the camera may be given to a
-          // different app and so may not be available to this app. Handle this properly by showing
-          // a message and recreate the session at the next iteration.
-          messageSnackbarHelper.showError(this, "Camera not available. Please restart the app.");
+          messageSnackbarHelper.showError(this, "Camera not available. Try restarting the app.");
           session = null;
           return;
         }

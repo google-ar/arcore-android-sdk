@@ -779,9 +779,9 @@ AR_DEFINE_ENUM(ArCloudAnchorState){
     /// error. The app should not attempt to recover from this error.
     AR_CLOUD_ANCHOR_STATE_ERROR_INTERNAL = -1,
 
-    /// The app cannot communicate with the ARCore Cloud because of an invalid
-    /// or unauthorized API key in the manifest, or because there was no API key
-    /// present in the manifest.
+    /// The app cannot communicate with the ARCore Cloud Anchor service because
+    /// of an invalid or unauthorized API key in the manifest, or because there
+    /// was no API key present in the manifest.
     AR_CLOUD_ANCHOR_STATE_ERROR_NOT_AUTHORIZED = -2,
 
     AR_CLOUD_ANCHOR_STATE_ERROR_SERVICE_UNAVAILABLE AR_DEPRECATED(
@@ -790,7 +790,8 @@ AR_DEFINE_ENUM(ArCloudAnchorState){
 
     /// The application has exhausted the request quota allotted to the given
     /// API key. The developer should request additional quota for the ARCore
-    /// Cloud for their API key from the Google Developers Console.
+    /// Cloud Anchor service for their API key from the Google Developers
+    /// Console.
     AR_CLOUD_ANCHOR_STATE_ERROR_RESOURCE_EXHAUSTED = -4,
 
     /// Hosting failed, because the server could not successfully process the
@@ -798,8 +799,8 @@ AR_DEFINE_ENUM(ArCloudAnchorState){
     /// device has gathered more data from the environment.
     AR_CLOUD_ANCHOR_STATE_ERROR_HOSTING_DATASET_PROCESSING_FAILED = -5,
 
-    /// Resolving failed, because the ARCore Cloud could not find the provided
-    /// cloud anchor ID.
+    /// Resolving failed, because the ARCore Cloud Anchor service could not find
+    /// the provided cloud anchor ID.
     AR_CLOUD_ANCHOR_STATE_ERROR_CLOUD_ID_NOT_FOUND = -6,
 
     AR_CLOUD_ANCHOR_STATE_ERROR_RESOLVING_LOCALIZATION_NO_MATCH AR_DEPRECATED(
@@ -816,12 +817,12 @@ AR_DEFINE_ENUM(ArCloudAnchorState){
     /// it.
     AR_CLOUD_ANCHOR_STATE_ERROR_RESOLVING_SDK_VERSION_TOO_NEW = -9,
 
-    /// The ARCore Cloud Anchor Service was unreachable. This can happen because
-    /// of a number of reasons. The device may is in airplane mode or does not
-    /// have a working internet connection. The request sent to the server could
-    /// have timed out with no response, there could be a bad network
-    /// connection, DNS unavailability, firewall issues, or anything that could
-    /// affect the device's ability to connect to the ARCore Cloud Anchor
+    /// The ARCore Cloud Anchor Service was unreachable. This can happen for
+    /// a number of reasons. The device might be in airplane mode or does not
+    /// have a working internet connection. The request sent to the server might
+    /// have timed out with no response, or there might be a bad network
+    /// connection, DNS unavailability, firewall issues, or anything else that
+    /// might affect the device's ability to connect to the ARCore Cloud Anchor
     /// service.
     AR_CLOUD_ANCHOR_STATE_ERROR_HOSTING_SERVICE_UNAVAILABLE = -10,
 };
@@ -1851,8 +1852,10 @@ void ArSession_getSupportedCameraConfigs(const ArSession *session,
 /// before calling resume(). Failure to do so will cause resume() to return
 /// AR_ERROR_ILLEGAL_STATE error.
 ///
-/// Starting in ARCore 1.12, changing the active camera config will make
-/// existing anchors and trackables fail to regain tracking.
+/// Note: Starting in ARCore 1.12, changing the active camera config may cause
+/// the tracking state on certain devices to become permanently PAUSED. For
+/// consistent behavior across all supported devices, release any previously
+/// created anchors and trackables when setting a new camera config.
 ///
 /// @param[in]    session          The ARCore session
 /// @param[in]    camera_config    The provided ArCameraConfig must be from a
@@ -2029,6 +2032,12 @@ void ArCamera_getViewMatrix(const ArSession *session,
 /// anything other than #AR_TRACKING_STATE_TRACKING the pose should not be
 /// considered useful. Use ArCamera_getTrackingFailureReason() to determine the
 /// best recommendation to provide to the user to restore motion tracking.
+///
+/// Note: Starting in ARCore 1.12, changing the active camera config using
+/// {@link ArSession_setCameraConfig()} may cause the tracking state on certain
+/// devices to become permanently PAUSED. For consistent behavior across all
+/// supported devices, release any previously created anchors and trackables
+/// when setting a new camera config.
 void ArCamera_getTrackingState(const ArSession *session,
                                const ArCamera *camera,
                                ArTrackingState *out_tracking_state);
@@ -2092,7 +2101,7 @@ void ArCamera_getTextureIntrinsics(const ArSession *session,
 /// Releases a reference to the camera.  This must match a call to
 /// ArFrame_acquireCamera().
 ///
-/// This method may safely be called with @c nullptr - it will do nothing.
+/// This method may safely be called with @c NULL - it will do nothing.
 void ArCamera_release(ArCamera *camera);
 
 /// @}
@@ -2283,7 +2292,8 @@ void ArFrame_transformCoordinates2d(const ArSession *session,
 /// @param[in]    frame           The current frame.
 /// @param[in]    pixel_x         Logical X position within the view, as from an
 ///     Android UI event.
-/// @param[in]    pixel_y         Logical X position within the view.
+/// @param[in]    pixel_y         Logical Y position within the view, as from an
+///     Android UI event.
 /// @param[inout] hit_result_list The list to fill.  This list must have been
 ///     previously allocated using ArHitResultList_create().  If the list has
 ///     been previously used, it will first be cleared.
@@ -2471,7 +2481,7 @@ void ArPointCloud_getTimestamp(const ArSession *session,
 /// Releases a reference to the point cloud.  This must match a call to
 /// ArFrame_acquirePointCloud().
 ///
-/// This method may safely be called with @c nullptr - it will do nothing.
+/// This method may safely be called with @c NULL - it will do nothing.
 void ArPointCloud_release(ArPointCloud *point_cloud);
 
 /// @}
@@ -2496,7 +2506,7 @@ void ArImageMetadata_getNdkCameraMetadata(
 /// Releases a reference to the metadata.  This must match a call to
 /// ArFrame_acquireImageMetadata().
 ///
-/// This method may safely be called with @c nullptr - it will do nothing.
+/// This method may safely be called with @c NULL - it will do nothing.
 void ArImageMetadata_release(ArImageMetadata *metadata);
 
 /// Image formats produced by ARCore.
@@ -2618,7 +2628,7 @@ void ArImage_getPlaneData(const ArSession *session,
 /// @deprecated in release 1.10.0. Please use the other ArImage_* functions to
 /// obtain image data. ARCore can produce a wide variety of images, not all of
 /// which can be represented using Android NDK AImage provided by this function.
-/// In those cases, this method will return @c nullptr in out_ndk_image.
+/// In those cases, this method will return @c NULL in out_ndk_image.
 void ArImage_getNdkImage(const ArImage *image, const AImage **out_ndk_image)
     AR_DEPRECATED(
         "deprecated in release 1.10.0. Please see function documentation");
@@ -2812,6 +2822,12 @@ void ArAnchor_getPose(const ArSession *session,
                       ArPose *out_pose);
 
 /// Retrieves the current state of the pose of this anchor.
+///
+/// Note: Starting in ARCore 1.12, changing the active camera config using
+/// {@link ArSession_setCameraConfig()} may cause the tracking state on certain
+/// devices to become permanently PAUSED. For consistent behavior across all
+/// supported devices, release any previously created anchors and trackables
+/// when setting a new camera config.
 void ArAnchor_getTrackingState(const ArSession *session,
                                const ArAnchor *anchor,
                                ArTrackingState *out_tracking_state);
@@ -2824,7 +2840,7 @@ void ArAnchor_detach(ArSession *session, ArAnchor *anchor);
 /// Releases a reference to an anchor. To stop tracking for this anchor, call
 /// ArAnchor_detach() first.
 ///
-/// This method may safely be called with @c nullptr - it will do nothing.
+/// This method may safely be called with @c NULL - it will do nothing.
 void ArAnchor_release(ArAnchor *anchor);
 
 /// Acquires the cloud anchor ID of the anchor. The ID acquired is an ASCII
@@ -2885,7 +2901,7 @@ void ArTrackableList_acquireItem(const ArSession *session,
 /// will necessarily stop tracking. The same trackable may still be included in
 /// from other calls, for example ArSession_getAllTrackables().
 ///
-/// This method may safely be called with @c nullptr - it will do nothing.
+/// This method may safely be called with @c NULL - it will do nothing.
 void ArTrackable_release(ArTrackable *trackable);
 
 /// Retrieves the type of the trackable.  See ::ArTrackableType for valid types.
@@ -2895,6 +2911,12 @@ void ArTrackable_getType(const ArSession *session,
 
 /// Retrieves the current state of ARCore's knowledge of the pose of this
 /// trackable.
+///
+/// Note: Starting in ARCore 1.12, changing the active camera config using
+/// {@link ArSession_setCameraConfig()} may cause the tracking state on certain
+/// devices to become permanently PAUSED. For consistent behavior across all
+/// supported devices, release any previously created trackables when setting a
+/// new camera config.
 void ArTrackable_getTrackingState(const ArSession *session,
                                   const ArTrackable *trackable,
                                   ArTrackingState *out_tracking_state);
@@ -3057,9 +3079,10 @@ void ArPoint_getOrientationMode(const ArSession *session,
 /// @addtogroup augmented_image
 /// @{
 
-/// Returns the pose of the center of the detected image. The pose's +Y axis
-/// will be a normal vector pointing out of the face of the image. The +X and +Z
-/// axes represent right and up relative to the image.
+/// Returns the pose of the center of the Augmented Image, in world coordinates.
+/// The pose's transformed +Y axis will be the normal out of the plane. The
+/// pose's transformed +X axis points from left to right on the image, and the
+/// transformed +Z axis points from top to bottom on the image.
 ///
 /// If the tracking state is PAUSED/STOPPED, this returns the pose when the
 /// image state was last TRACKING, or the identity pose if the image state has
@@ -3152,7 +3175,7 @@ void ArAugmentedImage_getTrackingMethod(
 ///                                    (x, y, z) packing.
 /// @param[out] out_number_of_vertices The number of vertices in the mesh. The
 ///     returned pointer will point to an array of size out_number_of_vertices *
-///     3 or @c nullptr if the size is 0.
+///     3 or @c NULL if the size is 0.
 void ArAugmentedFace_getMeshVertices(const ArSession *session,
                                      const ArAugmentedFace *face,
                                      const float **out_vertices,
@@ -3176,7 +3199,7 @@ void ArAugmentedFace_getMeshVertices(const ArSession *session,
 ///                                   (x, y, z) packing.
 /// @param[out] out_number_of_normals The number of normals in the mesh. The
 ///     returned pointer will point to an array of size out_number_of_normals *
-///     3, or @c nullptr if the size is 0.
+///     3, or @c NULL if the size is 0.
 void ArAugmentedFace_getMeshNormals(const ArSession *session,
                                     const ArAugmentedFace *face,
                                     const float **out_normals,
@@ -3200,8 +3223,7 @@ void ArAugmentedFace_getMeshNormals(const ArSession *session,
 ///                                     coordinates in (u, v) packing.
 /// @param[out] out_number_of_texture_coordinates The number of texture
 ///     coordinates in the mesh. The returned pointer will point to an array of
-///     size out_number_of_texture_coordinates * 2, or @c nullptr if the size is
-///     0.
+///     size out_number_of_texture_coordinates * 2, or @c NULL if the size is 0.
 void ArAugmentedFace_getMeshTextureCoordinates(
     const ArSession *session,
     const ArAugmentedFace *face,
@@ -3229,7 +3251,7 @@ void ArAugmentedFace_getMeshTextureCoordinates(
 ///                                     indices packed in consecutive triplets.
 /// @param[out] out_number_of_triangles The number of triangles in the mesh. The
 ///     returned pointer will point to an array of size out_number_of_triangles
-///     * 3, or @c nullptr if the size is 0.
+///     * 3, or @c NULL if the size is 0.
 void ArAugmentedFace_getMeshTriangleIndices(
     const ArSession *session,
     const ArAugmentedFace *face,

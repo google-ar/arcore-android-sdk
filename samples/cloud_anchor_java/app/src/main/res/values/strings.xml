@@ -35,7 +35,7 @@
   <string name="snackbar_arcore_too_old">Please update ARCore.</string>
   <string name="snackbar_arcore_sdk_too_old">Please update the app with a newer version of the ARCore SDK.</string>
   <string name="snackbar_arcore_exception">This device does not support ARCore.</string>
-  <string name="snackbar_camera_unavailable">Camera unavailable. Please restart the app.</string>
+  <string name="snackbar_camera_unavailable">Camera unavailable. Try restarting the app.</string>
   <string name="snackbar_cloud_id_shared">The anchor ID was shared via Firebase.</string>
   <string name="snackbar_dismiss">Dismiss</string>
   <string name="snackbar_firebase_error">There was a Firebase Error. Please check Logcat for more details.</string>

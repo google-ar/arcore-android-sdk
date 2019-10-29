@@ -38,7 +38,7 @@ namespace computer_vision {
 class ComputerVisionApplication {
  public:
   // Constructor and deconstructor.
-  ComputerVisionApplication(AAssetManager* asset_manager);
+  explicit ComputerVisionApplication(AAssetManager* asset_manager);
   ~ComputerVisionApplication();
 
   // OnPause is called on the UI thread from the Activity's onPause method.
