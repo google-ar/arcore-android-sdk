@@ -243,7 +243,7 @@ public class SharedCameraActivity extends AppCompatActivity
       };
 
   // Repeating camera capture session state callback.
-  CameraCaptureSession.StateCallback cameraCaptureCallback =
+  CameraCaptureSession.StateCallback cameraSessionStateCallback =
       new CameraCaptureSession.StateCallback() {
 
         // Called when the camera capture session is first configured after the app
@@ -302,7 +302,7 @@ public class SharedCameraActivity extends AppCompatActivity
       };
 
   // Repeating camera capture session capture callback.
-  private final CameraCaptureSession.CaptureCallback captureSessionCallback =
+  private final CameraCaptureSession.CaptureCallback cameraCaptureCallback =
       new CameraCaptureSession.CaptureCallback() {
 
         @Override
@@ -413,6 +413,7 @@ public class SharedCameraActivity extends AppCompatActivity
 
   @Override
   public void onPause() {
+    shouldUpdateSurfaceTexture.set(false);
     surfaceView.onPause();
     waitUntilCameraCaptureSesssionIsActive();
     displayRotationHelper.onPause();
@@ -444,7 +445,7 @@ public class SharedCameraActivity extends AppCompatActivity
         updateSnackbarMessage();
 
         // Set capture session callback while in AR mode.
-        sharedCamera.setCaptureCallback(captureSessionCallback, backgroundHandler);
+        sharedCamera.setCaptureCallback(cameraCaptureCallback, backgroundHandler);
       } catch (CameraNotAvailableException e) {
         Log.e(TAG, "Failed to resume ARCore session", e);
         return;
@@ -453,7 +454,6 @@ public class SharedCameraActivity extends AppCompatActivity
   }
 
   private void pauseARCore() {
-    shouldUpdateSurfaceTexture.set(false);
     if (arcoreActive) {
       // Pause ARCore.
       sharedSession.pause();
@@ -477,7 +477,7 @@ public class SharedCameraActivity extends AppCompatActivity
       setCameraEffects(previewCaptureRequestBuilder);
 
       captureSession.setRepeatingRequest(
-          previewCaptureRequestBuilder.build(), captureSessionCallback, backgroundHandler);
+          previewCaptureRequestBuilder.build(), cameraCaptureCallback, backgroundHandler);
     } catch (CameraAccessException e) {
       Log.e(TAG, "Failed to set repeating request", e);
     }
@@ -512,7 +512,7 @@ public class SharedCameraActivity extends AppCompatActivity
 
       // Wrap our callback in a shared camera callback.
       CameraCaptureSession.StateCallback wrappedCallback =
-          sharedCamera.createARSessionStateCallback(cameraCaptureCallback, backgroundHandler);
+          sharedCamera.createARSessionStateCallback(cameraSessionStateCallback, backgroundHandler);
 
       // Create camera capture session for camera preview using ARCore wrapped callback.
       cameraDevice.createCaptureSession(surfaceList, wrappedCallback, backgroundHandler);

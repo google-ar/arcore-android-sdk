@@ -29,6 +29,8 @@ public final class TrackingStateHelper {
       "Too dark. Try moving to a well-lit area.";
   private static final String BAD_STATE_MESSAGE =
       "Tracking lost due to bad internal state. Please try restarting the AR experience.";
+  private static final String CAMERA_UNAVAILABLE_MESSAGE =
+      "Another app is using the camera. Tap on this app or try closing the other one.";
 
   private final Activity activity;
 
@@ -71,6 +73,8 @@ public final class TrackingStateHelper {
         return EXCESSIVE_MOTION_MESSAGE;
       case INSUFFICIENT_FEATURES:
         return INSUFFICIENT_FEATURES_MESSAGE;
+      case CAMERA_UNAVAILABLE:
+        return CAMERA_UNAVAILABLE_MESSAGE;
     }
     return "Unknown tracking failure reason: " + reason;
   }

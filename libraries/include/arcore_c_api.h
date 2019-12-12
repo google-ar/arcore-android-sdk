@@ -758,7 +758,13 @@ AR_DEFINE_ENUM(ArTrackingFailureReason){
     /// Motion tracking lost due to insufficient visual features. Ask the user
     /// to move to a different area and to avoid blank walls and surfaces
     /// without detail.
-    AR_TRACKING_FAILURE_REASON_INSUFFICIENT_FEATURES = 4};
+    AR_TRACKING_FAILURE_REASON_INSUFFICIENT_FEATURES = 4,
+    /// Motion tracking paused because the camera is in use by another
+    /// application. Tracking will resume once this app regains priority, or
+    /// once all apps with higher priority have stopped using the camera. Prior
+    /// to ARCore SDK 1.13, AR_TRACKING_FAILURE_REASON_NONE is returned in this
+    /// case instead.
+    AR_TRACKING_FAILURE_REASON_CAMERA_UNAVAILABLE = 5};
 
 /// @ingroup cloud
 /// Describes the current cloud state of an @c Anchor.
@@ -812,12 +818,12 @@ AR_DEFINE_ENUM(ArCloudAnchorState){
     /// it.
     AR_CLOUD_ANCHOR_STATE_ERROR_RESOLVING_SDK_VERSION_TOO_OLD = -8,
 
-    /// The anchor could not be acquired because the SDK used to host the anchor
-    /// was older than and incompatible with the version being used to acquire
-    /// it.
+    /// The Cloud Anchor could not be acquired because the SDK used to host the
+    /// anchor was older than and incompatible with the version being used to
+    /// acquire it.
     AR_CLOUD_ANCHOR_STATE_ERROR_RESOLVING_SDK_VERSION_TOO_NEW = -9,
 
-    /// The ARCore Cloud Anchor Service was unreachable. This can happen for
+    /// The ARCore Cloud Anchor service was unreachable. This can happen for
     /// a number of reasons. The device might be in airplane mode or does not
     /// have a working internet connection. The request sent to the server might
     /// have timed out with no response, or there might be a bad network
@@ -1008,7 +1014,8 @@ AR_DEFINE_ENUM(ArCloudAnchorMode){
     /// Anchor Hosting is enabled. Setting this value and calling
     /// @c ArSession_configure() will require that the application have the
     /// Android INTERNET permission.
-    AR_CLOUD_ANCHOR_MODE_ENABLED = 1};
+    AR_CLOUD_ANCHOR_MODE_ENABLED = 1,
+};
 
 /// @ingroup frame
 /// 2d coordinate systems supported by ARCore.
@@ -3348,9 +3355,14 @@ void ArAugmentedImageDatabase_serialize(
 ///
 /// The image name is expected to be a null-terminated string in UTF-8 format.
 ///
+/// Currently, only images for which the stride is equal to the width are
+/// supported.
+///
 /// @return #AR_SUCCESS or any of:
 /// - #AR_ERROR_IMAGE_INSUFFICIENT_QUALITY - image quality is insufficient, e.g.
 ///   because of lack of features in the image.
+/// - #AR_ERROR_INVALID_ARGUMENT - if image_stride_in_pixels is not equal to
+///   image_width_in_pixels.
 ArStatus ArAugmentedImageDatabase_addImage(
     const ArSession *session,
     ArAugmentedImageDatabase *augmented_image_database,
@@ -3382,10 +3394,14 @@ ArStatus ArAugmentedImageDatabase_addImage(
 ///
 /// The image name is expected to be a null-terminated string in UTF-8 format.
 ///
+/// Currently, only images for which the stride is equal to the width are
+/// supported.
+///
 /// @return #AR_SUCCESS or any of:
 /// - #AR_ERROR_IMAGE_INSUFFICIENT_QUALITY - image quality is insufficient, e.g.
 ///   because of lack of features in the image.
-/// - #AR_ERROR_INVALID_ARGUMENT - image_width_in_meters is <= 0.
+/// - #AR_ERROR_INVALID_ARGUMENT - image_width_in_meters is <= 0 or if
+///   image_stride_in_pixels is not equal to image_width_in_pixels.
 ArStatus ArAugmentedImageDatabase_addImageWithPhysicalSize(
     const ArSession *session,
     ArAugmentedImageDatabase *augmented_image_database,
