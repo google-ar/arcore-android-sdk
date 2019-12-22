@@ -1,0 +1,11 @@
+rootProject.name = 'ARCore samples'
+
+include ':all-in-one:app'
+include ':shared_camera_java:app'
+include ':hello_ar_java:app'
+include ':hello_ar_c:app'
+include ':computervision_java:app'
+include ':computervision_c:app'
+include ':cloud_anchor_java:app'
+include ':augmented_image_java:app'
+include ':augmented_image_c:app'

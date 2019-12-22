@@ -1,0 +1,10 @@
+<resources>
+	<color name="background_camera">#000</color>
+
+	<color name="colorPrimary">#33b5e5</color>
+	<color name="colorPrimaryDark">#303F9F</color>
+	<color name="colorAccent">#FF4081</color>
+	<color name="spinner">#ff33ff33</color>
+	<color name="primary_transparent">#1133b5e5</color>
+	<color name="white">#FFFFFF</color>
+</resources>
