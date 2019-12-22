@@ -1,0 +1,16 @@
+# For Android Studio and Gradle
+*.iml
+.gradle
+
+.idea/*
+!idea/codeStyles
+
+local.properties
+.DS_Store
+build
+captures
+
+.externalNativeBuild/
+.cxx/
+
+google-services.json
