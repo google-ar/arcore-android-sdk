@@ -61,8 +61,8 @@ dependencies {
 
     // Glide - An image loading and caching library for Android
     // https://github.com/bumptech/glide
-    implementation 'com.github.bumptech.glide:glide:4.6.1'
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.6.1'
+    implementation 'com.github.bumptech.glide:glide:4.8.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.8.0'
 }
 
 // Extracts the shared libraries from aars in the natives configuration.
