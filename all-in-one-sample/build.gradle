@@ -1,0 +1,104 @@
+
+        buildConfigField "String", 'GIT_USER', "\"" + getGitUser() + "\""
+        buildConfigField "String", 'GIT_REPOSITORY', "\"" + getGitRepository() + "\""
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('../signing/release.keystore')
+            storePassword System.getenv("KEYSTORE_PASS")
+            keyAlias System.getenv("ALIAS_NAME")
+            keyPassword System.getenv("ALIAS_PASS")
+        }
+        debug {
+            storePassword "android"
+            keyPassword "android"
+            keyAlias "androiddebugkey"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+            if (System.getenv("CI_SERVER")) { // gitlab
+                println "I run on Gitlab and use RELEASE signing"
+                signingConfig signingConfigs.release
+            } else if (file('../signing/release.keystore').exists()) {
+                if (System.getenv("KEYSTORE_PASS") == null || System.getenv("ALIAS_NAME") == null || System.getenv("ALIAS_PASS") == null) {
+                    println "I run somewhere else and I use DEBUG signing because variables are not set !"
+                    signingConfig signingConfigs.debug
+                } else {
+                    println "I run somewhere else and I use RELEASE signing"
+                    signingConfig signingConfigs.release
+                }
+            } else {
+                println "I run somewhere else and I use debug signing"
+                signingConfig signingConfigs.debug
+            }
+        }
+        debug {
+            if (System.getenv("CI") == "true") { // Github action
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
+            applicationIdSuffix ".debug"
+            versionNameSuffix ".debug"
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'com.google.android.material:material:1.3.0'
+    implementation 'androidx.cardview:cardview:1.0.0'
+    implementation 'androidx.recyclerview:recyclerview:1.1.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+    implementation "androidx.preference:preference-ktx:1.1.1"
+    implementation 'com.github.hannesa2:githubAppUpdate:0.8'
+    implementation 'com.github.AppDevNext.Logcat:LogcatCore:2.4.0'
+
+    implementation project(':samples:shared_camera_java:app')
+    implementation project(':samples:hello_ar_java:app')
+    implementation project(':samples:hello_ar_c:app')
+    implementation project(':samples:computervision_java:app')
+    implementation project(':samples:computervision_c:app')
+    implementation project(':samples:cloud_anchor_java:app')
+    implementation project(':samples:augmented_image_java:app')
+    implementation project(':samples:augmented_image_c:app')
+    implementation "androidx.core:core-ktx:1.3.2"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+}
+
+static def getTag() {
+    def process = "git describe --tags --abbrev=0".execute()
+    return process.text.toString().trim()
+}
+
+static def getGitCommitCount() {
+    def process = "git rev-list HEAD --count".execute()
+    return process.text.toInteger()
+}
+
+static def getGitOriginRemote() {
+    def process = "git remote -v".execute()
+    def values = process.text.toString().trim().split("\\r\\n|\\n|\\r")
+
+    def found = values.find { it.startsWith("origin") && it.endsWith("(push)") }
+    return found.replace("origin", "").replace("(push)", "").replace(".git", "").trim()
+}
+
+static def getGitUser() {
+    def token = getGitOriginRemote().split("/")
+    return token[3]
+}
+
+static def getGitRepository() {
+    def token = getGitOriginRemote().split("/")
+    return token[4]
+}

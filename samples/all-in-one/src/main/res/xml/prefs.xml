@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+	>
+
+	<Preference
+		android:key="preference_ARCore_Version"
+		android:title="ARCore Version"/>
+
+	<Preference
+		android:key="preference_BOARD"
+		android:title="Board"/>
+
+	<Preference
+		android:key="preference_BRAND"
+		android:title="Brand"/>
+
+	<Preference
+		android:key="preference_CPU_ABI"
+		android:title="CPU abi"/>
+
+	<Preference
+		android:key="preference_DISPLAY"
+		android:title="Display"/>
+
+	<Preference
+		android:key="preference_USER"
+		android:title="User"/>
+
+</PreferenceScreen>
