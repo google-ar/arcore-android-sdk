@@ -1,3 +1,16 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+
+def setVersionName = { ->
+    if (project.hasProperty("androidVersionName")) {
+        println("Replacing versionName with supplied build parameter: " +
+                "$androidVersionName")
+        return androidVersionName
+    } else {
+        return getTag()
+    }
+}
 
         buildConfigField "String", 'GIT_USER', "\"" + getGitUser() + "\""
         buildConfigField "String", 'GIT_REPOSITORY', "\"" + getGitRepository() + "\""
