@@ -1,4 +1,4 @@
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
 
 /*
 The arcore aar library contains the native shared libraries.  These are
@@ -12,8 +12,6 @@ configurations { natives }
 android {
     compileSdkVersion 29
     defaultConfig {
-        applicationId "com.google.ar.core.examples.c.computervision"
-
         // "AR Optional" apps must declare minSdkVersion >= 14.
         // "AR Required" apps must declare minSdkVersion >= 24.
         minSdkVersion 24

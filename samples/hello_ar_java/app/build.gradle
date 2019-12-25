@@ -1,10 +1,8 @@
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 29
     defaultConfig {
-        applicationId "com.google.ar.core.examples.java.helloar"
-
         // AR Optional apps must declare minSdkVersion >= 14.
         // AR Required apps must declare minSdkVersion >= 24.
         minSdkVersion 24

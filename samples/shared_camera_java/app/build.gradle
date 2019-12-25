@@ -1,10 +1,8 @@
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 29
     defaultConfig {
-        applicationId "com.google.ar.core.examples.java.sharedcamera"
-
         // Camera2 API requires minSdkVersion >= 21.
         // "AR Optional" apps must declare minSdkVersion >= 14.
         // "AR Required" apps must declare minSdkVersion >= 24.
