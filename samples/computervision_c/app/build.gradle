@@ -20,13 +20,13 @@ def setVersionName = { ->
 }
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
     defaultConfig {
         applicationId "com.google.ar.core.examples.c.computervision"
 
         // 24 is the minimum since ARCore only works with 24 and higher.
         minSdkVersion 24
-        targetSdkVersion 27
+        targetSdkVersion 28
         versionCode 1
         versionName setVersionName()
 
@@ -62,11 +62,11 @@ android {
 
 dependencies {
     // ARCore library
-    implementation 'com.google.ar:core:1.14.0'
-    natives 'com.google.ar:core:1.14.0'
+    implementation 'com.google.ar:core:1.15.0'
+    natives 'com.google.ar:core:1.15.0'
 
-    implementation 'com.android.support:appcompat-v7:27.1.1'
-    implementation 'com.android.support:design:27.1.1'
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    implementation 'com.android.support:design:28.0.0'
 }
 
 // Extracts the shared libraries from aars in the natives configuration.

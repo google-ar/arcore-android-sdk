@@ -49,6 +49,7 @@ public class BackgroundRenderer {
   private int quadPositionParam;
   private int quadTexCoordParam;
   private int textureId = -1;
+  private boolean suppressTimestampZeroRendering = true;
 
   public int getTextureId() {
     return textureId;
@@ -108,6 +109,10 @@ public class BackgroundRenderer {
     ShaderUtil.checkGLError(TAG, "Program parameters");
   }
 
+  public void suppressTimestampZeroRendering(boolean suppressTimestampZeroRendering) {
+    this.suppressTimestampZeroRendering = suppressTimestampZeroRendering;
+  }
+
   /**
    * Draws the AR background image. The image will be drawn such that virtual content rendered with
    * the matrices provided by {@link com.google.ar.core.Camera#getViewMatrix(float[], int)} and
@@ -128,7 +133,7 @@ public class BackgroundRenderer {
           quadTexCoords);
     }
 
-    if (frame.getTimestamp() == 0) {
+    if (frame.getTimestamp() == 0 && suppressTimestampZeroRendering) {
       // Suppress rendering if the camera did not produce the first frame yet. This is to avoid
       // drawing possible leftover data from previous sessions if the texture is reused.
       return;

@@ -582,8 +582,7 @@ AR_DEFINE_ENUM(ArTrackableType){
 ///
 /// All currently defined features are mutually compatible.
 AR_DEFINE_ENUM(ArSessionFeature){
-    /// Indicates the end of a features list.  This must be the last entry in
-    /// the
+    /// Indicates the end of a features list. This must be the last entry in the
     /// array passed to ArSession_createWithFeatures().
     AR_SESSION_FEATURE_END_OF_LIST = 0,
 
@@ -806,7 +805,7 @@ AR_DEFINE_ENUM(ArCloudAnchorState){
     AR_CLOUD_ANCHOR_STATE_ERROR_HOSTING_DATASET_PROCESSING_FAILED = -5,
 
     /// Resolving failed, because the ARCore Cloud Anchor service could not find
-    /// the provided cloud anchor ID.
+    /// the provided Cloud Anchor ID.
     AR_CLOUD_ANCHOR_STATE_ERROR_CLOUD_ID_NOT_FOUND = -6,
 
     AR_CLOUD_ANCHOR_STATE_ERROR_RESOLVING_LOCALIZATION_NO_MATCH AR_DEPRECATED(
@@ -1321,7 +1320,7 @@ void ArConfig_setUpdateMode(const ArSession *session,
                             ArConfig *config,
                             ArUpdateMode update_mode);
 
-/// Gets the current cloud anchor mode from the ::ArConfig.
+/// Gets the current Cloud Anchor mode from the ::ArConfig.
 void ArConfig_getCloudAnchorMode(const ArSession *session,
                                  const ArConfig *config,
                                  ArCloudAnchorMode *out_cloud_anchor_mode);
@@ -1607,7 +1606,7 @@ ArStatus ArSession_checkSupported(const ArSession *session,
 ///
 /// The following configurations are not supported:
 ///
-/// - When using the back-facing camera (default):
+/// - When using the (default) back-facing camera:
 ///   - #AR_AUGMENTED_FACE_MODE_MESH3D.
 /// - When using the front-facing (selfie) camera
 ///   (#AR_SESSION_FEATURE_FRONT_CAMERA):
@@ -1663,9 +1662,8 @@ ArStatus ArSession_resume(ArSession *session);
 ArStatus ArSession_pause(ArSession *session);
 
 /// Sets the OpenGL texture name (id) that will allow GPU access to the camera
-/// image. The provided ID should have been created with @c glGenTextures(). The
-/// resulting texture must be bound to the @c GL_TEXTURE_EXTERNAL_OES target for
-/// use. Shaders accessing this texture must use a @c samplerExternalOES
+/// image. The texture must be bound to the @c GL_TEXTURE_EXTERNAL_OES target
+/// for use. Shaders accessing this texture must use a @c samplerExternalOES
 /// sampler. See sample code for an example.
 void ArSession_setCameraTextureName(ArSession *session, uint32_t texture_id);
 
@@ -1763,7 +1761,7 @@ void ArSession_getAllTrackables(const ArSession *session,
                                 ArTrackableType filter_type,
                                 ArTrackableList *out_trackable_list);
 
-/// This will create a new cloud anchor using pose and other metadata from
+/// This will create a new Cloud Anchor using the pose and other metadata from
 /// @c anchor.
 ///
 /// If the function returns #AR_SUCCESS, the cloud state of @c out_cloud_anchor
@@ -1775,7 +1773,7 @@ void ArSession_getAllTrackables(const ArSession *session,
 ///
 /// @param[in]    session          The ARCore session
 /// @param[in]    anchor           The anchor to be hosted
-/// @param[inout] out_cloud_anchor The new cloud anchor
+/// @param[inout] out_cloud_anchor The new Cloud Anchor
 /// @return #AR_SUCCESS or any of:
 /// - #AR_ERROR_NOT_TRACKING
 /// - #AR_ERROR_SESSION_PAUSED
@@ -1786,8 +1784,11 @@ ArStatus ArSession_hostAndAcquireNewCloudAnchor(ArSession *session,
                                                 const ArAnchor *anchor,
                                                 ArAnchor **out_cloud_anchor);
 
-/// This will create a new cloud anchor, and schedule a resolving task to
-/// resolve the anchor's pose using the given cloud anchor ID.
+/// This will create a new Cloud Anchor, and schedule a task to resolve the
+/// anchor's pose using the given Cloud Anchor ID. You don’t need to
+/// wait for a call to resolve a Cloud Anchor to complete before initiating
+/// another call. A session can be resolving up to 20 Cloud Anchors at a given
+/// time.
 ///
 /// If this function returns #AR_SUCCESS, the cloud state of @c out_cloud_anchor
 /// will be #AR_CLOUD_ANCHOR_STATE_TASK_IN_PROGRESS, and its tracking state will
@@ -1799,7 +1800,7 @@ ArStatus ArSession_hostAndAcquireNewCloudAnchor(ArSession *session,
 ///
 /// @param[in]    session          The ARCore session
 /// @param[in]    cloud_anchor_id  The cloud ID of the anchor to be resolved
-/// @param[inout] out_cloud_anchor The new cloud anchor
+/// @param[inout] out_cloud_anchor The new Cloud Anchor
 /// @return #AR_SUCCESS or any of:
 /// - #AR_ERROR_NOT_TRACKING
 /// - #AR_ERROR_SESSION_PAUSED
@@ -1845,6 +1846,8 @@ ArStatus ArSession_resolveAndAcquireNewCloudAnchor(ArSession *session,
 /// @deprecated in release 1.11.0. Please use instead: @code
 /// void ArSession_getSupportedCameraConfigsWithFilter(const ArSession* session,
 /// const ArCameraConfigFilter* filter, ArCameraConfigList* list); @endcode
+// TODO(b/146903940): Change ArSession_getSupportedCameraConfigs to return
+// ArStatus.
 void ArSession_getSupportedCameraConfigs(const ArSession *session,
                                          ArCameraConfigList *list)
     AR_DEPRECATED(
@@ -1893,6 +1896,12 @@ void ArSession_getCameraConfig(const ArSession *session,
 /// capabilities. Overly restrictive filtering can result in the returned list
 /// being empty on one or more devices.
 ///
+/// Beginning with ARCore SDK 1.15.0, some devices support additional camera
+/// configs with lower GPU texture resolutions than the device's default GPU
+/// texture resolution. See the ARCore supported devices
+/// (https://developers.google.com/ar/discover/supported-devices) page for
+/// details.
+///
 /// Element 0 will contain the camera config that best matches the filter
 /// settings, according to the following priority:
 ///
@@ -1907,6 +1916,8 @@ void ArSession_getCameraConfig(const ArSession *session,
 /// Can be called at any time.
 ///
 /// @return list of supported camera configs.
+// TODO(b/146903940): Change ArSession_getSupportedCameraConfigsWithFilter to
+// return ArStatus.
 void ArSession_getSupportedCameraConfigsWithFilter(
     const ArSession *session,
     const ArCameraConfigFilter *filter,
@@ -2850,7 +2861,7 @@ void ArAnchor_detach(ArSession *session, ArAnchor *anchor);
 /// This method may safely be called with @c NULL - it will do nothing.
 void ArAnchor_release(ArAnchor *anchor);
 
-/// Acquires the cloud anchor ID of the anchor. The ID acquired is an ASCII
+/// Acquires the Cloud Anchor ID of the anchor. The ID acquired is an ASCII
 /// null-terminated string. The acquired ID must be released after use by the
 /// @c ArString_release function. For anchors with cloud state
 /// #AR_CLOUD_ANCHOR_STATE_NONE or #AR_CLOUD_ANCHOR_STATE_TASK_IN_PROGRESS, this
@@ -2863,7 +2874,7 @@ void ArAnchor_acquireCloudAnchorId(ArSession *session,
                                    ArAnchor *anchor,
                                    char **out_cloud_anchor_id);
 
-/// Gets the current cloud anchor state of the anchor. This state is guaranteed
+/// Gets the current Cloud Anchor state of the anchor. This state is guaranteed
 /// not to change until update() is called.
 ///
 /// @param[in]    session   The ARCore session.

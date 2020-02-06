@@ -118,9 +118,6 @@ public class SharedCameraActivity extends AppCompatActivity
   // Linear layout that contains preview image and status text.
   private LinearLayout imageTextLinearLayout;
 
-  // Switch to allow pausing and resuming of ARCore.
-  private Switch arcoreSwitch;
-
   // ARCore session that supports camera sharing.
   private Session sharedSession;
 
@@ -362,11 +359,11 @@ public class SharedCameraActivity extends AppCompatActivity
 
     imageTextLinearLayout = findViewById(R.id.image_text_layout);
     statusTextView = findViewById(R.id.text_view);
-    arcoreSwitch = findViewById(R.id.arcore_switch);
 
+    // Switch to allow pausing and resuming of ARCore.
+    Switch arcoreSwitch = findViewById(R.id.arcore_switch);
     // Ensure initial switch position is set based on initial value of `arMode` variable.
     arcoreSwitch.setChecked(arMode);
-
     arcoreSwitch.setOnCheckedChangeListener(
         (view, checked) -> {
           Log.i(TAG, "Switching to " + (checked ? "AR" : "non-AR") + " mode.");
@@ -385,7 +382,7 @@ public class SharedCameraActivity extends AppCompatActivity
     updateSnackbarMessage();
   }
 
-  private synchronized void waitUntilCameraCaptureSesssionIsActive() {
+  private synchronized void waitUntilCameraCaptureSessionIsActive() {
     while (!captureSessionChangesPossible) {
       try {
         this.wait();
@@ -398,7 +395,7 @@ public class SharedCameraActivity extends AppCompatActivity
   @Override
   protected void onResume() {
     super.onResume();
-    waitUntilCameraCaptureSesssionIsActive();
+    waitUntilCameraCaptureSessionIsActive();
     startBackgroundThread();
     surfaceView.onResume();
 
@@ -415,7 +412,7 @@ public class SharedCameraActivity extends AppCompatActivity
   public void onPause() {
     shouldUpdateSurfaceTexture.set(false);
     surfaceView.onPause();
-    waitUntilCameraCaptureSesssionIsActive();
+    waitUntilCameraCaptureSessionIsActive();
     displayRotationHelper.onPause();
     if (arMode) {
       pauseARCore();
@@ -439,6 +436,9 @@ public class SharedCameraActivity extends AppCompatActivity
 
     if (!arcoreActive) {
       try {
+        // To avoid flicker when resuming ARCore mode inform the renderer to not suppress rendering
+        // of the frames with zero timestamp.
+        backgroundRenderer.suppressTimestampZeroRendering(false);
         // Resume ARCore.
         sharedSession.resume();
         arcoreActive = true;
@@ -668,7 +668,7 @@ public class SharedCameraActivity extends AppCompatActivity
       captureSession = null;
     }
     if (cameraDevice != null) {
-      waitUntilCameraCaptureSesssionIsActive();
+      waitUntilCameraCaptureSessionIsActive();
       safeToExitApp.close();
       cameraDevice.close();
       safeToExitApp.block();
