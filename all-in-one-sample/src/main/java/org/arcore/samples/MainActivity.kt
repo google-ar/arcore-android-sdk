@@ -1,6 +1,7 @@
 package org.arcore.samples
 
 import android.os.Bundle
+import info.hannes.github.AppUpdateHelper
 import org.arcore.samples.base.NavigationActivity
 
 class MainActivity : NavigationActivity() {
@@ -11,5 +12,11 @@ class MainActivity : NavigationActivity() {
                 .beginTransaction()
                 .add(R.id.contentInfo, SystemInfoFragment())
                 .commit()
+
+        AppUpdateHelper.checkForNewVersion(
+                this,
+                BuildConfig.GIT_USER,
+                BuildConfig.GIT_REPOSITORY,
+                BuildConfig.VERSION_NAME)
     }
 }
