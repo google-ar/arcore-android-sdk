@@ -1,6 +1,7 @@
 rootProject.name = 'ARCore samples'
 
 include ':all-in-one-sample'
+include ':samples:camera_tools'
 include ':samples:shared_camera_java:app'
 include ':samples:hello_ar_java:app'
 include ':samples:hello_ar_c:app'

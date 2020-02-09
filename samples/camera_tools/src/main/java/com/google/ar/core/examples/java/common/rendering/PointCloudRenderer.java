@@ -19,7 +19,9 @@ import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
+
 import com.google.ar.core.PointCloud;
+
 import java.io.IOException;
 
 /** Renders a point cloud. */
