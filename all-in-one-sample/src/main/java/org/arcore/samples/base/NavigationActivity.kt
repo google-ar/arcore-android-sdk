@@ -17,6 +17,8 @@ import com.google.ar.core.examples.java.cloudanchor.CloudAnchorActivity
 import com.google.ar.core.examples.java.computervision.ComputerVisionActivity
 import com.google.ar.core.examples.java.helloar.HelloArActivity
 import com.google.ar.core.examples.java.sharedcamera.SharedCameraActivity
+import info.hannes.github.AppUpdateHelper
+import info.hannes.logcat.LogcatActivity
 import org.arcore.samples.BuildConfig
 import org.arcore.samples.R
 
@@ -76,9 +78,27 @@ abstract class NavigationActivity : AppCompatActivity(), NavigationView.OnNaviga
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean { // Inflate the menu; this adds items to the action bar if it is present.
-        menuInflater.inflate(R.menu.main, menu)
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
         return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_update -> {
+                AppUpdateHelper.checkForNewVersion(
+                        this,
+                        BuildConfig.GIT_USER,
+                        BuildConfig.GIT_REPOSITORY,
+                        BuildConfig.VERSION_NAME)
+                true
+            }
+            R.id.action_logcat -> {
+                openActivity(LogcatActivity::class.java)
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 
     override fun onResume() {

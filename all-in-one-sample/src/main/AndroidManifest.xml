@@ -9,6 +9,11 @@
         android:theme="@style/Theme.AppCompat.NoActionBar"
         tools:ignore="AllowBackup,GoogleAppIndexingWarning"
         tools:replace="android:icon,android:theme">
+
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="your Crashlytic key" />
+
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
