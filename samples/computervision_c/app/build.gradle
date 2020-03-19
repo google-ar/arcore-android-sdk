@@ -62,8 +62,8 @@ android {
 
 dependencies {
     // ARCore library
-    implementation 'com.google.ar:core:1.15.0'
-    natives 'com.google.ar:core:1.15.0'
+    implementation 'com.google.ar:core:1.16.0'
+    natives 'com.google.ar:core:1.16.0'
 
     implementation 'com.android.support:appcompat-v7:28.0.0'
     implementation 'com.android.support:design:28.0.0'

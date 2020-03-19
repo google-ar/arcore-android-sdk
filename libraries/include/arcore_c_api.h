@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2017-2020 Google Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,6 +120,9 @@
 
 /// @defgroup cameraconfig CameraConfig
 /// Camera configuration.
+
+/// @defgroup cameraconfigfilter CameraConfigFilter
+/// Filters available camera configurations.
 
 /// @defgroup frame Frame
 /// Per-frame state.
@@ -389,6 +392,8 @@ typedef struct ArAugmentedImage_ ArAugmentedImage;
 
 /// @}
 
+//                                image_segmentation_people)
+
 // Augmented Faces
 
 /// @addtogroup augmented_face
@@ -646,8 +651,7 @@ AR_DEFINE_ENUM(ArStatus){
     /// To avoid this error, ensure that Session_checkSupported() returns true.
     AR_ERROR_UNSUPPORTED_CONFIGURATION = -8,
 
-    /// The Android camera permission was not granted prior to calling
-    /// ArSession_resume().
+    /// The application does not have Android camera permission.
     AR_ERROR_CAMERA_PERMISSION_NOT_GRANTED = -9,
 
     /// Acquire failed because the object being acquired was already released.
@@ -1007,12 +1011,12 @@ AR_DEFINE_ENUM(ArPointOrientationMode){
 /// @ingroup cloud
 /// Indicates the cloud configuration of the ::ArSession.
 AR_DEFINE_ENUM(ArCloudAnchorMode){
-    /// Anchor Hosting is disabled. This is the value set in the default
+    /// Cloud Anchors are disabled. This is the value set in the default
     /// ::ArConfig.
     AR_CLOUD_ANCHOR_MODE_DISABLED = 0,
-    /// Anchor Hosting is enabled. Setting this value and calling
-    /// @c ArSession_configure() will require that the application have the
-    /// Android INTERNET permission.
+    /// This mode will enable Cloud Anchors. Setting this value and calling @c
+    /// ArSssion_configure() will require the application to have the Android
+    /// INTERNET permission.
     AR_CLOUD_ANCHOR_MODE_ENABLED = 1,
 };
 
@@ -1351,6 +1355,8 @@ void ArConfig_getAugmentedImageDatabase(
     const ArConfig *config,
     ArAugmentedImageDatabase *out_augmented_image_database);
 
+//                                image_segmentation_people)
+
 /// Stores the currently configured augmented face mode into @c
 /// *augmented_face_mode.
 void ArConfig_getAugmentedFaceMode(const ArSession *session,
@@ -1541,30 +1547,55 @@ AR_DEFINE_ENUM(ArCameraConfigDepthSensorUsage){
     AR_CAMERA_CONFIG_DEPTH_SENSOR_USAGE_DO_NOT_USE = 0x0002,
 };
 
-// Creates a camera config filters object with default values set for
-// backward compatibility. The caller can update the config filters it
-// wants and then get the matching camera configs.
+/// @addtogroup cameraconfigfilter
+/// @{
+
+/// Creates a camera config filter object.
+///
+/// @param[in]   session     The ARCore session
+/// @param[out]  out_filter  A pointer to an @c ArCameraConfigFilter* to receive
+///     the address of the newly allocated ArCameraConfigFilter
 void ArCameraConfigFilter_create(const ArSession *session,
                                  ArCameraConfigFilter **out_filter);
 
-/// Releases memory used by the provided camera config filters object.
+/// Releases memory used by the provided camera config filter object.
+///
+/// @param[in] filter The filter to release memory for.
 void ArCameraConfigFilter_destroy(ArCameraConfigFilter *filter);
 
-/// Sets the fps filter.
+/// Sets the desired framerates to allow.
+///
+/// @param[in] session     The ARCore session
+/// @param[in, out] filter The filter object to change
+/// @param[in] fps_filters A 32bit integer representing multiple
+///     @c ArCameraConfigTargetFps values, bitwise-or'd together
 void ArCameraConfigFilter_setTargetFps(const ArSession *session,
                                        ArCameraConfigFilter *filter,
                                        const uint32_t fps_filters);
 
-/// Gets the fps filter state.
+/// Gets the desired framerates to allow.
+///
+/// @param[in]  session         The ARCore session
+/// @param[in]  filter          The filter object to query
+/// @param[out] out_fps_filters To be filled in with the desired framerates
+///      allowed
 void ArCameraConfigFilter_getTargetFps(const ArSession *session,
                                        ArCameraConfigFilter *filter,
                                        uint32_t *out_fps_filters);
 
-/// Sets depth sensor usage filter. Default is to not filter.
+/// Sets the desired depth sensor usages to allow.
+///
+/// @param[in]      session                    The ARCore session
+/// @param[in, out] filter                     The filter object to change
+/// @param[in]      depth_sensor_usage_filters A 32bit integer representing
+///     multiple @c ArCameraConfigDepthSensorUsage values, bitwise-or'd
+///     together
 void ArCameraConfigFilter_setDepthSensorUsage(
     const ArSession *session,
     ArCameraConfigFilter *filter,
     uint32_t depth_sensor_usage_filters);
+
+/// @}
 
 // === ArSession methods ===
 
@@ -1600,11 +1631,12 @@ ArStatus ArSession_checkSupported(const ArSession *session,
     AR_DEPRECATED(
         "deprecated in release 1.2.0. Please see function documentation");
 
-/// Configures the session with the given config.
-/// Note: a session is always initially configured with the default config.
-/// This should be called if a configuration different than default is needed.
+/// Configures the session.
 ///
-/// The following configurations are not supported:
+/// A session initially has a default configuration. This should be called if a
+/// configuration different than default is needed.
+///
+/// The following configurations are unsupported:
 ///
 /// - When using the (default) back-facing camera:
 ///   - #AR_AUGMENTED_FACE_MODE_MESH3D.
@@ -1614,10 +1646,13 @@ ArStatus ArSession_checkSupported(const ArSession *session,
 ///   - #AR_CLOUD_ANCHOR_MODE_ENABLED.
 ///   - #AR_LIGHT_ESTIMATION_MODE_ENVIRONMENTAL_HDR.
 ///
+/// @param[in] session The ARCore session.
+/// @param[in] config The new configuration setting for the session.
+///
 /// @return #AR_SUCCESS or any of:
 /// - #AR_ERROR_FATAL
-/// - #AR_ERROR_UNSUPPORTED_CONFIGURATION If the configuration is not supported,
-///   see above restrictions
+/// - #AR_ERROR_UNSUPPORTED_CONFIGURATION if the configuration is not supported.
+///   See above restrictions.
 /// - #AR_ERROR_INTERNET_PERMISSION_NOT_GRANTED
 ArStatus ArSession_configure(ArSession *session, const ArConfig *config);
 
@@ -1898,9 +1933,10 @@ void ArSession_getCameraConfig(const ArSession *session,
 ///
 /// Beginning with ARCore SDK 1.15.0, some devices support additional camera
 /// configs with lower GPU texture resolutions than the device's default GPU
-/// texture resolution. See the ARCore supported devices
+/// texture resolution. These additional resolutions are only returned when the
+/// filter is not a @c nullptr. See the ARCore supported devices
 /// (https://developers.google.com/ar/discover/supported-devices) page for
-/// details.
+/// an up to date list of supported devices.
 ///
 /// Element 0 will contain the camera config that best matches the filter
 /// settings, according to the following priority:
