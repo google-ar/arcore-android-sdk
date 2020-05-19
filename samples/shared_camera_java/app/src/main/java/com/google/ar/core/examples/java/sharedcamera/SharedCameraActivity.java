@@ -716,6 +716,7 @@ public class SharedCameraActivity extends AppCompatActivity
   // Android permission request callback.
   @Override
   public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+    super.onRequestPermissionsResult(requestCode, permissions, results);
     if (!CameraPermissionHelper.hasCameraPermission(this)) {
       Toast.makeText(
               getApplicationContext(),

@@ -1,11 +1,11 @@
 # Description:
 #   The GLM (OpenGL Mathematics) library.
 
+load("//third_party/glm:defs.bzl", "COMMON_COPTS")
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])  # MIT
-
-load("//third_party/glm:defs.bzl", "COMMON_COPTS")
 
 # Headers that can be passed to cc_library.hdrs.
 filegroup(
@@ -20,6 +20,7 @@ filegroup(
             "glm/simd/*.h",
         ],
     ),
+    compatible_with = ["//buildenv/target:gce"],
 )
 
 # All headers, including inlined files, that can be passed to
@@ -31,11 +32,13 @@ filegroup(
         "glm/**/*.hpp",
         "glm/**/*.inl",
     ]),
+    compatible_with = ["//buildenv/target:gce"],
 )
 
 cc_library(
     name = "glm_impl",
     srcs = ["glm/detail/glm.cpp"],
+    compatible_with = ["//buildenv/target:gce"],
     copts = COMMON_COPTS + [
         # GLM includes things in a few ways, and by doing this as a copt we
         # avoid polluting the global header paths.

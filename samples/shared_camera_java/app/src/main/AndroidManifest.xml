@@ -19,8 +19,8 @@
     package="com.google.ar.core.examples.java.sharedcamera">
 
   <uses-permission android:name="android.permission.CAMERA"/>
-  <!-- This tag indicates that this application requires ARCore.  This results in the application
-       only being visible in the Google Play Store on devices that support ARCore. -->
+  <!-- Limits app visibility in the Google Play Store to ARCore supported devices
+       (https://developers.google.com/ar/discover/supported-devices). -->
   <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
   <uses-feature android:glEsVersion="0x00020000" android:required="true" />
 
@@ -44,8 +44,7 @@
         <category android:name="android.intent.category.LAUNCHER"/>
       </intent-filter>
     </activity>
-    <!-- This tag indicates that this application requires ARCore.  This results in the Google Play
-         Store downloading and installing ARCore along with the application. -->
+    <!-- Indicates whether "Google Play Services for AR" (ARCore) is "required" or "optional". -->
     <meta-data android:name="com.google.ar.core" android:value="required" />
   </application>
 </manifest>

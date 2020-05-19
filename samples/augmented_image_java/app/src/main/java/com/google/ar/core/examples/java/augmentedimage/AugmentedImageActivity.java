@@ -202,6 +202,7 @@ public class AugmentedImageActivity extends AppCompatActivity implements GLSurfa
 
   @Override
   public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+    super.onRequestPermissionsResult(requestCode, permissions, results);
     if (!CameraPermissionHelper.hasCameraPermission(this)) {
       Toast.makeText(
               this, "Camera permissions are needed to run this application", Toast.LENGTH_LONG)

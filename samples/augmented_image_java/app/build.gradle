@@ -15,7 +15,8 @@ android {
     defaultConfig {
         applicationId "com.google.ar.core.examples.java.augmentedimage"
 
-        // 24 is the minimum since ARCore only works with 24 and higher.
+        // "AR Optional" apps must declare minSdkVersion >= 14.
+        // "AR Required" apps must declare minSdkVersion >= 24.
         minSdkVersion 24
         targetSdkVersion 28
         versionCode 1
@@ -34,8 +35,8 @@ android {
 }
 
 dependencies {
-    // ARCore library
-    implementation 'com.google.ar:core:1.16.0'
+    // ARCore (Google Play Services for AR) library.
+    implementation 'com.google.ar:core:1.17.0'
 
     // Obj - a simple Wavefront OBJ file loader
     // https://github.com/javagl/Obj

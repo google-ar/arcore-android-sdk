@@ -38,6 +38,12 @@
           android:onClick="onLowResolutionRadioButtonClicked"
           android:text="@string/label_low_res"/>
       <RadioButton
+          android:id="@+id/radio_medium_res"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:onClick="onMediumResolutionRadioButtonClicked"
+          android:text="@string/label_medium_res"/>
+      <RadioButton
           android:id="@+id/radio_high_res"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"

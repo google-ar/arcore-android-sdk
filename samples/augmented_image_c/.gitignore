@@ -11,3 +11,6 @@ local.properties
 
 # OS configurations.
 .DS_Store
+
+# Android NDK cmake output.
+.cxx/

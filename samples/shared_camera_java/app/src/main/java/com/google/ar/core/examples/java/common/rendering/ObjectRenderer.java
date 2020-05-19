@@ -42,10 +42,10 @@ public class ObjectRenderer {
    * @see #setBlendMode(BlendMode)
    */
   public enum BlendMode {
-    /** Multiplies the destination color by the source alpha. */
+    /** Multiplies the destination color by the source alpha, without z-buffer writing. */
     Shadow,
-    /** Normal alpha blending. */
-    Grid
+    /** Normal alpha blending with z-buffer writing. */
+    AlphaBlending
   }
 
   // Shader names.
@@ -347,15 +347,16 @@ public class ObjectRenderer {
     GLES20.glEnableVertexAttribArray(texCoordAttribute);
 
     if (blendMode != null) {
-      GLES20.glDepthMask(false);
       GLES20.glEnable(GLES20.GL_BLEND);
       switch (blendMode) {
         case Shadow:
           // Multiplicative blending function for Shadow.
+          GLES20.glDepthMask(false);
           GLES20.glBlendFunc(GLES20.GL_ZERO, GLES20.GL_ONE_MINUS_SRC_ALPHA);
           break;
-        case Grid:
-          // Grid, additive blending function.
+        case AlphaBlending:
+          // Alpha blending function, with the depth mask enabled.
+          GLES20.glDepthMask(true);
           GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
           break;
       }

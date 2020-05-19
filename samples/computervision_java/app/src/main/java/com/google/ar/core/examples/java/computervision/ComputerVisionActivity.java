@@ -24,6 +24,7 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Size;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.RadioButton;
@@ -51,6 +52,8 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -60,7 +63,7 @@ import javax.microedition.khronos.opengles.GL10;
 public class ComputerVisionActivity extends AppCompatActivity implements GLSurfaceView.Renderer {
   private static final String TAG = ComputerVisionActivity.class.getSimpleName();
   private static final String CAMERA_INTRINSICS_TEXT_FORMAT =
-      "Unrotated Camera %s %s Intrinsics:\n\tFocal Length: (%.2f, %.2f)"
+      "\tUnrotated Camera %s %s Intrinsics:\n\tFocal Length: (%.2f, %.2f)"
           + "\n\tPrincipal Point: (%.2f, %.2f)"
           + "\n\t%s Image Dimensions: (%d, %d)"
           + "\n\tUnrotated Field of View: (%.2f˚, %.2f˚)"
@@ -80,6 +83,16 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
 
   // Select the image acquisition path here.
   private final ImageAcquisitionPath imageAcquisitionPath = ImageAcquisitionPath.CPU_DIRECT_ACCESS;
+
+  // Multiple CPU image Resolution.
+  private enum ImageResolution {
+    LOW_RESOLUTION,
+    MEDIUM_RESOLUTION,
+    HIGH_RESOLUTION,
+  }
+
+  // Default CPU image is low resolution.
+  private ImageResolution cpuResolution = ImageResolution.LOW_RESOLUTION;
 
   // Session management and rendering.
   private GLSurfaceView surfaceView;
@@ -112,8 +125,8 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
   private static final int IMAGE_HEIGHT = 720;
 
   // For Camera Configuration APIs usage.
-  private boolean isLowResolutionSelected;
   private CameraConfig cpuLowResolutionCameraConfig;
+  private CameraConfig cpuMediumResolutionCameraConfig;
   private CameraConfig cpuHighResolutionCameraConfig;
 
   private Switch cvModeSwitch;
@@ -230,6 +243,7 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
 
   @Override
   public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+    super.onRequestPermissionsResult(requestCode, permissions, results);
     if (!CameraPermissionHelper.hasCameraPermission(this)) {
       Toast.makeText(this, "Camera permission is needed to run this application", Toast.LENGTH_LONG)
           .show();
@@ -393,19 +407,28 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
 
   public void onLowResolutionRadioButtonClicked(View view) {
     boolean checked = ((RadioButton) view).isChecked();
-    if (checked && !isLowResolutionSelected) {
+    if (checked && cpuResolution != ImageResolution.LOW_RESOLUTION) {
       // Display low resolution.
       onCameraConfigChanged(cpuLowResolutionCameraConfig);
-      isLowResolutionSelected = true;
+      cpuResolution = ImageResolution.LOW_RESOLUTION;
+    }
+  }
+
+  public void onMediumResolutionRadioButtonClicked(View view) {
+    boolean checked = ((RadioButton) view).isChecked();
+    if (checked && cpuResolution != ImageResolution.MEDIUM_RESOLUTION) {
+      // Display medium resolution.
+      onCameraConfigChanged(cpuMediumResolutionCameraConfig);
+      cpuResolution = ImageResolution.MEDIUM_RESOLUTION;
     }
   }
 
   public void onHighResolutionRadioButtonClicked(View view) {
     boolean checked = ((RadioButton) view).isChecked();
-    if (checked && isLowResolutionSelected) {
+    if (checked && cpuResolution != ImageResolution.HIGH_RESOLUTION) {
       // Display high resolution.
       onCameraConfigChanged(cpuHighResolutionCameraConfig);
-      isLowResolutionSelected = false;
+      cpuResolution = ImageResolution.HIGH_RESOLUTION;
     }
   }
 
@@ -448,7 +471,9 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
               + " and fps "
               + cameraConfig.getFpsRange()
               + ".";
-      Toast.makeText(this, toastMessage, Toast.LENGTH_LONG).show();
+      Toast toast = Toast.makeText(this, toastMessage, Toast.LENGTH_LONG);
+      toast.setGravity(Gravity.BOTTOM, /* xOffset= */ 0, /* yOffset=*/ 250);
+      toast.show();
     }
   }
 
@@ -468,16 +493,24 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
 
       // Determine the highest and lowest CPU resolutions.
       cpuLowResolutionCameraConfig =
-          getCameraConfigWithLowestOrHighestResolution(cameraConfigs, true);
+          getCameraConfigWithSelectedResolution(
+              cameraConfigs, /*ImageResolution*/ ImageResolution.LOW_RESOLUTION);
+      cpuMediumResolutionCameraConfig =
+          getCameraConfigWithSelectedResolution(
+              cameraConfigs, /*ImageResolution*/ ImageResolution.MEDIUM_RESOLUTION);
       cpuHighResolutionCameraConfig =
-          getCameraConfigWithLowestOrHighestResolution(cameraConfigs, false);
-
+          getCameraConfigWithSelectedResolution(
+              cameraConfigs, /*ImageResolution*/ ImageResolution.HIGH_RESOLUTION);
       // Update the radio buttons with the resolution info.
       updateRadioButtonText(
           R.id.radio_low_res, cpuLowResolutionCameraConfig, getString(R.string.label_low_res));
       updateRadioButtonText(
+          R.id.radio_medium_res,
+          cpuMediumResolutionCameraConfig,
+          getString(R.string.label_medium_res));
+      updateRadioButtonText(
           R.id.radio_high_res, cpuHighResolutionCameraConfig, getString(R.string.label_high_res));
-      isLowResolutionSelected = true;
+      cpuResolution = ImageResolution.LOW_RESOLUTION;
     }
   }
 
@@ -487,21 +520,29 @@ public class ComputerVisionActivity extends AppCompatActivity implements GLSurfa
     radioButton.setText(prefix + " (" + resolution.getWidth() + "x" + resolution.getHeight() + ")");
   }
 
-  private CameraConfig getCameraConfigWithLowestOrHighestResolution(
-      List<CameraConfig> cameraConfigs, boolean lowest) {
-    CameraConfig cameraConfig = cameraConfigs.get(0);
-    for (int index = 1; index < cameraConfigs.size(); index++) {
-      if (lowest) {
-        if (cameraConfigs.get(index).getImageSize().getHeight()
-            < cameraConfig.getImageSize().getHeight()) {
-          cameraConfig = cameraConfigs.get(index);
-        }
-      } else {
-        if (cameraConfigs.get(index).getImageSize().getHeight()
-            > cameraConfig.getImageSize().getHeight()) {
-          cameraConfig = cameraConfigs.get(index);
-        }
-      }
+  /* Get the CameraConfig with selected resolution. */
+  private static CameraConfig getCameraConfigWithSelectedResolution(
+      List<CameraConfig> cameraConfigs, ImageResolution resolution) {
+    // Take the first three camera configs, if camera configs size are larger than 3.
+    List<CameraConfig> cameraConfigsByResolution =
+        new ArrayList<>(
+            cameraConfigs.subList(0, Math.min(cameraConfigs.size(), 3)));
+    Collections.sort(
+        cameraConfigsByResolution,
+        (CameraConfig p1, CameraConfig p2) ->
+            Integer.compare(p1.getImageSize().getHeight(), p2.getImageSize().getHeight()));
+    CameraConfig cameraConfig = cameraConfigsByResolution.get(0);
+    switch (resolution) {
+      case LOW_RESOLUTION:
+        cameraConfig = cameraConfigsByResolution.get(0);
+        break;
+      case MEDIUM_RESOLUTION:
+        // There are some devices that medium resolution is the same as high resolution.
+        cameraConfig = cameraConfigsByResolution.get(1);
+        break;
+      case HIGH_RESOLUTION:
+        cameraConfig = cameraConfigsByResolution.get(2);
+        break;
     }
     return cameraConfig;
   }

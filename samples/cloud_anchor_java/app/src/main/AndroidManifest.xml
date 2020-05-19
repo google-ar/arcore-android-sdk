@@ -23,8 +23,8 @@
   <uses-permission android:name="android.permission.INTERNET" />
 
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-  <!-- This tag indicates that this application requires ARCore.  This results in the application
-       only being visible in the Google Play Store on devices that support ARCore. -->
+  <!-- Limits app visibility in the Google Play Store to ARCore supported devices
+       (https://developers.google.com/ar/discover/supported-devices). -->
   <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
 
   <application
@@ -47,10 +47,7 @@
         <category android:name="android.intent.category.LAUNCHER"/>
       </intent-filter>
     </activity>
-    <!-- This tag indicates that this application requires ARCore.  This results in the Google Play
-         Store downloading and installing ARCore along with the application.
-         Application code must still call ArCoreApk.requestInstall() before beginning an ARCore
-         sessions, in case the user uninstalls ARCore for any reason. -->
+    <!-- Indicates whether "Google Play Services for AR" (ARCore) is "required" or "optional". -->
     <meta-data android:name="com.google.ar.core" android:value="required" />
   </application>
 </manifest>

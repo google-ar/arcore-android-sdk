@@ -117,6 +117,17 @@
 
 /// @defgroup config Configuration
 /// Session configuration.
+///
+/// To configure an #ArSession:
+///
+/// 1. Use #ArConfig_create() to create an #ArConfig object.
+/// 2. Call any number of configuration functions on the newly created object.
+/// 3. To apply the configuration to the session, use #ArSession_configure().
+/// 4. To release the memory used by the #ArConfig object, use
+///    #ArConfig_destroy().
+///
+/// Note: None of the `ArConfig_set*()` functions will actually affect the state
+/// of the given #ArSession until #ArSession_configure() is called.
 
 /// @defgroup cameraconfig CameraConfig
 /// Camera configuration.
@@ -701,8 +712,8 @@ AR_DEFINE_ENUM(ArStatus){
     /// A function has been invoked at an illegal or inappropriate time. A
     /// message will be printed to logcat with additional details for the
     /// developer. For example, ArSession_resume() will return this status if
-    /// the camera configuration was changed and there are any unreleased
-    /// images.
+    /// the camera configuration was changed and there is at least one
+    /// unreleased image.
     AR_ERROR_ILLEGAL_STATE = -20,
 
     /// The ARCore APK is not installed on this device.
@@ -834,6 +845,7 @@ AR_DEFINE_ENUM(ArCloudAnchorState){
     /// might affect the device's ability to connect to the ARCore Cloud Anchor
     /// service.
     AR_CLOUD_ANCHOR_STATE_ERROR_HOSTING_SERVICE_UNAVAILABLE = -10,
+
 };
 
 /// @ingroup arcoreapk
@@ -1387,6 +1399,7 @@ void ArConfig_setAugmentedFaceMode(const ArSession *session,
 /// To determine whether the configured ARCore camera supports auto focus, check
 /// ACAMERA_LENS_INFO_MINIMUM_FOCUS_DISTANCE, which is 0 for fixed-focus
 /// cameras.
+///
 void ArConfig_setFocusMode(const ArSession *session,
                            ArConfig *config,
                            ArFocusMode focus_mode);
@@ -1595,6 +1608,16 @@ void ArCameraConfigFilter_setDepthSensorUsage(
     ArCameraConfigFilter *filter,
     uint32_t depth_sensor_usage_filters);
 
+/// Gets the desired depth sensor usages to allow.
+///
+/// @param[in]  session                The ARCore session
+/// @param[in]  filter                 The filter object to query
+/// @param[out] out_depth_sensor_usage To be filled in with the desired depth
+///     sensor usages allowed
+void ArCameraConfigFilter_getDepthSensorUsage(const ArSession *session,
+                                              ArCameraConfigFilter *filter,
+                                              uint32_t *out_depth_sensor_usage);
+
 /// @}
 
 // === ArSession methods ===
@@ -1695,6 +1718,25 @@ ArStatus ArSession_resume(ArSession *session);
 /// @return #AR_SUCCESS or any of:
 /// - #AR_ERROR_FATAL
 ArStatus ArSession_pause(ArSession *session);
+
+/// Sets the OpenGL texture names (ids) that will be assigned to incoming camera
+/// frames in sequence in a ring buffer. The textures must be bound to the @c
+/// GL_TEXTURE_EXTERNAL_OES target for use. Shaders accessing these textures
+/// must use a @c samplerExternalOES sampler.
+///
+/// Passing multiple textures allows for a multithreaded rendering pipeline,
+/// unlike @c ArSession_setCameraTextureName.
+///
+/// Note: this function doesn't fail. If given invalid input, it logs an error
+/// without setting the texture names.
+///
+/// @param[in] session The ARCore session
+/// @param[in] number_of_textures The number of textures being passed. This
+/// must always be at least 1.
+/// @param[in] texture_ids Pointer to the array of textures names (ids)
+void ArSession_setCameraTextureNames(ArSession *session,
+                                     int32_t number_of_textures,
+                                     const uint32_t *texture_ids);
 
 /// Sets the OpenGL texture name (id) that will allow GPU access to the camera
 /// image. The texture must be bound to the @c GL_TEXTURE_EXTERNAL_OES target
@@ -1820,7 +1862,7 @@ ArStatus ArSession_hostAndAcquireNewCloudAnchor(ArSession *session,
                                                 ArAnchor **out_cloud_anchor);
 
 /// This will create a new Cloud Anchor, and schedule a task to resolve the
-/// anchor's pose using the given Cloud Anchor ID. You don’t need to
+/// anchor's pose using the given Cloud Anchor ID. You don't need to
 /// wait for a call to resolve a Cloud Anchor to complete before initiating
 /// another call. A session can be resolving up to 20 Cloud Anchors at a given
 /// time.
@@ -2470,6 +2512,18 @@ void ArFrame_getUpdatedTrackables(const ArSession *session,
                                   const ArFrame *frame,
                                   ArTrackableType filter_type,
                                   ArTrackableList *out_trackable_list);
+
+/// Returns the OpenGL ES camera texture name (id) associated with this frame.
+/// This is guaranteed to be one of the texture names previously set via
+/// #ArSession_setCameraTextureNames or #ArSession_setCameraTextureName. Texture
+/// names (ids) are returned in a round robin fashion in sequential frames.
+///
+/// @param[in]   session         The ARCore session.
+/// @param[in]   frame           The current frame.
+/// @param[out]  out_texture_id  Where to store the texture name (id).
+void ArFrame_getCameraTextureName(const ArSession *session,
+                                  const ArFrame *frame,
+                                  uint32_t *out_texture_id);
 
 // === Scene Structure methods ===
 
