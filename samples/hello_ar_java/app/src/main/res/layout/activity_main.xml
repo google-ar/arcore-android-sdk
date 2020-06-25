@@ -25,4 +25,14 @@
       android:layout_height="fill_parent"
       android:layout_gravity="top"/>
 
+  <ImageButton
+      android:id="@+id/settings_button"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_alignParentEnd="true"
+      android:layout_alignParentTop="true"
+      android:layout_margin="25dp"
+      android:src="@drawable/ic_settings"
+      android:background="@android:color/transparent"/>
+
 </RelativeLayout>

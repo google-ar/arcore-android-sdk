@@ -31,6 +31,8 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.Map;
+import java.util.TreeMap;
 
 /** Renders an object loaded from an OBJ file in OpenGL. */
 public class ObjectRenderer {
@@ -49,8 +51,8 @@ public class ObjectRenderer {
   }
 
   // Shader names.
-  private static final String VERTEX_SHADER_NAME = "shaders/object.vert";
-  private static final String FRAGMENT_SHADER_NAME = "shaders/object.frag";
+  private static final String VERTEX_SHADER_NAME = "shaders/ar_object.vert";
+  private static final String FRAGMENT_SHADER_NAME = "shaders/ar_object.frag";
 
   private static final int COORDS_PER_VERTEX = 3;
   private static final float[] DEFAULT_COLOR = new float[] {0f, 0f, 0f, 0f};
@@ -88,11 +90,20 @@ public class ObjectRenderer {
   // Shader location: material properties.
   private int materialParametersUniform;
 
-  // Shader location: color correction property
+  // Shader location: color correction property.
   private int colorCorrectionParameterUniform;
 
   // Shader location: object color property (to change the primary color of the object).
   private int colorUniform;
+
+  // Shader location: depth texture.
+  private int depthTextureUniform;
+
+  // Shader location: transform to depth uvs.
+  private int depthUvTransformUniform;
+
+  // Shader location: the aspect ratio of the depth texture.
+  private int depthAspectRatioUniform;
 
   private BlendMode blendMode = null;
 
@@ -107,7 +118,12 @@ public class ObjectRenderer {
   private float specular = 1.0f;
   private float specularPower = 6.0f;
 
-  public ObjectRenderer() {}
+  // Depth-for-Occlusion parameters.
+  private static final String USE_DEPTH_FOR_OCCLUSION_SHADER_FLAG = "USE_DEPTH_FOR_OCCLUSION";
+  private boolean useDepthForOcclusion = false;
+  private float depthAspectRatio = 0.0f;
+  private float[] uvTransform = null;
+  private int depthTextureId;
 
   /**
    * Creates and initializes OpenGL resources needed for rendering the model.
@@ -118,35 +134,8 @@ public class ObjectRenderer {
    */
   public void createOnGlThread(Context context, String objAssetName, String diffuseTextureAssetName)
       throws IOException {
-    final int vertexShader =
-        ShaderUtil.loadGLShader(TAG, context, GLES20.GL_VERTEX_SHADER, VERTEX_SHADER_NAME);
-    final int fragmentShader =
-        ShaderUtil.loadGLShader(TAG, context, GLES20.GL_FRAGMENT_SHADER, FRAGMENT_SHADER_NAME);
-
-    program = GLES20.glCreateProgram();
-    GLES20.glAttachShader(program, vertexShader);
-    GLES20.glAttachShader(program, fragmentShader);
-    GLES20.glLinkProgram(program);
-    GLES20.glUseProgram(program);
-
-    ShaderUtil.checkGLError(TAG, "Program creation");
-
-    modelViewUniform = GLES20.glGetUniformLocation(program, "u_ModelView");
-    modelViewProjectionUniform = GLES20.glGetUniformLocation(program, "u_ModelViewProjection");
-
-    positionAttribute = GLES20.glGetAttribLocation(program, "a_Position");
-    normalAttribute = GLES20.glGetAttribLocation(program, "a_Normal");
-    texCoordAttribute = GLES20.glGetAttribLocation(program, "a_TexCoord");
-
-    textureUniform = GLES20.glGetUniformLocation(program, "u_Texture");
-
-    lightingParametersUniform = GLES20.glGetUniformLocation(program, "u_LightingParameters");
-    materialParametersUniform = GLES20.glGetUniformLocation(program, "u_MaterialParameters");
-    colorCorrectionParameterUniform =
-        GLES20.glGetUniformLocation(program, "u_ColorCorrectionParameters");
-    colorUniform = GLES20.glGetUniformLocation(program, "u_ObjColor");
-
-    ShaderUtil.checkGLError(TAG, "Program parameters");
+    // Compiles and loads the shader based on the current configuration.
+    compileAndLoadShaderProgram(context);
 
     // Read the texture.
     Bitmap textureBitmap =
@@ -241,6 +230,74 @@ public class ObjectRenderer {
   }
 
   /**
+   * Specifies whether to use the depth texture to perform depth-based occlusion of virtual objects
+   * from real-world geometry.
+   *
+   * <p>This function is a no-op if the value provided is the same as what is already set. If the
+   * value changes, this function will recompile and reload the shader program to either
+   * enable/disable depth-based occlusion. NOTE: recompilation of the shader is inefficient. This
+   * code could be optimized to precompile both versions of the shader.
+   *
+   * @param context Context for loading the shader.
+   * @param useDepthForOcclusion Specifies whether to use the depth texture to perform occlusion
+   *     during rendering of virtual objects.
+   */
+  public void setUseDepthForOcclusion(Context context, boolean useDepthForOcclusion)
+      throws IOException {
+    if (this.useDepthForOcclusion == useDepthForOcclusion) {
+      return; // No change, does nothing.
+    }
+
+    // Toggles the occlusion rendering mode and recompiles the shader.
+    this.useDepthForOcclusion = useDepthForOcclusion;
+    compileAndLoadShaderProgram(context);
+  }
+
+  private void compileAndLoadShaderProgram(Context context) throws IOException {
+    // Compiles and loads the shader program based on the selected mode.
+    Map<String, Integer> defineValuesMap = new TreeMap<>();
+    defineValuesMap.put(USE_DEPTH_FOR_OCCLUSION_SHADER_FLAG, useDepthForOcclusion ? 1 : 0);
+
+    final int vertexShader =
+        ShaderUtil.loadGLShader(TAG, context, GLES20.GL_VERTEX_SHADER, VERTEX_SHADER_NAME);
+    final int fragmentShader =
+        ShaderUtil.loadGLShader(
+            TAG, context, GLES20.GL_FRAGMENT_SHADER, FRAGMENT_SHADER_NAME, defineValuesMap);
+
+    program = GLES20.glCreateProgram();
+    GLES20.glAttachShader(program, vertexShader);
+    GLES20.glAttachShader(program, fragmentShader);
+    GLES20.glLinkProgram(program);
+    GLES20.glUseProgram(program);
+
+    ShaderUtil.checkGLError(TAG, "Program creation");
+
+    modelViewUniform = GLES20.glGetUniformLocation(program, "u_ModelView");
+    modelViewProjectionUniform = GLES20.glGetUniformLocation(program, "u_ModelViewProjection");
+
+    positionAttribute = GLES20.glGetAttribLocation(program, "a_Position");
+    normalAttribute = GLES20.glGetAttribLocation(program, "a_Normal");
+    texCoordAttribute = GLES20.glGetAttribLocation(program, "a_TexCoord");
+
+    textureUniform = GLES20.glGetUniformLocation(program, "u_Texture");
+
+    lightingParametersUniform = GLES20.glGetUniformLocation(program, "u_LightingParameters");
+    materialParametersUniform = GLES20.glGetUniformLocation(program, "u_MaterialParameters");
+    colorCorrectionParameterUniform =
+        GLES20.glGetUniformLocation(program, "u_ColorCorrectionParameters");
+    colorUniform = GLES20.glGetUniformLocation(program, "u_ObjColor");
+
+    // Occlusion Uniforms.
+    if (useDepthForOcclusion) {
+      depthTextureUniform = GLES20.glGetUniformLocation(program, "u_DepthTexture");
+      depthUvTransformUniform = GLES20.glGetUniformLocation(program, "u_DepthUvTransform");
+      depthAspectRatioUniform = GLES20.glGetUniformLocation(program, "u_DepthAspectRatio");
+    }
+
+    ShaderUtil.checkGLError(TAG, "Program parameters");
+  }
+
+  /**
    * Updates the object model matrix and applies scaling.
    *
    * @param modelMatrix A 4x4 model-to-world transformation matrix, stored in column-major order.
@@ -278,7 +335,7 @@ public class ObjectRenderer {
    *
    * @param cameraView A 4x4 view matrix, in column-major order.
    * @param cameraPerspective A 4x4 projection matrix, in column-major order.
-   * @param lightIntensity Illumination intensity. Combined with diffuse and specular material
+   * @param colorCorrectionRgba Illumination intensity. Combined with diffuse and specular material
    *     properties.
    * @see #setBlendMode(BlendMode)
    * @see #updateModelMatrix(float[], float)
@@ -326,6 +383,18 @@ public class ObjectRenderer {
     GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
     GLES20.glUniform1i(textureUniform, 0);
 
+    // Occlusion parameters.
+    if (useDepthForOcclusion) {
+      // Attach the depth texture.
+      GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+      GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, depthTextureId);
+      GLES20.glUniform1i(depthTextureUniform, 1);
+
+      // Set the depth texture uv transform.
+      GLES20.glUniformMatrix3fv(depthUvTransformUniform, 1, false, uvTransform, 0);
+      GLES20.glUniform1f(depthAspectRatioUniform, depthAspectRatio);
+    }
+
     // Set the vertex attributes.
     GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vertexBufferId);
 
@@ -357,7 +426,11 @@ public class ObjectRenderer {
         case AlphaBlending:
           // Alpha blending function, with the depth mask enabled.
           GLES20.glDepthMask(true);
-          GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+
+          // Textures are loaded with premultiplied alpha
+          // (https://developer.android.com/reference/android/graphics/BitmapFactory.Options#inPremultiplied),
+          // so we use the premultiplied alpha blend factors.
+          GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
           break;
       }
     }
@@ -386,5 +459,14 @@ public class ObjectRenderer {
     v[0] *= reciprocalLength;
     v[1] *= reciprocalLength;
     v[2] *= reciprocalLength;
+  }
+
+  public void setUvTransformMatrix(float[] transform) {
+    uvTransform = transform;
+  }
+
+  public void setDepthTexture(int textureId, int width, int height) {
+    depthTextureId = textureId;
+    depthAspectRatio = (float) width / (float) height;
   }
 }

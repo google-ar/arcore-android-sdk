@@ -87,9 +87,12 @@ void PlaneRenderer::Draw(const glm::mat4& projection_mat,
   glVertexAttribPointer(attri_vertices_, 3, GL_FLOAT, GL_FALSE, 0,
                         vertices_.data());
 
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glDrawElements(GL_TRIANGLES, triangles_.size(), GL_UNSIGNED_SHORT,
                  triangles_.data());
 
+  glDisable(GL_BLEND);
   glUseProgram(0);
   glDepthMask(GL_TRUE);
   util::CheckGlError("plane_renderer::Draw()");

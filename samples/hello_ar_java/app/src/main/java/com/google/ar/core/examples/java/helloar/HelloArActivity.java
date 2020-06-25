@@ -16,16 +16,23 @@
 
 package com.google.ar.core.examples.java.helloar;
 
+import android.content.DialogInterface;
+import android.content.res.Resources;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.View;
+import android.widget.ImageButton;
 import android.widget.Toast;
 import com.google.ar.core.Anchor;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
+import com.google.ar.core.Config;
+import com.google.ar.core.Coordinates2d;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
@@ -36,6 +43,7 @@ import com.google.ar.core.Session;
 import com.google.ar.core.Trackable;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
+import com.google.ar.core.examples.java.common.helpers.DepthSettings;
 import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
 import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
 import com.google.ar.core.examples.java.common.helpers.SnackbarHelper;
@@ -46,6 +54,7 @@ import com.google.ar.core.examples.java.common.rendering.ObjectRenderer;
 import com.google.ar.core.examples.java.common.rendering.ObjectRenderer.BlendMode;
 import com.google.ar.core.examples.java.common.rendering.PlaneRenderer;
 import com.google.ar.core.examples.java.common.rendering.PointCloudRenderer;
+import com.google.ar.core.examples.java.common.rendering.Texture;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
@@ -78,9 +87,13 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
 
   private final BackgroundRenderer backgroundRenderer = new BackgroundRenderer();
   private final ObjectRenderer virtualObject = new ObjectRenderer();
-  private final ObjectRenderer virtualObjectShadow = new ObjectRenderer();
   private final PlaneRenderer planeRenderer = new PlaneRenderer();
   private final PointCloudRenderer pointCloudRenderer = new PointCloudRenderer();
+  private final Texture depthTexture = new Texture();
+  private boolean calculateUVTransform = true;
+
+  private final DepthSettings depthSettings = new DepthSettings();
+  private boolean[] settingsMenuDialogCheckboxes;
 
   // Temporary matrix allocated here to reduce number of allocations for each frame.
   private final float[] anchorMatrix = new float[16];
@@ -121,6 +134,11 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     surfaceView.setWillNotDraw(false);
 
     installRequested = false;
+    calculateUVTransform = true;
+
+    depthSettings.onCreate(this);
+    ImageButton settingsButton = findViewById(R.id.settings_button);
+    settingsButton.setOnClickListener(this::launchSettingsMenuDialog);
   }
 
   @Override
@@ -148,7 +166,13 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
 
         // Create the session.
         session = new Session(/* context= */ this);
-
+        Config config = session.getConfig();
+        if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
+          config.setDepthMode(Config.DepthMode.AUTOMATIC);
+        } else {
+          config.setDepthMode(Config.DepthMode.DISABLED);
+        }
+        session.configure(config);
       } catch (UnavailableArcoreNotInstalledException
           | UnavailableUserDeclinedInstallationException e) {
         message = "Please install ARCore";
@@ -227,17 +251,16 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     // Prepare the rendering objects. This involves reading shaders, so may throw an IOException.
     try {
       // Create the texture and pass it to ARCore session to be filled during update().
-      backgroundRenderer.createOnGlThread(/*context=*/ this);
+      depthTexture.createOnGlThread();
+      backgroundRenderer.createOnGlThread(/*context=*/ this, depthTexture.getTextureId());
       planeRenderer.createOnGlThread(/*context=*/ this, "models/trigrid.png");
       pointCloudRenderer.createOnGlThread(/*context=*/ this);
 
       virtualObject.createOnGlThread(/*context=*/ this, "models/andy.obj", "models/andy.png");
+      virtualObject.setBlendMode(BlendMode.AlphaBlending);
+      virtualObject.setDepthTexture(
+          depthTexture.getTextureId(), depthTexture.getWidth(), depthTexture.getHeight());
       virtualObject.setMaterialProperties(0.0f, 2.0f, 0.5f, 6.0f);
-
-      virtualObjectShadow.createOnGlThread(
-          /*context=*/ this, "models/andy_shadow.obj", "models/andy_shadow.png");
-      virtualObjectShadow.setBlendMode(BlendMode.Shadow);
-      virtualObjectShadow.setMaterialProperties(1.0f, 0.0f, 0.0f, 1.0f);
 
     } catch (IOException e) {
       Log.e(TAG, "Failed to read an asset file", e);
@@ -271,11 +294,24 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
       Frame frame = session.update();
       Camera camera = frame.getCamera();
 
+      if (frame.hasDisplayGeometryChanged() || calculateUVTransform) {
+        // The UV Transform represents the transformation between screenspace in normalized units
+        // and screenspace in units of pixels.  Having the size of each pixel is necessary in the
+        // virtual object shader, to perform kernel-based blur effects.
+        calculateUVTransform = false;
+        float[] transform = getTextureTransformMatrix(frame);
+        virtualObject.setUvTransformMatrix(transform);
+      }
+
+      if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
+        depthTexture.updateWithDepthImageOnGlThread(frame);
+      }
+
       // Handle one tap per frame.
       handleTap(frame, camera);
 
       // If frame is ready, render camera preview image to the GL surface.
-      backgroundRenderer.draw(frame);
+      backgroundRenderer.draw(frame, depthSettings.depthColorVisualizationEnabled());
 
       // Keep the screen unlocked while tracking, but allow it to lock when tracking stops.
       trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
@@ -322,6 +358,7 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
 
       // Visualize anchors created by touch.
       float scaleFactor = 1.0f;
+      virtualObject.setUseDepthForOcclusion(this, depthSettings.useDepthForOcclusion());
       for (ColoredAnchor coloredAnchor : anchors) {
         if (coloredAnchor.anchor.getTrackingState() != TrackingState.TRACKING) {
           continue;
@@ -332,9 +369,7 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
 
         // Update and draw the model and its shadow.
         virtualObject.updateModelMatrix(anchorMatrix, scaleFactor);
-        virtualObjectShadow.updateModelMatrix(anchorMatrix, scaleFactor);
         virtualObject.draw(viewmtx, projmtx, colorCorrectionRgba, coloredAnchor.color);
-        virtualObjectShadow.draw(viewmtx, projmtx, colorCorrectionRgba, coloredAnchor.color);
       }
 
     } catch (Throwable t) {
@@ -381,10 +416,86 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
           // space. This anchor is created on the Plane to place the 3D model
           // in the correct position relative both to the world and to the plane.
           anchors.add(new ColoredAnchor(hit.createAnchor(), objColor));
+
+          // For devices that support the Depth API, shows a dialog to suggest enabling
+          // depth-based occlusion. This dialog needs to be spawned on the UI thread.
+          this.runOnUiThread(this::showOcclusionDialogIfNeeded);
           break;
         }
       }
     }
+  }
+
+  /**
+   * Shows a pop-up dialog on the first call, determining whether the user wants to enable
+   * depth-based occlusion. The result of this dialog can be retrieved with useDepthForOcclusion().
+   */
+  private void showOcclusionDialogIfNeeded() {
+    boolean isDepthSupported = session.isDepthModeSupported(Config.DepthMode.AUTOMATIC);
+    if (!depthSettings.shouldShowDepthEnableDialog() || !isDepthSupported) {
+      return; // Don't need to show dialog.
+    }
+
+    // Asks the user whether they want to use depth-based occlusion.
+    new AlertDialog.Builder(this)
+        .setTitle(R.string.options_title_with_depth)
+        .setMessage(R.string.depth_use_explanation)
+        .setPositiveButton(
+            R.string.button_text_enable_depth,
+            (DialogInterface dialog, int which) -> {
+              depthSettings.setUseDepthForOcclusion(true);
+            })
+        .setNegativeButton(
+            R.string.button_text_disable_depth,
+            (DialogInterface dialog, int which) -> {
+              depthSettings.setUseDepthForOcclusion(false);
+            })
+        .show();
+  }
+
+  /** Shows checkboxes to the user to facilitate toggling of depth-based effects. */
+  private void launchSettingsMenuDialog(View view) {
+    // Retrieves the current settings to show in the checkboxes.
+    resetSettingsMenuDialogCheckboxes();
+
+    // Shows the dialog to the user.
+    Resources resources = getResources();
+    if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
+      // With depth support, the user can select visualization options.
+      new AlertDialog.Builder(this)
+          .setTitle(R.string.options_title_with_depth)
+          .setMultiChoiceItems(
+              resources.getStringArray(R.array.depth_options_array),
+              settingsMenuDialogCheckboxes,
+              (DialogInterface dialog, int which, boolean isChecked) ->
+                  settingsMenuDialogCheckboxes[which] = isChecked)
+          .setPositiveButton(
+              R.string.done,
+              (DialogInterface dialogInterface, int which) -> applySettingsMenuDialogCheckboxes())
+          .setNegativeButton(
+              android.R.string.cancel,
+              (DialogInterface dialog, int which) -> resetSettingsMenuDialogCheckboxes())
+          .show();
+    } else {
+      // Without depth support, no settings are available.
+      new AlertDialog.Builder(this)
+          .setTitle(R.string.options_title_without_depth)
+          .setPositiveButton(
+              R.string.done,
+              (DialogInterface dialogInterface, int which) -> applySettingsMenuDialogCheckboxes())
+          .show();
+    }
+  }
+
+  private void applySettingsMenuDialogCheckboxes() {
+    depthSettings.setUseDepthForOcclusion(settingsMenuDialogCheckboxes[0]);
+    depthSettings.setDepthColorVisualizationEnabled(settingsMenuDialogCheckboxes[1]);
+  }
+
+  private void resetSettingsMenuDialogCheckboxes() {
+    settingsMenuDialogCheckboxes = new boolean[2];
+    settingsMenuDialogCheckboxes[0] = depthSettings.useDepthForOcclusion();
+    settingsMenuDialogCheckboxes[1] = depthSettings.depthColorVisualizationEnabled();
   }
 
   /** Checks if we detected at least one plane. */
@@ -395,5 +506,40 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
       }
     }
     return false;
+  }
+
+  /**
+   * Returns a transformation matrix that when applied to screen space uvs makes them match
+   * correctly with the quad texture coords used to render the camera feed. It takes into account
+   * device orientation.
+   */
+  private static float[] getTextureTransformMatrix(Frame frame) {
+    float[] frameTransform = new float[6];
+    float[] uvTransform = new float[9];
+    // XY pairs of coordinates in NDC space that constitute the origin and points along the two
+    // principal axes.
+    float[] ndcBasis = {0, 0, 1, 0, 0, 1};
+
+    // Temporarily store the transformed points into outputTransform.
+    frame.transformCoordinates2d(
+        Coordinates2d.OPENGL_NORMALIZED_DEVICE_COORDINATES,
+        ndcBasis,
+        Coordinates2d.TEXTURE_NORMALIZED,
+        frameTransform);
+
+    // Convert the transformed points into an affine transform and transpose it.
+    float ndcOriginX = frameTransform[0];
+    float ndcOriginY = frameTransform[1];
+    uvTransform[0] = frameTransform[2] - ndcOriginX;
+    uvTransform[1] = frameTransform[3] - ndcOriginY;
+    uvTransform[2] = 0;
+    uvTransform[3] = frameTransform[4] - ndcOriginX;
+    uvTransform[4] = frameTransform[5] - ndcOriginY;
+    uvTransform[5] = 0;
+    uvTransform[6] = ndcOriginX;
+    uvTransform[7] = ndcOriginY;
+    uvTransform[8] = 1;
+
+    return uvTransform;
   }
 }

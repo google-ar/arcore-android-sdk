@@ -403,8 +403,6 @@ typedef struct ArAugmentedImage_ ArAugmentedImage;
 
 /// @}
 
-//                                image_segmentation_people)
-
 // Augmented Faces
 
 /// @addtogroup augmented_face
@@ -991,6 +989,25 @@ AR_DEFINE_ENUM(ArFocusMode){/// Focus is fixed.
                             /// Auto-focus is enabled.
                             AR_FOCUS_MODE_AUTO = 1};
 
+/// Selects the desired depth mode. Not all devices support all modes, use
+/// ArSession_isDepthModeSupported to find whether the current device and the
+/// selected camera support a particular depth mode.
+AR_DEFINE_ENUM(ArDepthMode){
+    /// No depth information will be provided. Calling @c
+    /// ArFrame_acquireDepthImage() will return @c AR_ERROR_ILLEGAL_STATE.
+    AR_DEPTH_MODE_DISABLED = 0,
+    /// On supported devices the best possible depth is estimated based on
+    /// hardware and software sources. Available sources of automatic depth are:
+    ///  - Depth from motion
+    ///  - Active depth cameras
+    /// Provides depth estimation for every pixel in the image, and works best
+    /// for
+    /// static scenes. For a list of supported devices, see:
+    /// https://developers.google.com/ar/discover/supported-devices
+    /// Adds significant computational load.
+    AR_DEPTH_MODE_AUTOMATIC = 1,
+};
+
 /// @ingroup plane
 /// Simple summary of the normal vector of a plane, for filtering purposes.
 AR_DEFINE_ENUM(ArPlaneType){
@@ -1039,7 +1056,9 @@ AR_DEFINE_ENUM(ArCoordinates2dType){
     AR_COORDINATES_2D_TEXTURE_TEXELS = 0,
     /// GPU texture coordinates, (s,t) normalized to [0.0f, 1.0f] range.
     AR_COORDINATES_2D_TEXTURE_NORMALIZED = 1,
-    /// CPU image, (x,y) in pixels.
+    /// CPU image, (x,y) in pixels. The range of x and y is determined by the
+    /// CPU
+    /// image resolution.
     AR_COORDINATES_2D_IMAGE_PIXELS = 2,
     /// CPU image, (x,y) normalized to [0.0f, 1.0f] range.
     AR_COORDINATES_2D_IMAGE_NORMALIZED = 3,
@@ -1050,6 +1069,7 @@ AR_DEFINE_ENUM(ArCoordinates2dType){
     AR_COORDINATES_2D_VIEW = 7,
     /// Android view, display-rotated, (x,y) normalized to [0.0f, 1.0f] range.
     AR_COORDINATES_2D_VIEW_NORMALIZED = 8,
+    //       image_segmantation_background_2d_coords)
 
 };
 
@@ -1367,8 +1387,6 @@ void ArConfig_getAugmentedImageDatabase(
     const ArConfig *config,
     ArAugmentedImageDatabase *out_augmented_image_database);
 
-//                                image_segmentation_people)
-
 /// Stores the currently configured augmented face mode into @c
 /// *augmented_face_mode.
 void ArConfig_getAugmentedFaceMode(const ArSession *session,
@@ -1383,18 +1401,20 @@ void ArConfig_setAugmentedFaceMode(const ArSession *session,
                                    ArConfig *config,
                                    ArAugmentedFaceMode augmented_face_mode);
 
-/// Sets the desired focus mode. See ::ArFocusMode for available options.
+/// On supported devices, selects the desired camera focus mode. On these
+/// devices, the default desired focus mode is currently #AR_FOCUS_MODE_FIXED,
+/// although this default might change in the future. See the
+/// <a href="https://developers.google.com/ar/discover/supported-devices">ARCore
+/// supported devices</a> page for a list of devices on which ARCore does not
+/// support changing the desired focus mode.
 ///
-/// The default focus mode varies by device and camera, and is set to optimize
-/// AR tracking. Currently the default on most ARCore devices and cameras is
-/// AR_FOCUS_MODE_FIXED, although this default might change in the future.
-///
-/// Note, on devices where ARCore does not support auto focus due to the use of
-/// a fixed focus camera, setting AR_FOCUS_MODE_AUTO will be ignored. Similarly,
-/// on devices where tracking requires auto focus, setting AR_FOCUS_MODE_FIXED
-/// will be ignored. See the ARCore supported devices
-/// (https://developers.google.com/ar/discover/supported-devices) page for a
-/// list of affected devices.
+/// For optimal AR tracking performance, use the focus mode provided by the
+/// default session config. While capturing pictures or video, use
+/// #AR_FOCUS_MODE_AUTO. For optimal AR  tracking, revert to the default focus
+/// mode once auto focus behavior is no longer needed. If your app requires
+/// fixed focus camera, set #AR_FOCUS_MODE_FIXED before enabling the AR session.
+/// This ensures that your app always uses fixed focus, even if the default
+/// camera config focus mode changes in a future release.
 ///
 /// To determine whether the configured ARCore camera supports auto focus, check
 /// ACAMERA_LENS_INFO_MINIMUM_FOCUS_DISTANCE, which is 0 for fixed-focus
@@ -1404,10 +1424,32 @@ void ArConfig_setFocusMode(const ArSession *session,
                            ArConfig *config,
                            ArFocusMode focus_mode);
 
-/// Stores the currently configured focus mode into @c *focus_mode.
+/// Stores the currently configured desired focus mode into @c *focus_mode.
+/// Note: The desired focus mode may be different from the actual focus
+/// mode. See the
+/// <a href="https://developers.google.com/ar/discover/supported-devices">ARCore
+/// supported devices page</a> for a list of affected devices.
 void ArConfig_getFocusMode(const ArSession *session,
                            ArConfig *config,
                            ArFocusMode *focus_mode);
+
+/// Gets the currently configured desired @c ArDepthMode.
+void ArConfig_getDepthMode(const ArSession *session,
+                           const ArConfig *config,
+                           ArDepthMode *out_depth_mode);
+
+/// Sets the desired @c ArDepthMode.
+///
+/// Notes:
+/// - Not all devices support all modes. Use @c ArSession_isDepthModeSupported
+///   to determine whether the current device and the selected camera support a
+///   particular depth mode.
+/// - With depth enabled through this call, calls to
+///   @c ArFrame_acquireDepthImage can be made to acquire the latest computed
+///   depth image.
+void ArConfig_setDepthMode(const ArSession *session,
+                           ArConfig *config,
+                           ArDepthMode mode);
 
 /// @}
 
@@ -1838,7 +1880,7 @@ void ArSession_getAllTrackables(const ArSession *session,
                                 ArTrackableType filter_type,
                                 ArTrackableList *out_trackable_list);
 
-/// This will create a new Cloud Anchor using the pose and other metadata from
+/// This creates a new Cloud Anchor using the pose and other metadata from
 /// @c anchor.
 ///
 /// If the function returns #AR_SUCCESS, the cloud state of @c out_cloud_anchor
@@ -1861,11 +1903,10 @@ ArStatus ArSession_hostAndAcquireNewCloudAnchor(ArSession *session,
                                                 const ArAnchor *anchor,
                                                 ArAnchor **out_cloud_anchor);
 
-/// This will create a new Cloud Anchor, and schedule a task to resolve the
-/// anchor's pose using the given Cloud Anchor ID. You don't need to
-/// wait for a call to resolve a Cloud Anchor to complete before initiating
-/// another call. A session can be resolving up to 20 Cloud Anchors at a given
-/// time.
+/// This creates a new Cloud Anchor, and schedule a task to resolve the anchor's
+/// pose using the given Cloud Anchor ID. You don't need to wait for a call to
+/// resolve a Cloud Anchor to complete before initiating another call.
+/// A session can be resolving up to 20 Cloud Anchors at a given time.
 ///
 /// If this function returns #AR_SUCCESS, the cloud state of @c out_cloud_anchor
 /// will be #AR_CLOUD_ANCHOR_STATE_TASK_IN_PROGRESS, and its tracking state will
@@ -2000,6 +2041,20 @@ void ArSession_getSupportedCameraConfigsWithFilter(
     const ArSession *session,
     const ArCameraConfigFilter *filter,
     ArCameraConfigList *list);
+
+/// Checks whether the provided @c ArDepthMode is supported on this device
+/// with the selected camera configuration. The current list of supported
+/// devices is documented on the <a
+/// href="https://developers.google.com/ar/discover/supported-devices">ARCore
+/// supported devices</a> page.
+///
+/// @param[in] session The ARCore session.
+/// @param[in] depth_mode The desired depth mode to check.
+/// @param[out] out_is_supported Non zero if the depth mode is supported on this
+/// device.
+void ArSession_isDepthModeSupported(const ArSession *session,
+                                    ArDepthMode depth_mode,
+                                    int32_t *out_is_supported);
 
 /// @}
 
@@ -2139,10 +2194,13 @@ void ArCamera_getTrackingState(const ArSession *session,
                                ArTrackingState *out_tracking_state);
 
 /// Gets the reason that ArCamera_getTrackingState() is
-/// #AR_TRACKING_STATE_PAUSED. Note, it returns
-/// ArTrackingFailureReason#AR_TRACKING_FAILURE_REASON_NONE briefly after
-/// ArSession_resume(), while the motion tracking is initializing. Always
-/// returns ArTrackingFailureReason#AR_TRACKING_FAILURE_REASON_NONE when
+/// #AR_TRACKING_STATE_PAUSED.
+///
+/// Note: This function returns
+/// ArTrackingFailureReason()#AR_TRACKING_FAILURE_REASON_NONE briefly after
+/// ArSession_resume() while the motion tracking is initializing.
+/// This function always returns
+/// ArTrackingFailureReason()#AR_TRACKING_FAILURE_REASON_NONE when
 /// ArCamera_getTrackingState is #AR_TRACKING_STATE_TRACKING.
 ///
 /// If multiple potential causes for motion tracking failure are detected,
@@ -2295,8 +2353,8 @@ void ArFrame_getAndroidSensorPose(const ArSession *session,
                                   ArPose *out_pose);
 
 /// Transform the given texture coordinates to correctly show the background
-/// image. This will account for the display rotation, and any additional
-/// required adjustment. For performance, this function should be called only if
+/// image. This accounts for the display rotation, and any additional required
+/// adjustment. For performance, this function should be called only if
 /// ArFrame_hasDisplayGeometryChanged() emits true.
 ///
 /// @param[in]    session      The ARCore session
@@ -2462,7 +2520,7 @@ void ArFrame_acquireCamera(const ArSession *session,
 /// - #AR_ERROR_RESOURCE_EXHAUSTED if too many metadata objects are currently
 ///   held.
 /// - #AR_ERROR_NOT_YET_AVAILABLE if the camera failed to produce metadata for
-///   the given frame. Note: this will commonly happen for few frames right
+///   the given frame. Note: this commonly happens for few frames right
 ///   after @c ArSession_resume() due to the camera stack bringup.
 ArStatus ArFrame_acquireImageMetadata(const ArSession *session,
                                       const ArFrame *frame,
@@ -2491,9 +2549,9 @@ ArStatus ArFrame_acquireCameraImage(ArSession *session,
 ///
 /// @param[in]    session            The ARCore session
 /// @param[in]    frame              The current frame.
-/// @param[inout] out_anchor_list The list to fill.  This list must have
-///     already been allocated with ArAnchorList_create().  If previously
-///     used, the list will first be cleared.
+/// @param[inout] out_anchor_list The list to fill.  This list must have already
+///     been allocated with ArAnchorList_create().  If previously used, the list
+///     is cleared first.
 void ArFrame_getUpdatedAnchors(const ArSession *session,
                                const ArFrame *frame,
                                ArAnchorList *out_anchor_list);
@@ -2507,11 +2565,55 @@ void ArFrame_getUpdatedAnchors(const ArSession *session,
 ///     ::ArTrackableType for legal values.
 /// @param[inout] out_trackable_list The list to fill.  This list must have
 ///     already been allocated with ArTrackableList_create().  If previously
-///     used, the list will first be cleared.
+///     used, the list is cleared first.
 void ArFrame_getUpdatedTrackables(const ArSession *session,
                                   const ArFrame *frame,
                                   ArTrackableType filter_type,
                                   ArTrackableList *out_trackable_list);
+
+/// Attempts to acquire a depth image that corresponds to the current frame.
+///
+/// The depth image has a single 16-bit plane at index 0. Each pixel contains
+/// the distance in millimeters to the camera plane. Currently, only the low
+/// order 13 bits are used. The 3 highest order bits are always set to 000.
+///
+/// If an up to date depth image isn't ready for the current frame, the most
+/// recent depth image available from an earlier frame is returned instead.
+/// This is only expected to occur on compute-constrained devices. An up to
+/// date depth image should typically become available again within a few
+/// frames. Compare @c ArImage_getTimestamp depth image timestamp with the @c
+/// ArFrame_getTimestamp frame timestamp to determine which camera frame the
+/// depth image corresponds to.
+///
+/// The image must be released via {@link ArImage_release()} once it is no
+/// longer needed.
+///
+/// @param[in]  session                The ARCore session.
+/// @param[in]  frame                  The current frame.
+/// @param[out] out_depth_image        On successful return, this is filled out
+///   with a pointer to an @c ArImage. On error return, this is filled out
+///   filled out with @c nullptr.
+/// @return #AR_SUCCESS or any of:
+/// - #AR_ERROR_INVALID_ARGUMENT if the session, frame, or depth image
+/// arguments
+///     are invalid.
+/// - #AR_ERROR_NOT_YET_AVAILABLE if the
+///     number of observed camera frames is not yet
+///     sufficient for depth estimation; or depth estimation was not
+///     possible due to poor lighting, camera occlusion, or insufficient motion
+///     observed.
+/// - #AR_ERROR_NOT_TRACKING The session is not in the
+/// #AR_TRACKING_STATE_TRACKING state, which is required to acquire depth
+/// images.
+/// - #AR_ERROR_ILLEGAL_STATE if a supported depth mode was not enabled in
+/// Session configuration.
+/// - #AR_ERROR_RESOURCE_EXHAUSTED if the caller app has exceeded maximum number
+/// of depth images that it can hold without releasing.
+/// - #AR_ERROR_DEADLINE_EXCEEDED if the provided Frame is not the current
+/// one.
+ArStatus ArFrame_acquireDepthImage(const ArSession *session,
+                                   const ArFrame *frame,
+                                   ArImage **out_depth_image);
 
 /// Returns the OpenGL ES camera texture name (id) associated with this frame.
 /// This is guaranteed to be one of the texture names previously set via
@@ -2524,6 +2626,8 @@ void ArFrame_getUpdatedTrackables(const ArSession *session,
 void ArFrame_getCameraTextureName(const ArSession *session,
                                   const ArFrame *frame,
                                   uint32_t *out_texture_id);
+
+/// @}
 
 // === Scene Structure methods ===
 
@@ -2624,13 +2728,17 @@ AR_DEFINE_ENUM(ArImageFormat){
     AR_IMAGE_FORMAT_INVALID = 0,
 
     /// Produced by @c ArFrame_acquireCameraImage().
-    /// See
+    /// Int value equal to
     /// https://developer.android.com/reference/android/graphics/ImageFormat.html#YUV_420_888
     AR_IMAGE_FORMAT_YUV_420_888 = 0x23,
 
+    /// Produced by @c ArFrame_acquireDepthImage().
+    /// Int value equal to
+    /// https://developer.android.com/reference/android/graphics/ImageFormat.html#DEPTH16
+    AR_IMAGE_FORMAT_DEPTH16 = 0x44363159,
+
     /// Produced by @c ArLightEstimate_acquireEnvironmentalHdrCubemap().
-    /// See
-    /// https://developer.android.com/ndk/reference/group/media#group___media_1gga9c3dace30485a0f28163a882a5d65a19aa0f5b9a07c9f3dc8a111c0098b18363a
+    /// Int value equal to @c AIMAGE_FORMATS @c AIMAGE_FORMAT_RGBA_FP16.
     AR_IMAGE_FORMAT_RGBA_FP16 = 0x16,
 };
 
@@ -3181,6 +3289,8 @@ void ArPoint_getOrientationMode(const ArSession *session,
                                 ArPointOrientationMode *out_orientation_mode);
 
 /// @}
+
+// === ArInstantPlacementPoint methods ===
 
 // === ArAugmentedImage methods ===
 

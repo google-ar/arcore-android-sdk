@@ -15,5 +15,16 @@
    limitations under the License.
 -->
 <resources>
-  <string name="app_name">HelloAR Java</string>
+  <string translatable="false" name="app_name">HelloAR Java</string>
+  <string translatable="false" name="depth_use_explanation">When Depth is enabled on supported devices, virtual objects adapt to the environment by blending in with the real world.</string>
+  <string translatable="false" name="button_text_enable_depth">Enable</string>
+  <string translatable="false" name="button_text_disable_depth">Disable</string>
+  <string translatable="false" name="options_title_with_depth">Your device supports depth</string>
+  <string translatable="false" name="options_title_without_depth">Your device does not support depth</string>
+  <string translatable="false" name="done">Done</string>
+  <string-array translatable="false" name="depth_options_array">
+    <item>Enable depth</item>
+    <item>Show depth map</item>
+  </string-array>
+
 </resources>

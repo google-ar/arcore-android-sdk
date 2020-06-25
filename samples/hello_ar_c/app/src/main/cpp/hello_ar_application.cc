@@ -17,6 +17,7 @@
 #include "hello_ar_application.h"
 
 #include <android/asset_manager.h>
+
 #include <array>
 
 #include "plane_renderer.h"
@@ -30,8 +31,7 @@ const glm::vec3 kWhite = {255, 255, 255};
 }  // namespace
 
 HelloArApplication::HelloArApplication(AAssetManager* asset_manager)
-    : asset_manager_(asset_manager) {
-}
+    : asset_manager_(asset_manager) {}
 
 HelloArApplication::~HelloArApplication() {
   if (ar_session_ != nullptr) {
@@ -79,6 +79,20 @@ void HelloArApplication::OnResume(void* env, void* context, void* activity) {
     CHECK(ArSession_create(env, context, &ar_session_) == AR_SUCCESS);
     CHECK(ar_session_);
 
+    int32_t is_depth_supported = 0;
+    ArSession_isDepthModeSupported(ar_session_, AR_DEPTH_MODE_AUTOMATIC,
+                                   &is_depth_supported);
+    ArConfig* ar_config = nullptr;
+    ArConfig_create(ar_session_, &ar_config);
+    if (is_depth_supported) {
+      ArConfig_setDepthMode(ar_session_, ar_config, AR_DEPTH_MODE_AUTOMATIC);
+    } else {
+      ArConfig_setDepthMode(ar_session_, ar_config, AR_DEPTH_MODE_DISABLED);
+    }
+    CHECK(ar_config);
+    CHECK(ArSession_configure(ar_session_, ar_config) == AR_SUCCESS);
+    ArConfig_destroy(ar_config);
+
     ArFrame_create(ar_session_, &ar_frame_);
     CHECK(ar_frame_);
 
@@ -93,10 +107,15 @@ void HelloArApplication::OnResume(void* env, void* context, void* activity) {
 void HelloArApplication::OnSurfaceCreated() {
   LOGI("OnSurfaceCreated()");
 
-  background_renderer_.InitializeGlContent(asset_manager_);
+  depth_texture_.CreateOnGlThread();
+  background_renderer_.InitializeGlContent(asset_manager_,
+                                           depth_texture_.GetTextureId());
   point_cloud_renderer_.InitializeGlContent(asset_manager_);
   andy_renderer_.InitializeGlContent(asset_manager_, "models/andy.obj",
                                      "models/andy.png");
+  andy_renderer_.SetDepthTexture(depth_texture_.GetTextureId(),
+                                 depth_texture_.GetWidth(),
+                                 depth_texture_.GetHeight());
   plane_renderer_.InitializeGlContent(asset_manager_);
 }
 
@@ -112,7 +131,8 @@ void HelloArApplication::OnDisplayGeometryChanged(int display_rotation,
   }
 }
 
-void HelloArApplication::OnDrawFrame() {
+void HelloArApplication::OnDrawFrame(bool depthColorVisualizationEnabled,
+                                     bool useDepthForOcclusion) {
   // Render the scene.
   glClearColor(0.9f, 0.9f, 0.9f, 1.0f);
   glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -132,8 +152,31 @@ void HelloArApplication::OnDrawFrame() {
     LOGE("HelloArApplication::OnDrawFrame ArSession_update error");
   }
 
+  andy_renderer_.SetDepthTexture(depth_texture_.GetTextureId(),
+                                 depth_texture_.GetWidth(),
+                                 depth_texture_.GetHeight());
+
   ArCamera* ar_camera;
   ArFrame_acquireCamera(ar_session_, ar_frame_, &ar_camera);
+
+  int32_t geometry_changed = 0;
+  ArFrame_getDisplayGeometryChanged(ar_session_, ar_frame_, &geometry_changed);
+  if (geometry_changed != 0 || !calculate_uv_transform_) {
+    // The UV Transform represents the transformation between screenspace in
+    // normalized units and screenspace in units of pixels.  Having the size of
+    // each pixel is necessary in the virtual object shader, to perform
+    // kernel-based blur effects.
+    calculate_uv_transform_ = false;
+    glm::mat3 transform = GetTextureTransformMatrix(ar_session_, ar_frame_);
+    andy_renderer_.SetUvTransformMatrix(transform);
+  }
+
+  int32_t is_depth_supported = 0;
+  ArSession_isDepthModeSupported(ar_session_, AR_DEPTH_MODE_AUTOMATIC,
+                                 &is_depth_supported);
+  if (is_depth_supported) {
+    depth_texture_.UpdateWithDepthImageOnGlThread(*ar_session_, *ar_frame_);
+  }
 
   glm::mat4 view_mat;
   glm::mat4 projection_mat;
@@ -146,7 +189,8 @@ void HelloArApplication::OnDrawFrame() {
   ArCamera_getTrackingState(ar_session_, ar_camera, &camera_tracking_state);
   ArCamera_release(ar_camera);
 
-  background_renderer_.Draw(ar_session_, ar_frame_);
+  background_renderer_.Draw(ar_session_, ar_frame_,
+                            depthColorVisualizationEnabled);
 
   // If the camera isn't tracking don't bother rendering other objects.
   if (camera_tracking_state != AR_TRACKING_STATE_TRACKING) {
@@ -173,21 +217,6 @@ void HelloArApplication::OnDrawFrame() {
 
   ArLightEstimate_destroy(ar_light_estimate);
   ar_light_estimate = nullptr;
-
-  // Render Andy objects.
-  glm::mat4 model_mat(1.0f);
-  for (const auto& colored_anchor : anchors_) {
-    ArTrackingState tracking_state = AR_TRACKING_STATE_STOPPED;
-    ArAnchor_getTrackingState(ar_session_, colored_anchor.anchor,
-                              &tracking_state);
-    if (tracking_state == AR_TRACKING_STATE_TRACKING) {
-      // Render object only if the tracking state is AR_TRACKING_STATE_TRACKING.
-      util::GetTransformMatrixFromAnchor(*colored_anchor.anchor, ar_session_,
-                                         &model_mat);
-      andy_renderer_.Draw(projection_mat, view_mat, model_mat, color_correction,
-                          colored_anchor.color);
-    }
-  }
 
   // Update and render planes.
   ArTrackableList* plane_list = nullptr;
@@ -233,6 +262,23 @@ void HelloArApplication::OnDrawFrame() {
   ArTrackableList_destroy(plane_list);
   plane_list = nullptr;
 
+  andy_renderer_.setUseDepthForOcclusion(asset_manager_, useDepthForOcclusion);
+
+  // Render Andy objects.
+  glm::mat4 model_mat(1.0f);
+  for (const auto& colored_anchor : anchors_) {
+    ArTrackingState tracking_state = AR_TRACKING_STATE_STOPPED;
+    ArAnchor_getTrackingState(ar_session_, colored_anchor.anchor,
+                              &tracking_state);
+    if (tracking_state == AR_TRACKING_STATE_TRACKING) {
+      // Render object only if the tracking state is AR_TRACKING_STATE_TRACKING.
+      util::GetTransformMatrixFromAnchor(*colored_anchor.anchor, ar_session_,
+                                         &model_mat);
+      andy_renderer_.Draw(projection_mat, view_mat, model_mat, color_correction,
+                          colored_anchor.color);
+    }
+  }
+
   // Update and render point cloud.
   ArPointCloud* ar_point_cloud = nullptr;
   ArStatus point_cloud_status =
@@ -244,6 +290,12 @@ void HelloArApplication::OnDrawFrame() {
   }
 }
 
+bool HelloArApplication::IsDepthSupported() {
+  int32_t is_supported = 0;
+  ArSession_isDepthModeSupported(ar_session_, AR_DEPTH_MODE_AUTOMATIC,
+                                 &is_supported);
+  return is_supported;
+}
 void HelloArApplication::OnTouched(float x, float y) {
   if (ar_frame_ != nullptr && ar_session_ != nullptr) {
     ArHitResultList* hit_result_list = nullptr;
@@ -373,5 +425,35 @@ void HelloArApplication::SetColor(float r, float g, float b, float a,
   *(color4f + 1) = g;
   *(color4f + 2) = b;
   *(color4f + 3) = a;
+}
+
+// This method returns a transformation matrix that when applied to screen space
+// uvs makes them match correctly with the quad texture coords used to render
+// the camera feed. It takes into account device orientation.
+glm::mat3 HelloArApplication::GetTextureTransformMatrix(
+    const ArSession* session, const ArFrame* frame) {
+  float frameTransform[6];
+  float uvTransform[9];
+  // XY pairs of coordinates in NDC space that constitute the origin and points
+  // along the two principal axes.
+  const float ndcBasis[6] = {0, 0, 1, 0, 0, 1};
+  ArFrame_transformCoordinates2d(
+      session, frame, AR_COORDINATES_2D_OPENGL_NORMALIZED_DEVICE_COORDINATES, 6,
+      ndcBasis, AR_COORDINATES_2D_TEXTURE_NORMALIZED, frameTransform);
+
+  // Convert the transformed points into an affine transform and transpose it.
+  float ndcOriginX = frameTransform[0];
+  float ndcOriginY = frameTransform[1];
+  uvTransform[0] = frameTransform[2] - ndcOriginX;
+  uvTransform[1] = frameTransform[3] - ndcOriginY;
+  uvTransform[2] = 0;
+  uvTransform[3] = frameTransform[4] - ndcOriginX;
+  uvTransform[4] = frameTransform[5] - ndcOriginY;
+  uvTransform[5] = 0;
+  uvTransform[6] = ndcOriginX;
+  uvTransform[7] = ndcOriginY;
+  uvTransform[8] = 1;
+
+  return glm::make_mat3(uvTransform);
 }
 }  // namespace hello_ar

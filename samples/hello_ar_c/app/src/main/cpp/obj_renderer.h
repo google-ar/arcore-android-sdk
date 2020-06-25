@@ -19,6 +19,7 @@
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
 #include <android/asset_manager.h>
+
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -51,7 +52,33 @@ class ObjRenderer {
             const glm::mat4& model_mat, const float* color_correction4,
             const float* object_color4) const;
 
+  void SetUvTransformMatrix(const glm::mat3& uv_transform) {
+    uv_transform_ = uv_transform;
+  }
+
+  void SetDepthTexture(int texture_id, int width, int height) {
+    depth_texture_id_ = texture_id;
+    depth_aspect_ratio_ = (float)width / (float)height;
+  }
+
+  // Specifies whether to use the depth texture to perform depth-based occlusion
+  // of virtual objects from real-world geometry.
+  //
+  // This function is a no-op if the value provided is the same as what is
+  // already set. If the value changes, this function will recompile and reload
+  // the shader program to either enable/disable depth-based occlusion. NOTE:
+  // recompilation of the shader is inefficient. This code could be optimized to
+  // precompile both versions of the shader.
+  //
+  // @param context Context for loading the shader.
+  // @param useDepthForOcclusion Specifies whether to use the depth texture to
+  // perform occlusion during rendering of virtual objects.
+  void setUseDepthForOcclusion(AAssetManager* asset_manager,
+                               bool use_depth_for_occlusion);
+
  private:
+  void compileAndLoadShaderProgram(AAssetManager* asset_manager);
+
   // Shader material lighting pateremrs
   float ambient_ = 0.0f;
   float diffuse_ = 2.0f;
@@ -68,19 +95,27 @@ class ObjRenderer {
 
   // Loaded TEXTURE_2D object name
   GLuint texture_id_;
+  GLuint depth_texture_id_;
 
   // Shader program details
   GLuint shader_program_;
-  GLint attri_vertices_;
-  GLint attri_uvs_;
-  GLint attri_normals_;
-  GLint uniform_mvp_mat_;
-  GLint uniform_mv_mat_;
-  GLint uniform_texture_;
-  GLint uniform_lighting_param_;
-  GLint uniform_material_param_;
-  GLint uniform_color_correction_param_;
-  GLint uniform_color_;
+  GLint position_attrib_;
+  GLint tex_coord_attrib_;
+  GLint normal_attrib_;
+  GLint mvp_mat_uniform_;
+  GLint mv_mat_uniform_;
+  GLint texture_uniform_;
+  GLint lighting_param_uniform_;
+  GLint material_param_uniform_;
+  GLint color_correction_param_uniform_;
+  GLint color_uniform_;
+  GLint depth_texture_uniform_;
+  GLint depth_uv_transform_uniform_;
+  GLint depth_aspect_ratio_uniform_;
+
+  bool use_depth_for_occlusion_ = false;
+  float depth_aspect_ratio_ = 0.0f;
+  glm::mat3 uv_transform_ = glm::mat3(1.0f);
 };
 }  // namespace hello_ar
 

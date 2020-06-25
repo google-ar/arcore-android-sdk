@@ -35,11 +35,14 @@ class BackgroundRenderer {
 
   // Sets up OpenGL state.  Must be called on the OpenGL thread and before any
   // other methods below.
-  void InitializeGlContent(AAssetManager* asset_manager);
+  void InitializeGlContent(AAssetManager* asset_manager, int depthTextureId);
 
   // Draws the background image.  This methods must be called for every ArFrame
   // returned by ArSession_update() to catch display geometry change events.
-  void Draw(const ArSession* session, const ArFrame* frame);
+  //  debugShowDepthMap Toggles whether to show the live camera feed or latest
+  //  depth image.
+  void Draw(const ArSession* session, const ArFrame* frame,
+            bool debug_show_depth_map);
 
   // Returns the generated texture name for the GL_TEXTURE_EXTERNAL_OES target.
   GLuint GetTextureId() const;
@@ -47,12 +50,19 @@ class BackgroundRenderer {
  private:
   static constexpr int kNumVertices = 4;
 
-  GLuint shader_program_;
-  GLuint texture_id_;
+  GLuint camera_program_;
+  GLuint depth_program_;
 
-  GLuint attribute_vertices_;
-  GLuint attribute_uvs_;
-  GLuint uniform_texture_;
+  GLuint camera_texture_id_;
+  GLuint depth_texture_id_;
+
+  GLuint camera_position_attrib_;
+  GLuint camera_tex_coord_attrib_;
+  GLuint camera_texture_uniform_;
+
+  GLuint depth_texture_uniform_;
+  GLuint depth_position_attrib_;
+  GLuint depth_tex_coord_attrib_;
 
   float transformed_uvs_[kNumVertices * 2];
   bool uvs_initialized_ = false;

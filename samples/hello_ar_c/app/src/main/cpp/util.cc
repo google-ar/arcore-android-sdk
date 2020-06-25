@@ -74,28 +74,45 @@ static GLuint LoadShader(GLenum shader_type, const char* shader_source) {
 GLuint CreateProgram(const char* vertex_shader_file_name,
                      const char* fragment_shader_file_name,
                      AAssetManager* asset_manager) {
-  std::string VertexShaderContent;
+  std::map<std::string, int> empty_define;
+  return CreateProgram(vertex_shader_file_name, fragment_shader_file_name,
+                       asset_manager, empty_define);
+}
+GLuint CreateProgram(const char* vertex_shader_file_name,
+                     const char* fragment_shader_file_name,
+                     AAssetManager* asset_manager,
+                     const std::map<std::string, int>& define_values_map) {
+  std::string vertexShaderContent;
   if (!LoadTextFileFromAssetManager(vertex_shader_file_name, asset_manager,
-                                    &VertexShaderContent)) {
+                                    &vertexShaderContent)) {
     LOGE("Failed to load file: %s", vertex_shader_file_name);
     return 0;
   }
 
-  std::string FragmentShaderContent;
+  std::string fragmentShaderContent;
   if (!LoadTextFileFromAssetManager(fragment_shader_file_name, asset_manager,
-                                    &FragmentShaderContent)) {
+                                    &fragmentShaderContent)) {
     LOGE("Failed to load file: %s", fragment_shader_file_name);
     return 0;
   }
 
+  // Prepend any #define values specified during this run.
+  std::stringstream defines;
+  for (const auto& entry : define_values_map) {
+    defines << "#define " << entry.first << " " << entry.second << "\n";
+  }
+  fragmentShaderContent = defines.str() + fragmentShaderContent;
+  vertexShaderContent = defines.str() + vertexShaderContent;
+
+  // Compiles shader code.
   GLuint vertexShader =
-      LoadShader(GL_VERTEX_SHADER, VertexShaderContent.c_str());
+      LoadShader(GL_VERTEX_SHADER, vertexShaderContent.c_str());
   if (!vertexShader) {
     return 0;
   }
 
   GLuint fragment_shader =
-      LoadShader(GL_FRAGMENT_SHADER, FragmentShaderContent.c_str());
+      LoadShader(GL_FRAGMENT_SHADER, fragmentShaderContent.c_str());
   if (!fragment_shader) {
     return 0;
   }

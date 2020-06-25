@@ -23,8 +23,10 @@
 #include <android/log.h>
 #include <errno.h>
 #include <jni.h>
+
 #include <cstdint>
 #include <cstdlib>
+#include <map>
 #include <vector>
 
 #include "arcore_c_api.h"
@@ -84,6 +86,19 @@ void CheckGlError(const char* operation);
 GLuint CreateProgram(const char* vertex_shader_file_name,
                      const char* fragment_shader_file_name,
                      AAssetManager* asset_manager);
+
+// Create a shader program ID.
+//
+// @param asset_manager, AAssetManager pointer.
+// @param vertex_shader_file_name, the vertex shader source file.
+// @param fragment_shader_file_name, the fragment shader source file.
+// @param define_values_map The #define values to add to the top of the shader
+// source code.
+// @return a non-zero value if the shader is created successfully, otherwise 0.
+GLuint CreateProgram(const char* vertex_shader_file_name,
+                     const char* fragment_shader_file_name,
+                     AAssetManager* asset_manager,
+                     const std::map<std::string, int>& define_values_map);
 
 // Load a text file from assets folder.
 //

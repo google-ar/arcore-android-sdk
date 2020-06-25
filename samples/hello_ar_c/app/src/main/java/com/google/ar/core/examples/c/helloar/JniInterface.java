@@ -51,13 +51,16 @@ public class JniInterface {
       long nativeApplication, int displayRotation, int width, int height);
 
   /** Main render loop, called on the OpenGL thread. */
-  public static native void onGlSurfaceDrawFrame(long nativeApplication);
+  public static native void onGlSurfaceDrawFrame(
+      long nativeApplication, boolean depthColorVisualizationEnabled, boolean useDepthForOcclusion);
 
   /** OnTouch event, called on the OpenGL thread. */
   public static native void onTouched(long nativeApplication, float x, float y);
 
   /** Get plane count in current session. Used to disable the "searching for surfaces" snackbar. */
   public static native boolean hasDetectedPlanes(long nativeApplication);
+
+  public static native boolean isDepthSupported(long nativeApplication);
 
   public static Bitmap loadImage(String imageName) {
 
