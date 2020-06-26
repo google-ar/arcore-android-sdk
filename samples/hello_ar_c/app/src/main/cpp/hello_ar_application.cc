@@ -438,7 +438,7 @@ glm::mat3 HelloArApplication::GetTextureTransformMatrix(
   // along the two principal axes.
   const float ndcBasis[6] = {0, 0, 1, 0, 0, 1};
   ArFrame_transformCoordinates2d(
-      session, frame, AR_COORDINATES_2D_OPENGL_NORMALIZED_DEVICE_COORDINATES, 6,
+      session, frame, AR_COORDINATES_2D_OPENGL_NORMALIZED_DEVICE_COORDINATES, 3,
       ndcBasis, AR_COORDINATES_2D_TEXTURE_NORMALIZED, frameTransform);
 
   // Convert the transformed points into an affine transform and transpose it.
