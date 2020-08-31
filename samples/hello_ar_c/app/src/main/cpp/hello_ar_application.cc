@@ -20,6 +20,7 @@
 
 #include <array>
 
+#include "arcore_c_api.h"
 #include "plane_renderer.h"
 #include "util.h"
 
@@ -28,6 +29,25 @@ namespace {
 constexpr size_t kMaxNumberOfAndroidsToRender = 20;
 
 const glm::vec3 kWhite = {255, 255, 255};
+
+// Assumed distance from the device camera to the surface on which user will
+// try to place objects. This value affects the apparent scale of objects
+// while the tracking method of the the Instant Placement point is
+// SCREENSPACE_WITH_APPROXIMATE_DISTANCE. Values in the [0.2, 2.0] meter
+// range are a good choice for most AR experiences. Use lower values for AR
+// experiences where users are expected to place objects on surfaces close
+// to the camera. Use larger values for experiences where the user will
+// likely be standing and trying to place an object on the ground or floor
+// in front of them.
+constexpr float kApproximateDistanceMeters = 1.0f;
+
+void SetColor(float r, float g, float b, float a, float* color4f) {
+  color4f[0] = r;
+  color4f[1] = g;
+  color4f[2] = b;
+  color4f[3] = a;
+}
+
 }  // namespace
 
 HelloArApplication::HelloArApplication(AAssetManager* asset_manager)
@@ -79,20 +99,7 @@ void HelloArApplication::OnResume(void* env, void* context, void* activity) {
     CHECK(ArSession_create(env, context, &ar_session_) == AR_SUCCESS);
     CHECK(ar_session_);
 
-    int32_t is_depth_supported = 0;
-    ArSession_isDepthModeSupported(ar_session_, AR_DEPTH_MODE_AUTOMATIC,
-                                   &is_depth_supported);
-    ArConfig* ar_config = nullptr;
-    ArConfig_create(ar_session_, &ar_config);
-    if (is_depth_supported) {
-      ArConfig_setDepthMode(ar_session_, ar_config, AR_DEPTH_MODE_AUTOMATIC);
-    } else {
-      ArConfig_setDepthMode(ar_session_, ar_config, AR_DEPTH_MODE_DISABLED);
-    }
-    CHECK(ar_config);
-    CHECK(ArSession_configure(ar_session_, ar_config) == AR_SUCCESS);
-    ArConfig_destroy(ar_config);
-
+    ConfigureSession();
     ArFrame_create(ar_session_, &ar_frame_);
     CHECK(ar_frame_);
 
@@ -139,8 +146,6 @@ void HelloArApplication::OnDrawFrame(bool depthColorVisualizationEnabled,
 
   glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   if (ar_session_ == nullptr) return;
 
@@ -253,8 +258,7 @@ void HelloArApplication::OnDrawFrame(bool depthColorVisualizationEnabled,
     ArTrackable_getTrackingState(ar_session_, ArAsTrackable(ar_plane),
                                  &plane_tracking_state);
     if (plane_tracking_state == AR_TRACKING_STATE_TRACKING) {
-      plane_renderer_.Draw(projection_mat, view_mat, *ar_session_, *ar_plane,
-                           kWhite);
+      plane_renderer_.Draw(projection_mat, view_mat, *ar_session_, *ar_plane);
       ArTrackable_release(ar_trackable);
     }
   }
@@ -266,11 +270,12 @@ void HelloArApplication::OnDrawFrame(bool depthColorVisualizationEnabled,
 
   // Render Andy objects.
   glm::mat4 model_mat(1.0f);
-  for (const auto& colored_anchor : anchors_) {
+  for (auto& colored_anchor : anchors_) {
     ArTrackingState tracking_state = AR_TRACKING_STATE_STOPPED;
     ArAnchor_getTrackingState(ar_session_, colored_anchor.anchor,
                               &tracking_state);
     if (tracking_state == AR_TRACKING_STATE_TRACKING) {
+      UpdateAnchorColor(&colored_anchor);
       // Render object only if the tracking state is AR_TRACKING_STATE_TRACKING.
       util::GetTransformMatrixFromAnchor(*colored_anchor.anchor, ar_session_,
                                          &model_mat);
@@ -296,12 +301,50 @@ bool HelloArApplication::IsDepthSupported() {
                                  &is_supported);
   return is_supported;
 }
+
+void HelloArApplication::ConfigureSession() {
+  const bool is_depth_supported = IsDepthSupported();
+
+  ArConfig* ar_config = nullptr;
+  ArConfig_create(ar_session_, &ar_config);
+  if (is_depth_supported) {
+    ArConfig_setDepthMode(ar_session_, ar_config, AR_DEPTH_MODE_AUTOMATIC);
+  } else {
+    ArConfig_setDepthMode(ar_session_, ar_config, AR_DEPTH_MODE_DISABLED);
+  }
+
+  if (is_instant_placement_enabled_) {
+    ArConfig_setInstantPlacementMode(ar_session_, ar_config,
+                                     AR_INSTANT_PLACEMENT_MODE_LOCAL_Y_UP);
+  } else {
+    ArConfig_setInstantPlacementMode(ar_session_, ar_config,
+                                     AR_INSTANT_PLACEMENT_MODE_DISABLED);
+  }
+  CHECK(ar_config);
+  CHECK(ArSession_configure(ar_session_, ar_config) == AR_SUCCESS);
+  ArConfig_destroy(ar_config);
+}
+
+void HelloArApplication::OnSettingsChange(bool is_instant_placement_enabled) {
+  is_instant_placement_enabled_ = is_instant_placement_enabled;
+
+  if (ar_session_ != nullptr) {
+    ConfigureSession();
+  }
+}
+
 void HelloArApplication::OnTouched(float x, float y) {
   if (ar_frame_ != nullptr && ar_session_ != nullptr) {
     ArHitResultList* hit_result_list = nullptr;
     ArHitResultList_create(ar_session_, &hit_result_list);
     CHECK(hit_result_list);
-    ArFrame_hitTest(ar_session_, ar_frame_, x, y, hit_result_list);
+    if (is_instant_placement_enabled_) {
+      ArFrame_hitTestInstantPlacement(ar_session_, ar_frame_, x, y,
+                                      kApproximateDistanceMeters,
+                                      hit_result_list);
+    } else {
+      ArFrame_hitTest(ar_session_, ar_frame_, x, y, hit_result_list);
+    }
 
     int32_t hit_result_list_size = 0;
     ArHitResultList_getSize(ar_session_, hit_result_list,
@@ -312,7 +355,6 @@ void HelloArApplication::OnTouched(float x, float y) {
     // responding to user input.
 
     ArHitResult* ar_hit_result = nullptr;
-    ArTrackableType trackable_type = AR_TRACKABLE_NOT_VALID;
     for (int32_t i = 0; i < hit_result_list_size; ++i) {
       ArHitResult* ar_hit = nullptr;
       ArHitResult_create(ar_session_, &ar_hit);
@@ -355,7 +397,6 @@ void HelloArApplication::OnTouched(float x, float y) {
         }
 
         ar_hit_result = ar_hit;
-        trackable_type = ar_trackable_type;
         break;
       } else if (AR_TRACKABLE_POINT == ar_trackable_type) {
         ArPoint* ar_point = ArAsPoint(ar_trackable);
@@ -363,9 +404,10 @@ void HelloArApplication::OnTouched(float x, float y) {
         ArPoint_getOrientationMode(ar_session_, ar_point, &mode);
         if (AR_POINT_ORIENTATION_ESTIMATED_SURFACE_NORMAL == mode) {
           ar_hit_result = ar_hit;
-          trackable_type = ar_trackable_type;
           break;
         }
+      } else if (AR_TRACKABLE_INSTANT_PLACEMENT_POINT == ar_trackable_type) {
+        ar_hit_result = ar_hit;
       }
     }
 
@@ -389,25 +431,20 @@ void HelloArApplication::OnTouched(float x, float y) {
 
       if (anchors_.size() >= kMaxNumberOfAndroidsToRender) {
         ArAnchor_release(anchors_[0].anchor);
+        ArTrackable_release(anchors_[0].trackable);
         anchors_.erase(anchors_.begin());
       }
 
+      ArTrackable* ar_trackable = nullptr;
+      ArHitResult_acquireTrackable(ar_session_, ar_hit_result, &ar_trackable);
       // Assign a color to the object for rendering based on the trackable type
       // this anchor attached to. For AR_TRACKABLE_POINT, it's blue color, and
       // for AR_TRACKABLE_PLANE, it's green color.
       ColoredAnchor colored_anchor;
       colored_anchor.anchor = anchor;
-      switch (trackable_type) {
-        case AR_TRACKABLE_POINT:
-          SetColor(66.0f, 133.0f, 244.0f, 255.0f, colored_anchor.color);
-          break;
-        case AR_TRACKABLE_PLANE:
-          SetColor(139.0f, 195.0f, 74.0f, 255.0f, colored_anchor.color);
-          break;
-        default:
-          SetColor(0.0f, 0.0f, 0.0f, 0.0f, colored_anchor.color);
-          break;
-      }
+      colored_anchor.trackable = ar_trackable;
+
+      UpdateAnchorColor(&colored_anchor);
       anchors_.push_back(colored_anchor);
 
       ArHitResult_destroy(ar_hit_result);
@@ -419,12 +456,43 @@ void HelloArApplication::OnTouched(float x, float y) {
   }
 }
 
-void HelloArApplication::SetColor(float r, float g, float b, float a,
-                                  float* color4f) {
-  *(color4f) = r;
-  *(color4f + 1) = g;
-  *(color4f + 2) = b;
-  *(color4f + 3) = a;
+void HelloArApplication::UpdateAnchorColor(ColoredAnchor* colored_anchor) {
+  ArTrackable* ar_trackable = colored_anchor->trackable;
+  float* color = colored_anchor->color;
+
+  ArTrackableType ar_trackable_type;
+  ArTrackable_getType(ar_session_, ar_trackable, &ar_trackable_type);
+
+  if (ar_trackable_type == AR_TRACKABLE_POINT) {
+    SetColor(66.0f, 133.0f, 244.0f, 255.0f, color);
+    return;
+  }
+
+  if (ar_trackable_type == AR_TRACKABLE_PLANE) {
+    SetColor(139.0f, 195.0f, 74.0f, 255.0f, color);
+    return;
+  }
+
+  if (ar_trackable_type == AR_TRACKABLE_INSTANT_PLACEMENT_POINT) {
+    ArInstantPlacementPoint* ar_instant_placement_point =
+        ArAsInstantPlacementPoint(ar_trackable);
+    ArInstantPlacementPointTrackingMethod tracking_method;
+    ArInstantPlacementPoint_getTrackingMethod(
+        ar_session_, ar_instant_placement_point, &tracking_method);
+    if (tracking_method ==
+        AR_INSTANT_PLACEMENT_POINT_TRACKING_METHOD_FULL_TRACKING) {
+      SetColor(255.0f, 255.0f, 137.0f, 255.0f, color);
+      return;
+    } else if (
+        tracking_method ==
+        AR_INSTANT_PLACEMENT_POINT_TRACKING_METHOD_SCREENSPACE_WITH_APPROXIMATE_DISTANCE) {  // NOLINT
+      SetColor(255.0f, 255.0f, 255.0f, 255.0f, color);
+      return;
+    }
+  }
+
+  // Fallback color
+  SetColor(0.0f, 0.0f, 0.0f, 0.0f, color);
 }
 
 // This method returns a transformation matrix that when applied to screen space

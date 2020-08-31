@@ -104,6 +104,7 @@ void BackgroundRenderer::Draw(const ArSession* session, const ArFrame* frame,
   glDepthMask(GL_FALSE);
 
   if (debug_show_depth_map) {
+    glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, depth_texture_id_);
     glUseProgram(depth_program_);
     glUniform1i(depth_texture_uniform_, 0);

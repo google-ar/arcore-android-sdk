@@ -36,8 +36,6 @@ import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.util.Size;
 import android.view.MotionEvent;
@@ -46,6 +44,8 @@ import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import com.google.ar.core.Anchor;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
@@ -380,6 +380,20 @@ public class SharedCameraActivity extends AppCompatActivity
 
     messageSnackbarHelper.setMaxLines(4);
     updateSnackbarMessage();
+  }
+
+  @Override
+  protected void onDestroy() {
+    if (sharedSession != null) {
+      // Explicitly close ARCore Session to release native resources.
+      // Review the API reference for important considerations before calling close() in apps with
+      // more complicated lifecycle requirements:
+      // https://developers.google.com/ar/reference/java/arcore/reference/com/google/ar/core/Session#close()
+      sharedSession.close();
+      sharedSession = null;
+    }
+
+    super.onDestroy();
   }
 
   private synchronized void waitUntilCameraCaptureSessionIsActive() {

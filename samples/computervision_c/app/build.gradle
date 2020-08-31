@@ -10,14 +10,14 @@ def arcore_libpath = "${buildDir}/arcore-native"
 configurations { natives }
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 29
     defaultConfig {
         applicationId "com.google.ar.core.examples.c.computervision"
 
         // "AR Optional" apps must declare minSdkVersion >= 14.
         // "AR Required" apps must declare minSdkVersion >= 24.
         minSdkVersion 24
-        targetSdkVersion 28
+        targetSdkVersion 29
         versionCode 1
         versionName '1.0'
 
@@ -27,7 +27,7 @@ android {
                 arguments "-DANDROID_STL=c++_static",
                         "-DARCORE_LIBPATH=${arcore_libpath}/jni",
                         "-DARCORE_INCLUDE=${project.rootDir}/../../libraries/include",
-                        "-DGLM_INCLUDE=${project.rootDir}/../../libraries/glm"
+                        "-DGLM_INCLUDE=${project.rootDir}/../../third_party/glm"
             }
         }
         ndk {
@@ -53,11 +53,11 @@ android {
 
 dependencies {
     // ARCore (Google Play Services for AR) library.
-    implementation 'com.google.ar:core:1.18.0'
-    natives 'com.google.ar:core:1.18.0'
+    implementation 'com.google.ar:core:1.19.0'
+    natives 'com.google.ar:core:1.19.0'
 
-    implementation 'com.android.support:appcompat-v7:28.0.0'
-    implementation 'com.android.support:design:28.0.0'
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'com.google.android.material:material:1.1.0'
 }
 
 // Extracts the shared libraries from aars in the natives configuration.

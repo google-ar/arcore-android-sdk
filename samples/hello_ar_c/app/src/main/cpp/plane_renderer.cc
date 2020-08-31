@@ -35,7 +35,6 @@ void PlaneRenderer::InitializeGlContent(AAssetManager* asset_manager) {
   uniform_texture_ = glGetUniformLocation(shader_program_, "texture");
   uniform_model_mat_ = glGetUniformLocation(shader_program_, "model_mat");
   uniform_normal_vec_ = glGetUniformLocation(shader_program_, "normal");
-  uniform_color_ = glGetUniformLocation(shader_program_, "color");
   attri_vertices_ = glGetAttribLocation(shader_program_, "vertex");
 
   glGenTextures(1, &texture_id_);
@@ -59,7 +58,7 @@ void PlaneRenderer::InitializeGlContent(AAssetManager* asset_manager) {
 
 void PlaneRenderer::Draw(const glm::mat4& projection_mat,
                          const glm::mat4& view_mat, const ArSession& ar_session,
-                         const ArPlane& ar_plane, const glm::vec3& color) {
+                         const ArPlane& ar_plane) {
   if (!shader_program_) {
     LOGE("shader_program is null.");
     return;
@@ -81,14 +80,17 @@ void PlaneRenderer::Draw(const glm::mat4& projection_mat,
   glUniformMatrix4fv(uniform_model_mat_, 1, GL_FALSE,
                      glm::value_ptr(model_mat_));
   glUniform3f(uniform_normal_vec_, normal_vec_.x, normal_vec_.y, normal_vec_.z);
-  glUniform3f(uniform_color_, color.x, color.y, color.z);
 
   glEnableVertexAttribArray(attri_vertices_);
   glVertexAttribPointer(attri_vertices_, 3, GL_FLOAT, GL_FALSE, 0,
                         vertices_.data());
 
   glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  // Textures are loaded with premultiplied alpha
+  // (https://developer.android.com/reference/android/graphics/BitmapFactory.Options#inPremultiplied),
+  // so we use the premultiplied alpha blend factors.
+  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
   glDrawElements(GL_TRIANGLES, triangles_.size(), GL_UNSIGNED_SHORT,
                  triangles_.data());
 

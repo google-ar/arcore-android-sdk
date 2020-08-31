@@ -56,6 +56,12 @@ JNI_METHOD(jboolean, isDepthSupported)
   return native(native_application)->IsDepthSupported();
 }
 
+JNI_METHOD(void, onSettingsChange)
+(JNIEnv *, jclass, jlong native_application,
+ jboolean is_instant_placement_enabled) {
+  native(native_application)->OnSettingsChange(is_instant_placement_enabled);
+}
+
 JNI_METHOD(void, destroyNativeApplication)
 (JNIEnv *, jclass, jlong native_application) {
   delete native(native_application);

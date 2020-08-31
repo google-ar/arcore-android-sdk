@@ -26,5 +26,9 @@
     <item>Enable depth</item>
     <item>Show depth map</item>
   </string-array>
+  <string translatable="false" name="options_title_instant_placement">Instant Placement options</string>
+  <string-array translatable="false" name="instant_placement_options_array">
+    <item>Enable Instant Placement</item>
+  </string-array>
 
 </resources>

@@ -198,7 +198,11 @@ void AugmentedImageApplication::OnDrawFrame(void* activity) {
   glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  // Textures are loaded with premultiplied alpha
+  // (https://developer.android.com/reference/android/graphics/BitmapFactory.Options#inPremultiplied),
+  // so we use the premultiplied alpha blend factors.
+  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
   if (ar_session_ == nullptr) return;
 

@@ -8,17 +8,17 @@ capabilities you can build entirely new AR experiences or enhance existing apps
 with AR features.
 
 
-## Upcoming breaking change affecting previously published 32-bit-only apps
+## Breaking change affecting previously published 32-bit-only apps
 
-In **August 2020**, _Google Play Services for AR_ (ARCore) will remove support
-for 32-bit-only ARCore-enabled apps running on 64-bit devices. Support for
-32-bit apps running on 32-bit devices is unaffected.
+_Google Play Services for AR_ (ARCore) has removed support for 32-bit-only
+ARCore-enabled apps running on 64-bit devices. Support for 32-bit apps running
+on 32-bit devices is unaffected.
 
 If you have published a 32-bit-only (`armeabi-v7a`) version of your
 ARCore-enabled app without publishing a corresponding 64-bit (`arm64-v8a`)
-version, you must update your app to include 64-bit native libraries before
-August 2020. 32-bit-only ARCore-enabled apps that are not updated by this time
-may crash when attempting to start an augmented reality (AR) session.
+version, you must update your app to include 64-bit native libraries.
+32-bit-only ARCore-enabled apps that are not updated by this time may crash when
+attempting to start an augmented reality (AR) session.
 
 To learn more about this breaking change, and for instructions on how to update
 your app, see https://developers.google.com/ar/64bit.

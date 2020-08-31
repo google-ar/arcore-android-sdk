@@ -79,6 +79,8 @@ class HelloArApplication {
   // Returns true if depth is supported.
   bool IsDepthSupported();
 
+  void OnSettingsChange(bool is_instant_placement_enabled);
+
  private:
   glm::mat3 GetTextureTransformMatrix(const ArSession* session,
                                       const ArFrame* frame);
@@ -90,12 +92,14 @@ class HelloArApplication {
   int width_ = 1;
   int height_ = 1;
   int display_rotation_ = 0;
+  bool is_instant_placement_enabled_ = true;
 
   AAssetManager* const asset_manager_;
 
   // The anchors at which we are drawing android models using given colors.
   struct ColoredAnchor {
     ArAnchor* anchor;
+    ArTrackable* trackable;
     float color[4];
   };
 
@@ -109,7 +113,9 @@ class HelloArApplication {
 
   int32_t plane_count_ = 0;
 
-  void SetColor(float r, float g, float b, float a, float* color4f);
+  void ConfigureSession();
+
+  void UpdateAnchorColor(ColoredAnchor* colored_anchor);
 };
 }  // namespace hello_ar
 

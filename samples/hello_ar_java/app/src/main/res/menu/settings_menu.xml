@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+  <item android:id="@+id/depth_settings" android:title="Depth API"/>
+  <item android:id="@+id/instant_placement_settings"
+      android:title="Instant Placement"/>
+</menu>

@@ -1,3 +1,4 @@
+#version 300 es
 /*
  * Copyright 2020 Google Inc. All Rights Reserved.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 precision mediump float;
 
 uniform sampler2D u_DepthTexture;
 
-varying vec2 v_TexCoord;
+in vec2 v_TexCoord;
+
+layout(location = 0) out vec4 o_FragColor;
 
 const highp float kMaxDepth = 8000.0; // In millimeters.
 
 float DepthGetMillimeters(in sampler2D depth_texture, in vec2 depth_uv) {
   // Depth is packed into the red and green components of its texture.
   // The texture is a normalized format, storing millimeters.
-  vec3 packedDepthAndVisibility = texture2D(depth_texture, depth_uv).xyz;
+  vec3 packedDepthAndVisibility = texture(depth_texture, depth_uv).xyz;
   return dot(packedDepthAndVisibility.xy, vec2(255.0, 256.0 * 255.0));
 }
 
@@ -60,5 +62,5 @@ void main() {
       clamp(DepthGetMillimeters(u_DepthTexture, v_TexCoord.xy) / kMaxDepth,
             0.0, 1.0);
   vec4 depth_color = vec4(DepthGetColorVisualization(normalized_depth), 1.0);
-  gl_FragColor = depth_color;
+  o_FragColor = depth_color;
 }

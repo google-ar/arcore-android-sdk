@@ -169,7 +169,11 @@ void ObjRenderer::Draw(const glm::mat4& projection_mat,
 
   glDepthMask(GL_TRUE);
   glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  // Textures are loaded with premultiplied alpha
+  // (https://developer.android.com/reference/android/graphics/BitmapFactory.Options#inPremultiplied),
+  // so we use the premultiplied alpha blend factors.
+  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
   glDrawElements(GL_TRIANGLES, indices_.size(), GL_UNSIGNED_SHORT,
                  indices_.data());

@@ -22,15 +22,15 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.support.annotation.GuardedBy;
-import android.support.v4.app.DialogFragment;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.annotation.GuardedBy;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.DialogFragment;
 import com.google.ar.core.Anchor;
 import com.google.ar.core.Anchor.CloudAnchorState;
 import com.google.ar.core.ArCoreApk;
@@ -138,7 +138,7 @@ public class CloudAnchorActivity extends AppCompatActivity
     surfaceView = findViewById(R.id.surfaceview);
     displayRotationHelper = new DisplayRotationHelper(this);
 
-    // Set up tap listener.
+    // Set up touch listener.
     gestureDetector =
         new GestureDetector(
             this,
@@ -180,6 +180,23 @@ public class CloudAnchorActivity extends AppCompatActivity
     firebaseManager = new FirebaseManager(this);
     currentMode = HostResolveMode.NONE;
     sharedPreferences = getSharedPreferences(PREFERENCE_FILE_KEY, Context.MODE_PRIVATE);
+  }
+
+  @Override
+  protected void onDestroy() {
+    // Clear all registered listeners.
+    resetMode();
+
+    if (session != null) {
+      // Explicitly close ARCore Session to release native resources.
+      // Review the API reference for important considerations before calling close() in apps with
+      // more complicated lifecycle requirements:
+      // https://developers.google.com/ar/reference/java/arcore/reference/com/google/ar/core/Session#close()
+      session.close();
+      session = null;
+    }
+
+    super.onDestroy();
   }
 
   @Override

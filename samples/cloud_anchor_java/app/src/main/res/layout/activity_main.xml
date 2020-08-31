@@ -58,7 +58,6 @@
           android:paddingVertical="5dp"
           android:fontFamily="monospace"
           android:text="@string/initial_room_code"
-          android:textAlignment="center"
           android:textSize="20sp"
           android:gravity="center_vertical"
           android:background="#001337"/>

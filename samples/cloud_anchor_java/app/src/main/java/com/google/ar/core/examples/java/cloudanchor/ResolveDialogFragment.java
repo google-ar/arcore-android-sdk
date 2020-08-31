@@ -19,11 +19,11 @@ package com.google.ar.core.examples.java.cloudanchor;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.os.Bundle;
-import android.support.v4.app.DialogFragment;
-import android.support.v4.app.FragmentActivity;
 import android.text.Editable;
 import android.view.View;
 import android.widget.EditText;
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.FragmentActivity;
 import com.google.common.base.Preconditions;
 
 /** A DialogFragment for the Resolve Dialog Box. */

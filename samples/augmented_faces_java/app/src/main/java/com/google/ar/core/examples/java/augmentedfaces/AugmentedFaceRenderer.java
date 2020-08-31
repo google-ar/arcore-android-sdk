@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.google.ar.core.examples.java.augmentedfaces;
 
 import static com.google.ar.core.examples.java.common.rendering.ShaderUtil.loadGLShader;
@@ -45,7 +61,6 @@ public class AugmentedFaceRenderer {
   private static final float[] lightDirection = new float[] {0.0f, 1.0f, 0.0f, 0.0f};
   private static final String VERTEX_SHADER_NAME = "shaders/object.vert";
   private static final String FRAGMENT_SHADER_NAME = "shaders/object.frag";
-  private static final String FACE_TEXTURE_FILENAME = "models/freckles.png";
   private int program;
   private final float[] modelViewProjectionMat = new float[16];
   private final float[] modelViewMat = new float[16];
@@ -53,7 +68,7 @@ public class AugmentedFaceRenderer {
 
   public AugmentedFaceRenderer() {}
 
-  public void createOnGlThread(Context context) throws IOException {
+  public void createOnGlThread(Context context, String diffuseTextureAssetName) throws IOException {
     final int vertexShader =
         loadGLShader(TAG, context, GLES20.GL_VERTEX_SHADER, VERTEX_SHADER_NAME);
     final int fragmentShader =
@@ -80,7 +95,7 @@ public class AugmentedFaceRenderer {
 
     GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
     GLES20.glGenTextures(1, textureId, 0);
-    loadTexture(context, textureId, FACE_TEXTURE_FILENAME);
+    loadTexture(context, textureId, diffuseTextureAssetName);
   }
 
   private static void loadTexture(Context context, int[] textureId, String filename)

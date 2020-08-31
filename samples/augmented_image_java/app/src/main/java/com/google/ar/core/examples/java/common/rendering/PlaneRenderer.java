@@ -83,8 +83,6 @@ public class PlaneRenderer {
   private int planeNormalUniform;
   private int planeModelViewProjectionUniform;
   private int textureUniform;
-  private int lineColorUniform;
-  private int dotColorUniform;
   private int gridControlUniform;
   private int planeUvMatrixUniform;
 
@@ -101,7 +99,6 @@ public class PlaneRenderer {
   private final float[] modelMatrix = new float[16];
   private final float[] modelViewMatrix = new float[16];
   private final float[] modelViewProjectionMatrix = new float[16];
-  private final float[] planeColor = new float[] {1f, 1f, 1f, 1f};
   private final float[] planeAngleUvMatrix =
       new float[4]; // 2x2 rotation matrix applied to uv coords.
 
@@ -154,8 +151,6 @@ public class PlaneRenderer {
     planeModelViewProjectionUniform =
         GLES20.glGetUniformLocation(planeProgram, "u_ModelViewProjection");
     textureUniform = GLES20.glGetUniformLocation(planeProgram, "u_Texture");
-    lineColorUniform = GLES20.glGetUniformLocation(planeProgram, "u_lineColor");
-    dotColorUniform = GLES20.glGetUniformLocation(planeProgram, "u_dotColor");
     gridControlUniform = GLES20.glGetUniformLocation(planeProgram, "u_gridControl");
     planeUvMatrixUniform = GLES20.glGetUniformLocation(planeProgram, "u_PlaneUvMatrix");
 
@@ -315,29 +310,19 @@ public class PlaneRenderer {
         new Comparator<SortablePlane>() {
           @Override
           public int compare(SortablePlane a, SortablePlane b) {
-            return Float.compare(a.distance, b.distance);
+            return Float.compare(b.distance, a.distance);
           }
         });
 
     float[] cameraView = new float[16];
     cameraPose.inverse().toMatrix(cameraView, 0);
 
-    // Planes are drawn with additive blending, masked by the alpha channel for occlusion.
-
-    // Start by clearing the alpha channel of the color buffer to 1.0.
-    GLES20.glClearColor(1, 1, 1, 1);
-    GLES20.glColorMask(false, false, false, true);
-    GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-    GLES20.glColorMask(true, true, true, true);
-
     // Disable depth write.
     GLES20.glDepthMask(false);
 
-    // Additive blending, masked by alpha channel, clearing alpha channel.
+    // Normal alpha blending with premultiplied alpha.
     GLES20.glEnable(GLES20.GL_BLEND);
-    GLES20.glBlendFuncSeparate(
-        GLES20.GL_DST_ALPHA, GLES20.GL_ONE, // RGB (src, dest)
-        GLES20.GL_ZERO, GLES20.GL_ONE_MINUS_SRC_ALPHA); // ALPHA (src, dest)
+    GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
 
     // Set up the shader.
     GLES20.glUseProgram(planeProgram);
@@ -374,10 +359,6 @@ public class PlaneRenderer {
         planeIndexMap.put(plane, planeIndex);
       }
 
-      // Set plane color.
-      GLES20.glUniform4fv(lineColorUniform, 1, planeColor, 0);
-      GLES20.glUniform4fv(dotColorUniform, 1, planeColor, 0);
-
       // Each plane will have its own angle offset from others, to make them easier to
       // distinguish. Compute a 2x2 rotation matrix from the angle.
       float angleRadians = planeIndex * 0.144f;
@@ -397,7 +378,6 @@ public class PlaneRenderer {
     GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
     GLES20.glDisable(GLES20.GL_BLEND);
     GLES20.glDepthMask(true);
-    GLES20.glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
     ShaderUtil.checkGLError(TAG, "Cleaning up after drawing planes");
   }

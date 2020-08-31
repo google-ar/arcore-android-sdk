@@ -14,9 +14,9 @@
  */
 package com.google.ar.core.examples.java.computervision;
 
-import android.arch.lifecycle.DefaultLifecycleObserver;
-import android.arch.lifecycle.LifecycleOwner;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
+import androidx.lifecycle.DefaultLifecycleObserver;
+import androidx.lifecycle.LifecycleOwner;
 
 /** Helper to measure frame-to-frame timing and frame rate. */
 public class FrameTimeHelper implements DefaultLifecycleObserver {

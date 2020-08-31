@@ -19,9 +19,9 @@ package com.google.ar.core.examples.java.augmentedfaces;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Toast;
+import androidx.appcompat.app.AppCompatActivity;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.AugmentedFace;
 import com.google.ar.core.AugmentedFace.RegionType;
@@ -35,7 +35,6 @@ import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
 import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
 import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
 import com.google.ar.core.examples.java.common.helpers.SnackbarHelper;
-import com.google.ar.core.examples.java.common.helpers.TapHelper;
 import com.google.ar.core.examples.java.common.helpers.TrackingStateHelper;
 import com.google.ar.core.examples.java.common.rendering.BackgroundRenderer;
 import com.google.ar.core.examples.java.common.rendering.ObjectRenderer;
@@ -68,7 +67,6 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
   private final SnackbarHelper messageSnackbarHelper = new SnackbarHelper();
   private DisplayRotationHelper displayRotationHelper;
   private final TrackingStateHelper trackingStateHelper = new TrackingStateHelper(this);
-  private TapHelper tapHelper;
 
   private final BackgroundRenderer backgroundRenderer = new BackgroundRenderer();
   private final AugmentedFaceRenderer augmentedFaceRenderer = new AugmentedFaceRenderer();
@@ -88,11 +86,6 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
     surfaceView = findViewById(R.id.surfaceview);
     displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
 
-    // Set up tap listener.
-
-    tapHelper = new TapHelper(/*context=*/ this);
-    surfaceView.setOnTouchListener(tapHelper);
-
     // Set up renderer.
     surfaceView.setPreserveEGLContextOnPause(true);
     surfaceView.setEGLContextClientVersion(2);
@@ -102,6 +95,20 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
     surfaceView.setWillNotDraw(false);
 
     installRequested = false;
+  }
+
+  @Override
+  protected void onDestroy() {
+    if (session != null) {
+      // Explicitly close ARCore Session to release native resources.
+      // Review the API reference for important considerations before calling close() in apps with
+      // more complicated lifecycle requirements:
+      // https://developers.google.com/ar/reference/java/arcore/reference/com/google/ar/core/Session#close()
+      session.close();
+      session = null;
+    }
+
+    super.onDestroy();
   }
 
   @Override
@@ -212,20 +219,15 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
     try {
       // Create the texture and pass it to ARCore session to be filled during update().
       backgroundRenderer.createOnGlThread(/*context=*/ this);
-      augmentedFaceRenderer.createOnGlThread(this);
+      augmentedFaceRenderer.createOnGlThread(this, "models/freckles.png");
       augmentedFaceRenderer.setMaterialProperties(0.0f, 1.0f, 0.1f, 6.0f);
-      noseObject.createOnGlThread(
-          /*context=*/ this,
-          "models/NOSE.obj",
-          "models/nose_fur.png");
+      noseObject.createOnGlThread(/*context=*/ this, "models/NOSE.obj", "models/nose_fur.png");
       noseObject.setMaterialProperties(0.0f, 1.0f, 0.1f, 6.0f);
       noseObject.setBlendMode(ObjectRenderer.BlendMode.AlphaBlending);
-      rightEarObject.createOnGlThread(
-          this, "models/FOREHEAD_RIGHT.obj", "models/ear_fur.png");
+      rightEarObject.createOnGlThread(this, "models/FOREHEAD_RIGHT.obj", "models/ear_fur.png");
       rightEarObject.setMaterialProperties(0.0f, 1.0f, 0.1f, 6.0f);
       rightEarObject.setBlendMode(ObjectRenderer.BlendMode.AlphaBlending);
-      leftEarObject.createOnGlThread(
-          this, "models/FOREHEAD_LEFT.obj", "models/ear_fur.png");
+      leftEarObject.createOnGlThread(this, "models/FOREHEAD_LEFT.obj", "models/ear_fur.png");
       leftEarObject.setMaterialProperties(0.0f, 1.0f, 0.1f, 6.0f);
       leftEarObject.setBlendMode(ObjectRenderer.BlendMode.AlphaBlending);
 
@@ -319,7 +321,7 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
       // Avoid crashing the application due to unhandled exceptions.
       Log.e(TAG, "Exception on the OpenGL thread", t);
     } finally {
-        GLES20.glDepthMask(true);
+      GLES20.glDepthMask(true);
     }
   }
 

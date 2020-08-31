@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 precision highp float;
 precision highp int;
 uniform sampler2D texture;
-uniform vec3 color;
 varying vec2 v_textureCoords;
 varying float v_alpha;
 
 void main() {
   float r = texture2D(texture, v_textureCoords).r;
-  gl_FragColor = vec4(color.xyz, r * v_alpha);
+  gl_FragColor = vec4(r * v_alpha);
 }

@@ -23,16 +23,18 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.GestureDetector;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageButton;
+import android.widget.PopupMenu;
 import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import com.google.android.material.snackbar.Snackbar;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -44,6 +46,8 @@ public class HelloArActivity extends AppCompatActivity
     implements GLSurfaceView.Renderer, DisplayManager.DisplayListener {
   private static final String TAG = HelloArActivity.class.getSimpleName();
   private static final int SNACKBAR_UPDATE_INTERVAL_MILLIS = 1000; // In milliseconds.
+  private static final int NUM_DEPTH_SETTINGS_CHECKBOXES = 2;
+  private static final int NUM_INSTANT_PLACEMENT_SETTINGS_CHECKBOXES = 1;
 
   private GLSurfaceView surfaceView;
 
@@ -52,7 +56,11 @@ public class HelloArActivity extends AppCompatActivity
   private int viewportHeight;
 
   private final DepthSettings depthSettings = new DepthSettings();
-  private boolean[] settingsMenuDialogCheckboxes;
+  private boolean[] depthSettingsMenuDialogCheckboxes = new boolean[NUM_DEPTH_SETTINGS_CHECKBOXES];
+
+  private final InstantPlacementSettings instantPlacementSettings = new InstantPlacementSettings();
+  private boolean[] instantPlacementSettingsMenuDialogCheckboxes =
+      new boolean[NUM_INSTANT_PLACEMENT_SETTINGS_CHECKBOXES];
 
   // Opaque native pointer to the native application instance.
   private long nativeApplication;
@@ -87,7 +95,7 @@ public class HelloArActivity extends AppCompatActivity
     setContentView(R.layout.activity_main);
     surfaceView = (GLSurfaceView) findViewById(R.id.surfaceview);
 
-    // Set up tap listener.
+    // Set up touch listener.
     gestureDetector =
         new GestureDetector(
             this,
@@ -126,8 +134,30 @@ public class HelloArActivity extends AppCompatActivity
     planeStatusCheckingHandler = new Handler();
 
     depthSettings.onCreate(this);
+    instantPlacementSettings.onCreate(this);
     ImageButton settingsButton = findViewById(R.id.settings_button);
-    settingsButton.setOnClickListener(this::launchSettingsMenuDialog);
+    settingsButton.setOnClickListener(
+        new View.OnClickListener() {
+          @Override
+          public void onClick(View v) {
+            PopupMenu popup = new PopupMenu(HelloArActivity.this, v);
+            popup.setOnMenuItemClickListener(HelloArActivity.this::settingsMenuClick);
+            popup.inflate(R.menu.settings_menu);
+            popup.show();
+          }
+        });
+  }
+
+  /** Menu button to launch feature specific settings. */
+  protected boolean settingsMenuClick(MenuItem item) {
+    if (item.getItemId() == R.id.depth_settings) {
+      launchDepthSettingsMenuDialog();
+      return true;
+    } else if (item.getItemId() == R.id.instant_placement_settings) {
+      launchInstantPlacementSettingsMenuDialog();
+      return true;
+    }
+    return false;
   }
 
   @Override
@@ -140,6 +170,8 @@ public class HelloArActivity extends AppCompatActivity
       return;
     }
 
+    JniInterface.onSettingsChange(
+        nativeApplication, instantPlacementSettings.isInstantPlacementEnabled());
     JniInterface.onResume(nativeApplication, getApplicationContext(), this);
     surfaceView.onResume();
 
@@ -273,8 +305,27 @@ public class HelloArActivity extends AppCompatActivity
         .show();
   }
 
+  private void launchInstantPlacementSettingsMenuDialog() {
+    resetSettingsMenuDialogCheckboxes();
+    Resources resources = getResources();
+    new AlertDialog.Builder(this)
+        .setTitle(R.string.options_title_instant_placement)
+        .setMultiChoiceItems(
+            resources.getStringArray(R.array.instant_placement_options_array),
+            instantPlacementSettingsMenuDialogCheckboxes,
+            (DialogInterface dialog, int which, boolean isChecked) ->
+                instantPlacementSettingsMenuDialogCheckboxes[which] = isChecked)
+        .setPositiveButton(
+            R.string.done,
+            (DialogInterface dialogInterface, int which) -> applySettingsMenuDialogCheckboxes())
+        .setNegativeButton(
+            android.R.string.cancel,
+            (DialogInterface dialog, int which) -> resetSettingsMenuDialogCheckboxes())
+        .show();
+  }
+
   /** Shows checkboxes to the user to facilitate toggling of depth-based effects. */
-  private void launchSettingsMenuDialog(View view) {
+  private void launchDepthSettingsMenuDialog() {
     // Retrieves the current settings to show in the checkboxes.
     resetSettingsMenuDialogCheckboxes();
 
@@ -287,9 +338,9 @@ public class HelloArActivity extends AppCompatActivity
           .setTitle(R.string.options_title_with_depth)
           .setMultiChoiceItems(
               resources.getStringArray(R.array.depth_options_array),
-              settingsMenuDialogCheckboxes,
+              depthSettingsMenuDialogCheckboxes,
               (DialogInterface dialog, int which, boolean isChecked) ->
-                  settingsMenuDialogCheckboxes[which] = isChecked)
+                  depthSettingsMenuDialogCheckboxes[which] = isChecked)
           .setPositiveButton(
               R.string.done,
               (DialogInterface dialogInterface, int which) -> applySettingsMenuDialogCheckboxes())
@@ -309,14 +360,20 @@ public class HelloArActivity extends AppCompatActivity
   }
 
   private void applySettingsMenuDialogCheckboxes() {
-    depthSettings.setUseDepthForOcclusion(settingsMenuDialogCheckboxes[0]);
-    depthSettings.setDepthColorVisualizationEnabled(settingsMenuDialogCheckboxes[1]);
+    depthSettings.setUseDepthForOcclusion(depthSettingsMenuDialogCheckboxes[0]);
+    depthSettings.setDepthColorVisualizationEnabled(depthSettingsMenuDialogCheckboxes[1]);
+    instantPlacementSettings.setInstantPlacementEnabled(
+        instantPlacementSettingsMenuDialogCheckboxes[0]);
+
+    JniInterface.onSettingsChange(
+        nativeApplication, instantPlacementSettings.isInstantPlacementEnabled());
   }
 
   private void resetSettingsMenuDialogCheckboxes() {
-    settingsMenuDialogCheckboxes = new boolean[2];
-    settingsMenuDialogCheckboxes[0] = depthSettings.useDepthForOcclusion();
-    settingsMenuDialogCheckboxes[1] = depthSettings.depthColorVisualizationEnabled();
+    depthSettingsMenuDialogCheckboxes[0] = depthSettings.useDepthForOcclusion();
+    depthSettingsMenuDialogCheckboxes[1] = depthSettings.depthColorVisualizationEnabled();
+    instantPlacementSettingsMenuDialogCheckboxes[0] =
+        instantPlacementSettings.isInstantPlacementEnabled();
   }
 
   // DisplayListener methods

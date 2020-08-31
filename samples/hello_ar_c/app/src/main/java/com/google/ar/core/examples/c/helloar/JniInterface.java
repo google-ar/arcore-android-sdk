@@ -62,6 +62,9 @@ public class JniInterface {
 
   public static native boolean isDepthSupported(long nativeApplication);
 
+  public static native void onSettingsChange(
+      long nativeApplication, boolean isInstantPlacementEnabled);
+
   public static Bitmap loadImage(String imageName) {
 
     try {
