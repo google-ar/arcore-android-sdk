@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2017 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -176,13 +176,6 @@ void HelloArApplication::OnDrawFrame(bool depthColorVisualizationEnabled,
     andy_renderer_.SetUvTransformMatrix(transform);
   }
 
-  int32_t is_depth_supported = 0;
-  ArSession_isDepthModeSupported(ar_session_, AR_DEPTH_MODE_AUTOMATIC,
-                                 &is_depth_supported);
-  if (is_depth_supported) {
-    depth_texture_.UpdateWithDepthImageOnGlThread(*ar_session_, *ar_frame_);
-  }
-
   glm::mat4 view_mat;
   glm::mat4 projection_mat;
   ArCamera_getViewMatrix(ar_session_, ar_camera, glm::value_ptr(view_mat));
@@ -190,16 +183,23 @@ void HelloArApplication::OnDrawFrame(bool depthColorVisualizationEnabled,
                                /*near=*/0.1f, /*far=*/100.f,
                                glm::value_ptr(projection_mat));
 
+  background_renderer_.Draw(ar_session_, ar_frame_,
+                            depthColorVisualizationEnabled);
+
   ArTrackingState camera_tracking_state;
   ArCamera_getTrackingState(ar_session_, ar_camera, &camera_tracking_state);
   ArCamera_release(ar_camera);
 
-  background_renderer_.Draw(ar_session_, ar_frame_,
-                            depthColorVisualizationEnabled);
-
   // If the camera isn't tracking don't bother rendering other objects.
   if (camera_tracking_state != AR_TRACKING_STATE_TRACKING) {
     return;
+  }
+
+  int32_t is_depth_supported = 0;
+  ArSession_isDepthModeSupported(ar_session_, AR_DEPTH_MODE_AUTOMATIC,
+                                 &is_depth_supported);
+  if (is_depth_supported) {
+    depth_texture_.UpdateWithDepthImageOnGlThread(*ar_session_, *ar_frame_);
   }
 
   // Get light estimation value.

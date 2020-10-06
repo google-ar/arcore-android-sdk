@@ -1,0 +1,21 @@
+# This file uses centimeters as units for non-parametric coordinates.
+
+mtllib forehead_right.mtl
+g skinCluster2Set tweakSet2
+v -0.046329 -0.000137 -0.018811
+v 0.007133 0.056882 -0.035861
+v -0.088098 0.052138 0.025037
+v -0.034636 0.109157 0.007988
+vt 0.002194 0.001364
+vt 0.995606 0.001364
+vt 0.002194 0.996801
+vt 0.995606 0.996801
+vn 0.529919 -0.255013 0.808798
+vn 0.529919 -0.255013 0.808798
+vn 0.529919 -0.255013 0.808798
+vn 0.529919 -0.255013 0.808798
+s 1
+g earRight_mesh asset
+usemtl earLeft_meshSG
+f 3/3/1 2/2/2 4/4/3
+f 2/2/2 3/3/1 1/1/4

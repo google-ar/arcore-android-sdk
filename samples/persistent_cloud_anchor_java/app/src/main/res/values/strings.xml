@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Copyright 2020 Google LLC
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<resources>
+  <!-- Strings in the main lobby activity -->
+  <string name="app_name">Persistent Cloud Anchor Sample</string>
+  <string name="cancel">Cancel</string>
+  <string name="host_button_text">Begin hosting</string>
+  <string name="host_title_text">Host a Cloud Anchor</string>
+  <!-- [CHAR_LIMIT=NONE] -->
+  <string name="host_instructions_text">Scan your space to create a new cloud anchor accessible by others</string>
+  <string name="begin_resolve_button_text">Begin resolving</string>
+  <!-- [CHAR_LIMIT=NONE] -->
+  <string name="resolve_title_text">Resolve Cloud Anchor(s)</string>
+  <!-- [CHAR_LIMIT=NONE] -->
+  <string name="resolve_instructions_text">Localize this device against previously created Cloud Anchor(s)</string>
+  <string name="debug_text">Debug panel</string>
+  <string name="user_message_text">User text</string>
+
+  <!-- Strings in the resolve options page -->
+  <string name="resolve_an_anchor_text">Resolve anchor(s)</string>
+  <string name="resolve_an_anchor_instructions_text">Choose up to 40 anchors to resolve at once</string>
+  <string name="select_anchors_text">Select from anchors previously hosted from this device</string>
+  <string name="enter_anchor_text">Enter anchor ID(s) manually, separated by commas</string>
+  <string name="enter_anchor_hint">Anchor IDs...</string>
+  <string name="resolve_button_text">Resolve</string>
+
+  <!-- Strings used in exceptions -->
+  <string name="arcore_unavailable">Please install ARCore.</string>
+  <string name="arcore_too_old">Please update ARCore.</string>
+  <string name="arcore_sdk_too_old">Please update the app with a newer version of the ARCore SDK.</string>
+  <string name="arcore_exception">This device does not support ARCore.</string>
+  <string name="camera_unavailable">Camera unavailable. Try restarting the app.</string>
+
+  <!-- Strings used in hosting flow-->
+  <string name="hosting_place_anchor">Tap to place an object.</string>
+  <string name="hosting_save">To save this location, walk around the object to capture it from different angles</string>
+  <string name="hosting_processing">Processing...</string>
+  <string name="hosting_success">Finished!</string>
+  <string name="hosting_error">Hosting Error: %1$s</string>
+  <string name="debug_hosting_place_anchor">Tap a vertical or horizontal plane...</string>
+  <string name="debug_hosting_save">Average Mapping Quality: %1$s\nNote: Horizontal and vertical planes have slightly
+    different hosting UIs for better visualization.</string>
+  <string name="debug_hosting_processing">FeatureMapQuality has reached SUFFICIENT-GOOD, triggering hostCloudAnchor().</string>
+  <string name="debug_hosting_success">Anchor %1$s created.</string>
+  <string name="debug_hosting_error">There was an error during Hosting: %1$s</string>
+  <string name="nickname_title_text">Enter name</string>
+  <string name="nickname_instructions_text">Enter a name for your anchor ID(to be stored in local app storage)</string>
+  <string name="nickname_default">CloudAnchor%1$d</string>
+  <string name="nickname_dialog_ok">OK</string>
+  <string name="too_close">You are too close; move backward.</string>
+  <string name="too_far">You are too far; come closer</string>
+
+  <!-- Strings used in the resolving flow-->
+  <string name="resolving_processing">Look at the location you expect the AR experience to appear.</string>
+  <string name="resolving_success">Resolve success!</string>
+  <string name="resolving_error">Resolving Error: %1$s</string>
+  <string name="debug_resolving_processing">Attempting to resolve %1$d anchors...</string>
+  <string name="debug_resolving_success">Resolved anchors; continuing to refine pose.</string>
+  <string name="debug_resolving_error">There was an error during Resolving: %1$s</string>
+  <!-- Resolve anchor has no result yet. [CHAR_LIMIT=NONE] -->
+
+  <!-- Strings used in privacy notice dialog messages. [CHAR_LIMIT=NONE] -->
+  <string name="share_experience_title">Experience it together</string>
+  <!-- Privacy notice message. [CHAR_LIMIT=NONE] -->
+  <string name="share_experience_message">To power this session, Google will process visual data from your camera.</string>
+  <!-- Privacy notice accept. [CHAR_LIMIT=NONE] -->
+  <string name="agree_to_share">Start now</string>
+  <!-- Privacy notice learn more. [CHAR_LIMIT=NONE] -->
+  <string name="learn_more">Learn more</string>
+  <!-- Cloud anchor privacy website. [CHAR_LIMIT=NONE] -->
+  <string name="cloud_anchor_website">https://developers.google.com/ar/cloud-anchors-privacy</string>
+</resources>

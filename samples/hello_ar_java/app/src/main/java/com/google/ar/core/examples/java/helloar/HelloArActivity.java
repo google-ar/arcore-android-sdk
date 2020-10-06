@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google Inc. All Rights Reserved.
+ * Copyright 2017 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +111,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private final InstantPlacementSettings instantPlacementSettings = new InstantPlacementSettings();
   private boolean[] instantPlacementSettingsMenuDialogCheckboxes = new boolean[1];
   // Assumed distance from the device camera to the surface on which user will try to place objects.
-  // This value affects the apparent scale of objects while the tracking method of the the
+  // This value affects the apparent scale of objects while the tracking method of the
   // Instant Placement point is SCREENSPACE_WITH_APPROXIMATE_DISTANCE.
   // Values in the [0.2, 2.0] meter range are a good choice for most AR experiences. Use lower
   // values for AR experiences where users are expected to place objects on surfaces close to the
@@ -396,7 +396,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         virtualObjectDepthShader.setMatrix3("u_DepthUvTransform", transform);
       }
 
-      if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
+      if (camera.getTrackingState() == TrackingState.TRACKING
+          && session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
         // The rendering abstraction leaks a bit here. Populate the depth texture with the current
         // frame data.
         try (Image depthImage = frame.acquireDepthImage()) {

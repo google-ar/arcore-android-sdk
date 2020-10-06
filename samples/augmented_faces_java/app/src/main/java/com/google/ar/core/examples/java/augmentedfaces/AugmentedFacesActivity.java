@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Google Inc. All Rights Reserved.
+ * Copyright 2020 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -221,13 +221,18 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
       backgroundRenderer.createOnGlThread(/*context=*/ this);
       augmentedFaceRenderer.createOnGlThread(this, "models/freckles.png");
       augmentedFaceRenderer.setMaterialProperties(0.0f, 1.0f, 0.1f, 6.0f);
-      noseObject.createOnGlThread(/*context=*/ this, "models/NOSE.obj", "models/nose_fur.png");
+      noseObject.createOnGlThread(
+          /*context=*/ this,
+          "models/nose.obj",
+          "models/nose_fur.png");
       noseObject.setMaterialProperties(0.0f, 1.0f, 0.1f, 6.0f);
       noseObject.setBlendMode(ObjectRenderer.BlendMode.AlphaBlending);
-      rightEarObject.createOnGlThread(this, "models/FOREHEAD_RIGHT.obj", "models/ear_fur.png");
+      rightEarObject.createOnGlThread(
+          this, "models/forehead_right.obj", "models/ear_fur.png");
       rightEarObject.setMaterialProperties(0.0f, 1.0f, 0.1f, 6.0f);
       rightEarObject.setBlendMode(ObjectRenderer.BlendMode.AlphaBlending);
-      leftEarObject.createOnGlThread(this, "models/FOREHEAD_LEFT.obj", "models/ear_fur.png");
+      leftEarObject.createOnGlThread(
+          this, "models/forehead_left.obj", "models/ear_fur.png");
       leftEarObject.setMaterialProperties(0.0f, 1.0f, 0.1f, 6.0f);
       leftEarObject.setBlendMode(ObjectRenderer.BlendMode.AlphaBlending);
 

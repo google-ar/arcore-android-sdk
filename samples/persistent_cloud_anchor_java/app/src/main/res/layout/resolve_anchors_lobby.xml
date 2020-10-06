@@ -1,0 +1,160 @@
+<!--
+   Copyright 2020 Google LLC
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
+      xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto"
+      xmlns:tools="http://schemas.android.com/tools"
+      xmlns:card_view="http://schemas.android.com/tools"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      tools:context="com.google.ar.core.examples.java.persistentcloudanchor.MainLobbyActivity">
+
+      <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline_select"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.35" />
+      <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline_enter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.45" />
+      <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline_center"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.4" />
+        <TextView
+            android:id="@+id/orText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="@id/guideline_center"
+            app:layout_constraintBottom_toBottomOf="@id/guideline_center"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:text="or"/>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="30dp"
+            android:layout_height="1dp"
+            app:layout_constraintTop_toTopOf="@id/guideline_center"
+            app:layout_constraintBottom_toBottomOf="@id/guideline_center"
+            app:layout_constraintStart_toEndOf="@id/orText"
+            android:layout_marginLeft="16dp"
+            app:cardBackgroundColor="@android:color/primary_text_dark"
+            card_view:cardElevation="0dp"
+            />
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="30dp"
+            android:layout_height="1dp"
+            app:layout_constraintTop_toTopOf="@id/guideline_center"
+            app:layout_constraintBottom_toBottomOf="@id/guideline_center"
+            app:layout_constraintEnd_toStartOf="@id/orText"
+            android:layout_marginRight="16dp"
+            app:cardBackgroundColor="@android:color/primary_text_dark"
+            card_view:cardElevation="0dp"
+            />
+      <TextView
+          android:id="@+id/resolve_an_anchor_title"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          app:layout_constraintTop_toTopOf="parent"
+          app:layout_constraintLeft_toLeftOf="parent"
+          app:layout_constraintRight_toRightOf="parent"
+          android:text="@string/resolve_an_anchor_text"
+          android:textSize="24sp"
+          android:textStyle="bold"
+          android:paddingTop="60dp"/>
+      <TextView
+          android:id="@+id/resolve_an_anchor_instructions"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          app:layout_constraintTop_toBottomOf="@+id/resolve_an_anchor_title"
+          app:layout_constraintLeft_toLeftOf="parent"
+          app:layout_constraintRight_toRightOf="parent"
+          android:text="@string/resolve_an_anchor_instructions_text"
+          android:gravity="center"
+          android:textSize="18sp"
+          android:layout_marginTop="20dp"/>
+      <TextView
+          android:id="@+id/select_anchors_instructions"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          app:layout_constraintBottom_toTopOf="@+id/select_anchors_spinner"
+          app:layout_constraintLeft_toLeftOf="parent"
+          app:layout_constraintRight_toRightOf="parent"
+          android:layout_marginBottom="20dp"
+          android:layout_marginStart="40dp"
+          android:gravity="left"
+          android:text="@string/select_anchors_text"
+          android:textSize="14sp"/>
+      <Spinner
+        android:id="@+id/select_anchors_spinner"
+        android:spinnerMode="dialog"
+        style="@style/Widget.AppCompat.Spinner.Underlined"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toTopOf="@+id/guideline_select"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="40dp"/>
+
+       <TextView
+          android:id="@+id/enter_anchor_instructions"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          app:layout_constraintTop_toBottomOf="@+id/guideline_enter"
+          app:layout_constraintLeft_toLeftOf="parent"
+          app:layout_constraintRight_toRightOf="parent"
+          android:layout_marginStart="40dp"
+          android:gravity="left"
+          android:text="@string/enter_anchor_text"
+          android:textSize="14sp"/>
+        <com.google.android.material.textfield.TextInputLayout
+          android:id="@+id/enter_anchor"
+          style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+          android:layout_width="0dp"
+          android:layout_height="wrap_content"
+          android:layout_marginStart="40dp"
+          android:layout_marginEnd="40dp"
+          android:hint="@string/enter_anchor_hint"
+          app:layout_constraintEnd_toEndOf="parent"
+          app:layout_constraintStart_toStartOf="parent"
+          app:layout_constraintTop_toBottomOf="@+id/enter_anchor_instructions">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/anchor_edit_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColorPrimary="#DADCE0"/>
+      </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.button.MaterialButton
+        android:id="@+id/resolve_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@+id/enter_anchor"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="@string/resolve_button_text"
+        android:theme="@style/AppButtonTheme"
+        android:layout_marginTop="60dp"/>
+</androidx.constraintlayout.widget.ConstraintLayout>

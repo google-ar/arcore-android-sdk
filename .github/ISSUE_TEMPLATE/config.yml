@@ -1,0 +1,22 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Advice and general questions
+    url: https://stackoverflow.com/questions/tagged/ARCore
+    about: For advice and general questions, please use the ARCore tag on Stack Overflow.
+  - name: ARCore SDK for Unity
+    url: https://github.com/google-ar/arcore-unity-sdk/issues
+    about: If using Unity, please use the https://github.com/google-ar/arcore-unity-sdk/issues issue tracker instead.
+
+  - name: Developer documentation (Java)
+    url: https://developers.google.com/ar/develop/java/
+    about: Check out the developer documentation in case your question has already been answered.
+  - name: API reference documentation (Java)
+    url: https://developers.google.com/ar/reference/java/arcore/reference/com/google/ar/core/package-summary
+    about: For API questions, refer to the API reference documentation.
+
+  - name: Developer documentation (NDK)
+    url: https://developers.google.com/ar/develop/c/
+    about: Check out the developer documentation in case your question has already been answered.
+  - name: API reference documentation (NDK)
+    url: https://developers.google.com/ar/reference/c/
+    about: For API questions, refer to the API reference documentation.
