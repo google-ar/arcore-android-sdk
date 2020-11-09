@@ -14,15 +14,17 @@
 #pragma once
 
 // Dependency:
-#include "../glm.hpp"
 #include "../gtx/transform.hpp"
+#include "../gtc/epsilon.hpp"
+#include "../ext/vector_relational.hpp"
+#include "../glm.hpp"
 
-#ifndef GLM_ENABLE_EXPERIMENTAL
-#	error "GLM: GLM_GTX_rotate_vector is an experimental extension and may change in the future. Use #define GLM_ENABLE_EXPERIMENTAL before including it, if you really want to use it."
-#endif
-
-#if GLM_MESSAGES == GLM_MESSAGES_ENABLED && !defined(GLM_EXT_INCLUDED)
-#	pragma message("GLM: GLM_GTX_rotate_vector extension included")
+#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
+#	ifndef GLM_ENABLE_EXPERIMENTAL
+#		pragma message("GLM: GLM_GTX_rotate_vector is an experimental extension and may change in the future. Use  before including it, if you really want to use it.")
+#	else
+#		pragma message("GLM: GLM_GTX_rotate_vector extension included")
+#	endif
 #endif
 
 namespace glm
@@ -31,11 +33,11 @@ namespace glm
 	/// @{
 
 	/// Returns Spherical interpolation between two vectors
-	/// 
+	///
 	/// @param x A first vector
 	/// @param y A second vector
 	/// @param a Interpolation factor. The interpolation is defined beyond the range [0, 1].
-	/// 
+	///
 	/// @see gtx_rotate_vector
 	template<typename T, qualifier Q>
 	GLM_FUNC_DECL vec<3, T, Q> slerp(
@@ -49,7 +51,7 @@ namespace glm
 	GLM_FUNC_DECL vec<2, T, Q> rotate(
 		vec<2, T, Q> const& v,
 		T const& angle);
-		
+
 	//! Rotate a three dimensional vector around an axis.
 	//! From GLM_GTX_rotate_vector extension.
 	template<typename T, qualifier Q>
@@ -57,7 +59,7 @@ namespace glm
 		vec<3, T, Q> const& v,
 		T const& angle,
 		vec<3, T, Q> const& normal);
-		
+
 	//! Rotate a four dimensional vector around an axis.
 	//! From GLM_GTX_rotate_vector extension.
 	template<typename T, qualifier Q>
@@ -65,7 +67,7 @@ namespace glm
 		vec<4, T, Q> const& v,
 		T const& angle,
 		vec<3, T, Q> const& normal);
-		
+
 	//! Rotate a three dimensional vector around the X axis.
 	//! From GLM_GTX_rotate_vector extension.
 	template<typename T, qualifier Q>
@@ -79,35 +81,35 @@ namespace glm
 	GLM_FUNC_DECL vec<3, T, Q> rotateY(
 		vec<3, T, Q> const& v,
 		T const& angle);
-		
+
 	//! Rotate a three dimensional vector around the Z axis.
 	//! From GLM_GTX_rotate_vector extension.
 	template<typename T, qualifier Q>
 	GLM_FUNC_DECL vec<3, T, Q> rotateZ(
 		vec<3, T, Q> const& v,
 		T const& angle);
-		
+
 	//! Rotate a four dimensional vector around the X axis.
 	//! From GLM_GTX_rotate_vector extension.
 	template<typename T, qualifier Q>
 	GLM_FUNC_DECL vec<4, T, Q> rotateX(
 		vec<4, T, Q> const& v,
 		T const& angle);
-		
+
 	//! Rotate a four dimensional vector around the Y axis.
 	//! From GLM_GTX_rotate_vector extension.
 	template<typename T, qualifier Q>
 	GLM_FUNC_DECL vec<4, T, Q> rotateY(
 		vec<4, T, Q> const& v,
 		T const& angle);
-		
+
 	//! Rotate a four dimensional vector around the Z axis.
 	//! From GLM_GTX_rotate_vector extension.
 	template<typename T, qualifier Q>
 	GLM_FUNC_DECL vec<4, T, Q> rotateZ(
 		vec<4, T, Q> const& v,
 		T const& angle);
-		
+
 	//! Build a rotation matrix from a normal and a up vector.
 	//! From GLM_GTX_rotate_vector extension.
 	template<typename T, qualifier Q>

@@ -2,13 +2,13 @@
 /// @file glm/geometric.hpp
 ///
 /// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.5 Geometric Functions</a>
-/// 
+///
 /// @defgroup core_func_geometric Geometric functions
 /// @ingroup core
-/// 
-/// Include <glm/geometric.hpp> to use these core features.
 ///
 /// These operate on vectors as vectors, not component-wise.
+///
+/// Include <glm/geometric.hpp> to use these core features.
 
 #pragma once
 
@@ -20,10 +20,10 @@ namespace glm
 	/// @{
 
 	/// Returns the length of x, i.e., sqrt(x * x).
-	/// 
+	///
 	/// @tparam L An integer between 1 and 4 included that qualify the dimension of the vector.
 	/// @tparam T Floating-point scalar types.
-	/// 
+	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/length.xml">GLSL length man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.5 Geometric Functions</a>
 	template<length_t L, typename T, qualifier Q>
@@ -33,7 +33,7 @@ namespace glm
 	///
 	/// @tparam L An integer between 1 and 4 included that qualify the dimension of the vector.
 	/// @tparam T Floating-point scalar types.
-	/// 
+	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/distance.xml">GLSL distance man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.5 Geometric Functions</a>
 	template<length_t L, typename T, qualifier Q>
@@ -43,7 +43,7 @@ namespace glm
 	///
 	/// @tparam L An integer between 1 and 4 included that qualify the dimension of the vector.
 	/// @tparam T Floating-point scalar types.
-	/// 
+	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/dot.xml">GLSL dot man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.5 Geometric Functions</a>
 	template<length_t L, typename T, qualifier Q>
@@ -52,7 +52,7 @@ namespace glm
 	/// Returns the cross product of x and y.
 	///
 	/// @tparam T Floating-point scalar types.
-	/// 
+	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/cross.xml">GLSL cross man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.5 Geometric Functions</a>
 	template<typename T, qualifier Q>
@@ -63,7 +63,7 @@ namespace glm
 	///
 	/// @tparam L An integer between 1 and 4 included that qualify the dimension of the vector.
 	/// @tparam T Floating-point scalar types.
-	/// 
+	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/normalize.xml">GLSL normalize man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.5 Geometric Functions</a>
 	template<length_t L, typename T, qualifier Q>
@@ -73,7 +73,7 @@ namespace glm
 	///
 	/// @tparam L An integer between 1 and 4 included that qualify the dimension of the vector.
 	/// @tparam T Floating-point scalar types.
-	/// 
+	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/faceforward.xml">GLSL faceforward man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.5 Geometric Functions</a>
 	template<length_t L, typename T, qualifier Q>
@@ -82,12 +82,12 @@ namespace glm
 		vec<L, T, Q> const& I,
 		vec<L, T, Q> const& Nref);
 
-	/// For the incident vector I and surface orientation N, 
+	/// For the incident vector I and surface orientation N,
 	/// returns the reflection direction : result = I - 2.0 * dot(N, I) * N.
 	///
 	/// @tparam L An integer between 1 and 4 included that qualify the dimension of the vector.
 	/// @tparam T Floating-point scalar types.
-	/// 
+	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/reflect.xml">GLSL reflect man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.5 Geometric Functions</a>
 	template<length_t L, typename T, qualifier Q>
@@ -95,13 +95,13 @@ namespace glm
 		vec<L, T, Q> const& I,
 		vec<L, T, Q> const& N);
 
-	/// For the incident vector I and surface normal N, 
-	/// and the ratio of indices of refraction eta, 
+	/// For the incident vector I and surface normal N,
+	/// and the ratio of indices of refraction eta,
 	/// return the refraction vector.
 	///
 	/// @tparam L An integer between 1 and 4 included that qualify the dimension of the vector.
 	/// @tparam T Floating-point scalar types.
-	/// 
+	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/refract.xml">GLSL refract man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.5 Geometric Functions</a>
 	template<length_t L, typename T, qualifier Q>

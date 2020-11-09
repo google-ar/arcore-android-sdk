@@ -1,5 +1,4 @@
 /// @ref gtx_handed_coordinate_space
-/// @file glm/gtx/handed_coordinate_space.inl
 
 namespace glm
 {

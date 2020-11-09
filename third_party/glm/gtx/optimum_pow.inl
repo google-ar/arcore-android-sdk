@@ -1,5 +1,4 @@
 /// @ref gtx_optimum_pow
-/// @file glm/gtx/optimum_pow.inl
 
 namespace glm
 {

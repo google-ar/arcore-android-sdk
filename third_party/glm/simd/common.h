@@ -7,53 +7,43 @@
 
 #if GLM_ARCH & GLM_ARCH_SSE2_BIT
 
-GLM_FUNC_QUALIFIER glm_vec4 glm_vec4_add(glm_vec4 a, glm_vec4 b)
-{
-	return _mm_add_ps(a, b);
+GLM_FUNC_QUALIFIER glm_f32vec4 glm_vec4_add(glm_f32vec4 a, glm_f32vec4 b) {
+  return _mm_add_ps(a, b);
 }
 
-GLM_FUNC_QUALIFIER glm_vec4 glm_vec1_add(glm_vec4 a, glm_vec4 b)
-{
-	return _mm_add_ss(a, b);
+GLM_FUNC_QUALIFIER glm_f32vec4 glm_vec1_add(glm_f32vec4 a, glm_f32vec4 b) {
+  return _mm_add_ss(a, b);
 }
 
-GLM_FUNC_QUALIFIER glm_vec4 glm_vec4_sub(glm_vec4 a, glm_vec4 b)
-{
-	return _mm_sub_ps(a, b);
+GLM_FUNC_QUALIFIER glm_f32vec4 glm_vec4_sub(glm_f32vec4 a, glm_f32vec4 b) {
+  return _mm_sub_ps(a, b);
 }
 
-GLM_FUNC_QUALIFIER glm_vec4 glm_vec1_sub(glm_vec4 a, glm_vec4 b)
-{
-	return _mm_sub_ss(a, b);
+GLM_FUNC_QUALIFIER glm_f32vec4 glm_vec1_sub(glm_f32vec4 a, glm_f32vec4 b) {
+  return _mm_sub_ss(a, b);
 }
 
-GLM_FUNC_QUALIFIER glm_vec4 glm_vec4_mul(glm_vec4 a, glm_vec4 b)
-{
-	return _mm_mul_ps(a, b);
+GLM_FUNC_QUALIFIER glm_f32vec4 glm_vec4_mul(glm_f32vec4 a, glm_f32vec4 b) {
+  return _mm_mul_ps(a, b);
 }
 
-GLM_FUNC_QUALIFIER glm_vec4 glm_vec1_mul(glm_vec4 a, glm_vec4 b)
-{
-	return _mm_mul_ss(a, b);
+GLM_FUNC_QUALIFIER glm_f32vec4 glm_vec1_mul(glm_f32vec4 a, glm_f32vec4 b) {
+  return _mm_mul_ss(a, b);
 }
 
-GLM_FUNC_QUALIFIER glm_vec4 glm_vec4_div(glm_vec4 a, glm_vec4 b)
-{
-	return _mm_div_ps(a, b);
+GLM_FUNC_QUALIFIER glm_f32vec4 glm_vec4_div(glm_f32vec4 a, glm_f32vec4 b) {
+  return _mm_div_ps(a, b);
 }
 
-GLM_FUNC_QUALIFIER glm_vec4 glm_vec1_div(glm_vec4 a, glm_vec4 b)
-{
-	return _mm_div_ss(a, b);
+GLM_FUNC_QUALIFIER glm_f32vec4 glm_vec1_div(glm_f32vec4 a, glm_f32vec4 b) {
+  return _mm_div_ss(a, b);
 }
 
-GLM_FUNC_QUALIFIER glm_vec4 glm_vec4_div_lowp(glm_vec4 a, glm_vec4 b)
-{
-	return glm_vec4_mul(a, _mm_rcp_ps(b));
+GLM_FUNC_QUALIFIER glm_f32vec4 glm_vec4_div_lowp(glm_f32vec4 a, glm_f32vec4 b) {
+  return glm_vec4_mul(a, _mm_rcp_ps(b));
 }
 
-GLM_FUNC_QUALIFIER glm_vec4 glm_vec4_swizzle_xyzw(glm_vec4 a)
-{
+GLM_FUNC_QUALIFIER glm_f32vec4 glm_vec4_swizzle_xyzw(glm_f32vec4 a) {
 #	if GLM_ARCH & GLM_ARCH_AVX2_BIT
 		return _mm_permute_ps(a, _MM_SHUFFLE(3, 2, 1, 0));
 #	else
@@ -61,8 +51,8 @@ GLM_FUNC_QUALIFIER glm_vec4 glm_vec4_swizzle_xyzw(glm_vec4 a)
 #	endif
 }
 
-GLM_FUNC_QUALIFIER glm_vec4 glm_vec1_fma(glm_vec4 a, glm_vec4 b, glm_vec4 c)
-{
+GLM_FUNC_QUALIFIER glm_f32vec4 glm_vec1_fma(glm_f32vec4 a, glm_f32vec4 b,
+                                            glm_f32vec4 c) {
 #	if (GLM_ARCH & GLM_ARCH_AVX2_BIT) && !(GLM_COMPILER & GLM_COMPILER_CLANG)
 		return _mm_fmadd_ss(a, b, c);
 #	else
@@ -70,8 +60,8 @@ GLM_FUNC_QUALIFIER glm_vec4 glm_vec1_fma(glm_vec4 a, glm_vec4 b, glm_vec4 c)
 #	endif
 }
 
-GLM_FUNC_QUALIFIER glm_vec4 glm_vec4_fma(glm_vec4 a, glm_vec4 b, glm_vec4 c)
-{
+GLM_FUNC_QUALIFIER glm_f32vec4 glm_vec4_fma(glm_f32vec4 a, glm_f32vec4 b,
+                                            glm_f32vec4 c) {
 #	if (GLM_ARCH & GLM_ARCH_AVX2_BIT) && !(GLM_COMPILER & GLM_COMPILER_CLANG)
 		return _mm_fmadd_ps(a, b, c);
 #	else
@@ -79,9 +69,8 @@ GLM_FUNC_QUALIFIER glm_vec4 glm_vec4_fma(glm_vec4 a, glm_vec4 b, glm_vec4 c)
 #	endif
 }
 
-GLM_FUNC_QUALIFIER glm_vec4 glm_vec4_abs(glm_vec4 x)
-{
-	return _mm_and_ps(x, _mm_castsi128_ps(_mm_set1_epi32(0x7FFFFFFF)));
+GLM_FUNC_QUALIFIER glm_f32vec4 glm_vec4_abs(glm_f32vec4 x) {
+  return _mm_and_ps(x, _mm_castsi128_ps(_mm_set1_epi32(0x7FFFFFFF)));
 }
 
 GLM_FUNC_QUALIFIER glm_ivec4 glm_ivec4_abs(glm_ivec4 x)
@@ -103,8 +92,8 @@ GLM_FUNC_QUALIFIER glm_vec4 glm_vec4_sign(glm_vec4 x)
 	glm_vec4 const cmp1 = _mm_cmpgt_ps(x, zro0);
 	glm_vec4 const and0 = _mm_and_ps(cmp0, _mm_set1_ps(-1.0f));
 	glm_vec4 const and1 = _mm_and_ps(cmp1, _mm_set1_ps(1.0f));
-	glm_vec4 const or0 = _mm_or_ps(and0, and1);;
-	return or0;
+        glm_vec4 const or0 = _mm_or_ps(and0, and1);
+        return or0;
 }
 
 GLM_FUNC_QUALIFIER glm_vec4 glm_vec4_round(glm_vec4 x)

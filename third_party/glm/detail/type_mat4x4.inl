@@ -1,223 +1,286 @@
-/// @ref core
-/// @file glm/detail/type_mat4x4.inl
-
 #include "../matrix.hpp"
 
 namespace glm
 {
 	// -- Constructors --
 
-#	if !GLM_HAS_DEFAULTED_FUNCTIONS
+#	if GLM_CONFIG_DEFAULTED_FUNCTIONS == GLM_DISABLE
 		template<typename T, qualifier Q>
-		GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat()
-		{}
+		GLM_FUNC_QUALIFIER GLM_CONSTEXPR mat<4, 4, T, Q>::mat()
+#			if GLM_CONFIG_CTOR_INIT == GLM_CTOR_INITIALIZER_LIST
+				: value{col_type(1, 0, 0, 0), col_type(0, 1, 0, 0), col_type(0, 0, 1, 0), col_type(0, 0, 0, 1)}
+#			endif
+		{
+#			if GLM_CONFIG_CTOR_INIT == GLM_CTOR_INITIALISATION
+				this->value[0] = col_type(1, 0, 0, 0);
+				this->value[1] = col_type(0, 1, 0, 0);
+				this->value[2] = col_type(0, 0, 1, 0);
+				this->value[3] = col_type(0, 0, 0, 1);
+#			endif
+		}
 #	endif
 
-#	if !GLM_HAS_DEFAULTED_FUNCTIONS
-		template<typename T, qualifier Q>
-		GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat(mat<4, 4, T, Q> const& m)
-		{
+	template<typename T, qualifier Q>
+	template<qualifier P>
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR mat<4, 4, T, Q>::mat(mat<4, 4, T, P> const& m)
+#		if GLM_HAS_INITIALIZER_LISTS
+			: value{col_type(m[0]), col_type(m[1]), col_type(m[2]), col_type(m[3])}
+#		endif
+	{
+#		if !GLM_HAS_INITIALIZER_LISTS
 			this->value[0] = m[0];
 			this->value[1] = m[1];
 			this->value[2] = m[2];
 			this->value[3] = m[3];
-		}
-#	endif//!GLM_HAS_DEFAULTED_FUNCTIONS
-
-	template<typename T, qualifier Q>
-	template<qualifier P>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat(mat<4, 4, T, P> const& m)
-	{
-		this->value[0] = m[0];
-		this->value[1] = m[1];
-		this->value[2] = m[2];
-		this->value[3] = m[3];
+#		endif
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat(T const& s)
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR mat<4, 4, T, Q>::mat(T const& s)
+#		if GLM_HAS_INITIALIZER_LISTS
+			: value{col_type(s, 0, 0, 0), col_type(0, s, 0, 0), col_type(0, 0, s, 0), col_type(0, 0, 0, s)}
+#		endif
 	{
-		this->value[0] = col_type(s, 0, 0, 0);
-		this->value[1] = col_type(0, s, 0, 0);
-		this->value[2] = col_type(0, 0, s, 0);
-		this->value[3] = col_type(0, 0, 0, s);
+#		if !GLM_HAS_INITIALIZER_LISTS
+			this->value[0] = col_type(s, 0, 0, 0);
+			this->value[1] = col_type(0, s, 0, 0);
+			this->value[2] = col_type(0, 0, s, 0);
+			this->value[3] = col_type(0, 0, 0, s);
+#		endif
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR mat<4, 4, T, Q>::mat
 	(
 		T const& x0, T const& y0, T const& z0, T const& w0,
 		T const& x1, T const& y1, T const& z1, T const& w1,
 		T const& x2, T const& y2, T const& z2, T const& w2,
 		T const& x3, T const& y3, T const& z3, T const& w3
 	)
+#		if GLM_HAS_INITIALIZER_LISTS
+			: value{
+				col_type(x0, y0, z0, w0),
+				col_type(x1, y1, z1, w1),
+				col_type(x2, y2, z2, w2),
+				col_type(x3, y3, z3, w3)}
+#		endif
 	{
-		this->value[0] = col_type(x0, y0, z0, w0);
-		this->value[1] = col_type(x1, y1, z1, w1);
-		this->value[2] = col_type(x2, y2, z2, w2);
-		this->value[3] = col_type(x3, y3, z3, w3);
+#		if !GLM_HAS_INITIALIZER_LISTS
+			this->value[0] = col_type(x0, y0, z0, w0);
+			this->value[1] = col_type(x1, y1, z1, w1);
+			this->value[2] = col_type(x2, y2, z2, w2);
+			this->value[3] = col_type(x3, y3, z3, w3);
+#		endif
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat
-	(
-		col_type const& v0,
-		col_type const& v1,
-		col_type const& v2,
-		col_type const& v3
-	)
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR mat<4, 4, T, Q>::mat(col_type const& v0, col_type const& v1, col_type const& v2, col_type const& v3)
+#		if GLM_HAS_INITIALIZER_LISTS
+			: value{col_type(v0), col_type(v1), col_type(v2), col_type(v3)}
+#		endif
 	{
-		this->value[0] = v0;
-		this->value[1] = v1;
-		this->value[2] = v2;
-		this->value[3] = v3;
+#		if !GLM_HAS_INITIALIZER_LISTS
+			this->value[0] = v0;
+			this->value[1] = v1;
+			this->value[2] = v2;
+			this->value[3] = v3;
+#		endif
 	}
 
 	template<typename T, qualifier Q>
 	template<typename U, qualifier P>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat(mat<4, 4, U, P> const& m)
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR mat<4, 4, T, Q>::mat(mat<4, 4, U, P> const& m)
+#		if GLM_HAS_INITIALIZER_LISTS
+			: value{col_type(m[0]), col_type(m[1]), col_type(m[2]), col_type(m[3])}
+#		endif
 	{
-		this->value[0] = col_type(m[0]);
-		this->value[1] = col_type(m[1]);
-		this->value[2] = col_type(m[2]);
-		this->value[3] = col_type(m[3]);
+#		if !GLM_HAS_INITIALIZER_LISTS
+			this->value[0] = col_type(m[0]);
+			this->value[1] = col_type(m[1]);
+			this->value[2] = col_type(m[2]);
+			this->value[3] = col_type(m[3]);
+#		endif
 	}
 
 	// -- Conversions --
 
-	template<typename T, qualifier Q> 
+	template<typename T, qualifier Q>
 	template<
 		typename X1, typename Y1, typename Z1, typename W1,
 		typename X2, typename Y2, typename Z2, typename W2,
 		typename X3, typename Y3, typename Z3, typename W3,
 		typename X4, typename Y4, typename Z4, typename W4>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR mat<4, 4, T, Q>::mat
 	(
 		X1 const& x1, Y1 const& y1, Z1 const& z1, W1 const& w1,
 		X2 const& x2, Y2 const& y2, Z2 const& z2, W2 const& w2,
 		X3 const& x3, Y3 const& y3, Z3 const& z3, W3 const& w3,
 		X4 const& x4, Y4 const& y4, Z4 const& z4, W4 const& w4
 	)
+#		if GLM_HAS_INITIALIZER_LISTS
+			: value{col_type(x1, y1, z1, w1), col_type(x2, y2, z2, w2), col_type(x3, y3, z3, w3), col_type(x4, y4, z4, w4)}
+#		endif
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<X1>::is_iec559 || std::numeric_limits<X1>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 1st parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Y1>::is_iec559 || std::numeric_limits<Y1>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 2nd parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Z1>::is_iec559 || std::numeric_limits<Z1>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 3rd parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<W1>::is_iec559 || std::numeric_limits<W1>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 4th parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<X1>::is_iec559 || std::numeric_limits<X1>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 1st parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<Y1>::is_iec559 || std::numeric_limits<Y1>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 2nd parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<Z1>::is_iec559 || std::numeric_limits<Z1>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 3rd parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<W1>::is_iec559 || std::numeric_limits<W1>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 4th parameter type invalid.");
 
-		GLM_STATIC_ASSERT(std::numeric_limits<X2>::is_iec559 || std::numeric_limits<X2>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 5th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Y2>::is_iec559 || std::numeric_limits<Y2>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 6th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Z2>::is_iec559 || std::numeric_limits<Z2>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 7th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<W2>::is_iec559 || std::numeric_limits<W2>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 8th parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<X2>::is_iec559 || std::numeric_limits<X2>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 5th parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<Y2>::is_iec559 || std::numeric_limits<Y2>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 6th parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<Z2>::is_iec559 || std::numeric_limits<Z2>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 7th parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<W2>::is_iec559 || std::numeric_limits<W2>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 8th parameter type invalid.");
 
-		GLM_STATIC_ASSERT(std::numeric_limits<X3>::is_iec559 || std::numeric_limits<X3>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 9th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Y3>::is_iec559 || std::numeric_limits<Y3>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 10th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Z3>::is_iec559 || std::numeric_limits<Z3>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 11th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<W3>::is_iec559 || std::numeric_limits<W3>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 12th parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<X3>::is_iec559 || std::numeric_limits<X3>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 9th parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<Y3>::is_iec559 || std::numeric_limits<Y3>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 10th parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<Z3>::is_iec559 || std::numeric_limits<Z3>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 11th parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<W3>::is_iec559 || std::numeric_limits<W3>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 12th parameter type invalid.");
 
-		GLM_STATIC_ASSERT(std::numeric_limits<X4>::is_iec559 || std::numeric_limits<X4>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 13th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Y4>::is_iec559 || std::numeric_limits<Y4>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 14th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<Z4>::is_iec559 || std::numeric_limits<Z4>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 15th parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<W4>::is_iec559 || std::numeric_limits<W4>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 16th parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<X4>::is_iec559 || std::numeric_limits<X4>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 13th parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<Y4>::is_iec559 || std::numeric_limits<Y4>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 14th parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<Z4>::is_iec559 || std::numeric_limits<Z4>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 15th parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<W4>::is_iec559 || std::numeric_limits<W4>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 16th parameter type invalid.");
 
-		this->value[0] = col_type(static_cast<T>(x1), value_type(y1), value_type(z1), value_type(w1));
-		this->value[1] = col_type(static_cast<T>(x2), value_type(y2), value_type(z2), value_type(w2));
-		this->value[2] = col_type(static_cast<T>(x3), value_type(y3), value_type(z3), value_type(w3));
-		this->value[3] = col_type(static_cast<T>(x4), value_type(y4), value_type(z4), value_type(w4));
+#		if !GLM_HAS_INITIALIZER_LISTS
+			this->value[0] = col_type(x1, y1, z1, w1);
+			this->value[1] = col_type(x2, y2, z2, w2);
+			this->value[2] = col_type(x3, y3, z3, w3);
+			this->value[3] = col_type(x4, y4, z4, w4);
+#		endif
 	}
-	
+
 	template<typename T, qualifier Q>
 	template<typename V1, typename V2, typename V3, typename V4>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat
-	(
-		vec<4, V1, Q> const& v1,
-		vec<4, V2, Q> const& v2,
-		vec<4, V3, Q> const& v3,
-		vec<4, V4, Q> const& v4
-	)		
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR mat<4, 4, T, Q>::mat(vec<4, V1, Q> const& v1, vec<4, V2, Q> const& v2, vec<4, V3, Q> const& v3, vec<4, V4, Q> const& v4)
+#		if GLM_HAS_INITIALIZER_LISTS
+			: value{col_type(v1), col_type(v2), col_type(v3), col_type(v4)}
+#		endif
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<V1>::is_iec559 || std::numeric_limits<V1>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 1st parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<V2>::is_iec559 || std::numeric_limits<V2>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 2nd parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<V3>::is_iec559 || std::numeric_limits<V3>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 3rd parameter type invalid.");
-		GLM_STATIC_ASSERT(std::numeric_limits<V4>::is_iec559 || std::numeric_limits<V4>::is_integer || GLM_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 4th parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<V1>::is_iec559 || std::numeric_limits<V1>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 1st parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<V2>::is_iec559 || std::numeric_limits<V2>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 2nd parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<V3>::is_iec559 || std::numeric_limits<V3>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 3rd parameter type invalid.");
+		GLM_STATIC_ASSERT(std::numeric_limits<V4>::is_iec559 || std::numeric_limits<V4>::is_integer || GLM_CONFIG_UNRESTRICTED_GENTYPE, "*mat4x4 constructor only takes float and integer types, 4th parameter type invalid.");
 
-		this->value[0] = col_type(v1);
-		this->value[1] = col_type(v2);
-		this->value[2] = col_type(v3);
-		this->value[3] = col_type(v4);
+#		if !GLM_HAS_INITIALIZER_LISTS
+			this->value[0] = col_type(v1);
+			this->value[1] = col_type(v2);
+			this->value[2] = col_type(v3);
+			this->value[3] = col_type(v4);
+#		endif
 	}
 
 	// -- Matrix conversions --
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat(mat<2, 2, T, Q> const& m)
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR mat<4, 4, T, Q>::mat(mat<2, 2, T, Q> const& m)
+#		if GLM_HAS_INITIALIZER_LISTS
+			: value{col_type(m[0], 0, 0), col_type(m[1], 0, 0), col_type(0, 0, 1, 0), col_type(0, 0, 0, 1)}
+#		endif
 	{
-		this->value[0] = col_type(m[0], 0, 0);
-		this->value[1] = col_type(m[1], 0, 0);
-		this->value[2] = col_type(0, 0, 1, 0);
-		this->value[3] = col_type(0, 0, 0, 1);
+#		if !GLM_HAS_INITIALIZER_LISTS
+			this->value[0] = col_type(m[0], 0, 0);
+			this->value[1] = col_type(m[1], 0, 0);
+			this->value[2] = col_type(0, 0, 1, 0);
+			this->value[3] = col_type(0, 0, 0, 1);
+#		endif
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat(mat<3, 3, T, Q> const& m)
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR mat<4, 4, T, Q>::mat(mat<3, 3, T, Q> const& m)
+#		if GLM_HAS_INITIALIZER_LISTS
+			: value{col_type(m[0], 0), col_type(m[1], 0), col_type(m[2], 0), col_type(0, 0, 0, 1)}
+#		endif
 	{
-		this->value[0] = col_type(m[0], 0);
-		this->value[1] = col_type(m[1], 0);
-		this->value[2] = col_type(m[2], 0);
-		this->value[3] = col_type(0, 0, 0, 1);
+#		if !GLM_HAS_INITIALIZER_LISTS
+			this->value[0] = col_type(m[0], 0);
+			this->value[1] = col_type(m[1], 0);
+			this->value[2] = col_type(m[2], 0);
+			this->value[3] = col_type(0, 0, 0, 1);
+#		endif
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat(mat<2, 3, T, Q> const& m)
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR mat<4, 4, T, Q>::mat(mat<2, 3, T, Q> const& m)
+#		if GLM_HAS_INITIALIZER_LISTS
+			: value{col_type(m[0], 0), col_type(m[1], 0), col_type(0, 0, 1, 0), col_type(0, 0, 0, 1)}
+#		endif
 	{
-		this->value[0] = col_type(m[0], 0);
-		this->value[1] = col_type(m[1], 0);
-		this->value[2] = col_type(0, 0, 1, 0);
-		this->value[3] = col_type(0, 0, 0, 1);
+#		if !GLM_HAS_INITIALIZER_LISTS
+			this->value[0] = col_type(m[0], 0);
+			this->value[1] = col_type(m[1], 0);
+			this->value[2] = col_type(0, 0, 1, 0);
+			this->value[3] = col_type(0, 0, 0, 1);
+#		endif
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat(mat<3, 2, T, Q> const& m)
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR mat<4, 4, T, Q>::mat(mat<3, 2, T, Q> const& m)
+#		if GLM_HAS_INITIALIZER_LISTS
+			: value{col_type(m[0], 0, 0), col_type(m[1], 0, 0), col_type(m[2], 1, 0), col_type(0, 0, 0, 1)}
+#		endif
 	{
-		this->value[0] = col_type(m[0], 0, 0);
-		this->value[1] = col_type(m[1], 0, 0);
-		this->value[2] = col_type(m[2], 1, 0);
-		this->value[3] = col_type(0, 0, 0, 1);
+#		if !GLM_HAS_INITIALIZER_LISTS
+			this->value[0] = col_type(m[0], 0, 0);
+			this->value[1] = col_type(m[1], 0, 0);
+			this->value[2] = col_type(m[2], 1, 0);
+			this->value[3] = col_type(0, 0, 0, 1);
+#		endif
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat(mat<2, 4, T, Q> const& m)
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR mat<4, 4, T, Q>::mat(mat<2, 4, T, Q> const& m)
+#		if GLM_HAS_INITIALIZER_LISTS
+			: value{col_type(m[0]), col_type(m[1]), col_type(0, 0, 1, 0), col_type(0, 0, 0, 1)}
+#		endif
 	{
-		this->value[0] = m[0];
-		this->value[1] = m[1];
-		this->value[2] = col_type(0, 0, 1, 0);
-		this->value[3] = col_type(0, 0, 0, 1);
+#		if !GLM_HAS_INITIALIZER_LISTS
+			this->value[0] = m[0];
+			this->value[1] = m[1];
+			this->value[2] = col_type(0, 0, 1, 0);
+			this->value[3] = col_type(0, 0, 0, 1);
+#		endif
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat(mat<4, 2, T, Q> const& m)
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR mat<4, 4, T, Q>::mat(mat<4, 2, T, Q> const& m)
+#		if GLM_HAS_INITIALIZER_LISTS
+			: value{col_type(m[0], 0, 0), col_type(m[1], 0, 0), col_type(0, 0, 1, 0), col_type(0, 0, 0, 1)}
+#		endif
 	{
-		this->value[0] = col_type(m[0], 0, 0);
-		this->value[1] = col_type(m[1], 0, 0);
-		this->value[2] = col_type(0, 0, 1, 0);
-		this->value[3] = col_type(0, 0, 0, 1);
+#		if !GLM_HAS_INITIALIZER_LISTS
+			this->value[0] = col_type(m[0], 0, 0);
+			this->value[1] = col_type(m[1], 0, 0);
+			this->value[2] = col_type(0, 0, 1, 0);
+			this->value[3] = col_type(0, 0, 0, 1);
+#		endif
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat(mat<3, 4, T, Q> const& m)
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR mat<4, 4, T, Q>::mat(mat<3, 4, T, Q> const& m)
+#		if GLM_HAS_INITIALIZER_LISTS
+			: value{col_type(m[0]), col_type(m[1]), col_type(m[2]), col_type(0, 0, 0, 1)}
+#		endif
 	{
-		this->value[0] = m[0];
-		this->value[1] = m[1];
-		this->value[2] = m[2];
-		this->value[3] = col_type(0, 0, 0, 1);
+#		if !GLM_HAS_INITIALIZER_LISTS
+			this->value[0] = m[0];
+			this->value[1] = m[1];
+			this->value[2] = m[2];
+			this->value[3] = col_type(0, 0, 0, 1);
+#		endif
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER mat<4, 4, T, Q>::mat(mat<4, 3, T, Q> const& m)
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR mat<4, 4, T, Q>::mat(mat<4, 3, T, Q> const& m)
+#		if GLM_HAS_INITIALIZER_LISTS
+			: value{col_type(m[0], 0), col_type(m[1], 0), col_type(m[2], 0), col_type(m[3], 1)}
+#		endif
 	{
-		this->value[0] = col_type(m[0], 0);
-		this->value[1] = col_type(m[1], 0);
-		this->value[2] = col_type(m[2], 0);
-		this->value[3] = col_type(m[3], 1);
+#		if !GLM_HAS_INITIALIZER_LISTS
+			this->value[0] = col_type(m[0], 0);
+			this->value[1] = col_type(m[1], 0);
+			this->value[2] = col_type(m[2], 0);
+			this->value[3] = col_type(m[3], 1);
+#		endif
 	}
 
 	// -- Accesses --
@@ -230,7 +293,7 @@ namespace glm
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER typename mat<4, 4, T, Q>::col_type const& mat<4, 4, T, Q>::operator[](typename mat<4, 4, T, Q>::length_type i) const
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR typename mat<4, 4, T, Q>::col_type const& mat<4, 4, T, Q>::operator[](typename mat<4, 4, T, Q>::length_type i) const
 	{
 		assert(i < this->length());
 		return this->value[i];
@@ -238,22 +301,8 @@ namespace glm
 
 	// -- Unary arithmetic operators --
 
-#	if !GLM_HAS_DEFAULTED_FUNCTIONS
-		template<typename T, qualifier Q>
-		GLM_FUNC_QUALIFIER mat<4, 4, T, Q>& mat<4, 4, T, Q>::operator=(mat<4, 4, T, Q> const& m)
-		{
-			//memcpy could be faster
-			//memcpy(&this->value, &m.value, 16 * sizeof(valType));
-			this->value[0] = m[0];
-			this->value[1] = m[1];
-			this->value[2] = m[2];
-			this->value[3] = m[3];
-			return *this;
-		}
-#	endif//!GLM_HAS_DEFAULTED_FUNCTIONS
-
-	template<typename T, qualifier Q> 
-	template<typename U> 
+	template<typename T, qualifier Q>
+	template<typename U>
 	GLM_FUNC_QUALIFIER mat<4, 4, T, Q>& mat<4, 4, T, Q>::operator=(mat<4, 4, U, Q> const& m)
 	{
 		//memcpy could be faster
@@ -652,6 +701,6 @@ namespace glm
 	}
 }//namespace glm
 
-#if GLM_ARCH != GLM_ARCH_PURE
+#if GLM_CONFIG_SIMD == GLM_ENABLE
 #	include "type_mat4x4_simd.inl"
 #endif

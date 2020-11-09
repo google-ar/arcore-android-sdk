@@ -1,5 +1,4 @@
 /// @ref gtx_rotate_vector
-/// @file glm/gtx/rotate_vector.inl
 
 namespace glm
 {
@@ -177,8 +176,8 @@ namespace glm
 		vec<3, T, Q> const& Up
 	)
 	{
-		if(all(equal(Normal, Up)))
-			return mat<4, 4, T, Q>(T(1));
+		if(all(equal(Normal, Up, epsilon<T>())))
+			return mat<4, 4, T, Q>(static_cast<T>(1));
 
 		vec<3, T, Q> RotationAxis = cross(Up, Normal);
 		T Angle = acos(dot(Normal, Up));

@@ -15,12 +15,12 @@
 // Dependency:
 #include "../glm.hpp"
 
-#ifndef GLM_ENABLE_EXPERIMENTAL
-#	error "GLM: GLM_GTX_mixed_product is an experimental extension and may change in the future. Use #define GLM_ENABLE_EXPERIMENTAL before including it, if you really want to use it."
-#endif
-
-#if GLM_MESSAGES == GLM_MESSAGES_ENABLED && !defined(GLM_EXT_INCLUDED)
-#	pragma message("GLM: GLM_GTX_mixed_product extension included")
+#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
+#	ifndef GLM_ENABLE_EXPERIMENTAL
+#		pragma message("GLM: GLM_GTX_mixed_product is an experimental extension and may change in the future. Use  before including it, if you really want to use it.")
+#	else
+#		pragma message("GLM: GLM_GTX_mixed_product extension included")
+#	endif
 #endif
 
 namespace glm
@@ -29,10 +29,10 @@ namespace glm
 	/// @{
 
 	/// @brief Mixed product of 3 vectors (from GLM_GTX_mixed_product extension)
-	template<typename T, qualifier Q> 
+	template<typename T, qualifier Q>
 	GLM_FUNC_DECL T mixedProduct(
-		vec<3, T, Q> const& v1, 
-		vec<3, T, Q> const& v2, 
+		vec<3, T, Q> const& v1,
+		vec<3, T, Q> const& v2,
 		vec<3, T, Q> const& v3);
 
 	/// @}

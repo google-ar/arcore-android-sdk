@@ -1,5 +1,4 @@
 /// @ref gtx_string_cast
-/// @file glm/gtx/string_cast.inl
 
 #include <cstdarg>
 #include <cstdio>
@@ -25,14 +24,14 @@ namespace detail
 		char text[STRING_BUFFER];
 		va_list list;
 
-		if(msg == 0)
+		if(msg == GLM_NULLPTR)
 			return std::string();
 
 		va_start(list, msg);
-#		if(GLM_COMPILER & GLM_COMPILER_VC)
+#		if (GLM_COMPILER & GLM_COMPILER_VC)
 			vsprintf_s(text, STRING_BUFFER, msg, list);
 #		else//
-			vsprintf(text, msg, list);
+			std::vsprintf(text, msg, list);
 #		endif//
 		va_end(list);
 
@@ -232,8 +231,8 @@ namespace detail
 				LiteralStr, LiteralStr, LiteralStr));
 
 			return detail::format(FormatStr.c_str(),
-				static_cast<typename cast<T>::value_type>(x[0]), 
-				static_cast<typename cast<T>::value_type>(x[1]), 
+				static_cast<typename cast<T>::value_type>(x[0]),
+				static_cast<typename cast<T>::value_type>(x[1]),
 				static_cast<typename cast<T>::value_type>(x[2]));
 		}
 	};
@@ -249,7 +248,7 @@ namespace detail
 				PrefixStr,
 				LiteralStr, LiteralStr, LiteralStr, LiteralStr));
 
-			return detail::format(FormatStr.c_str(), 
+			return detail::format(FormatStr.c_str(),
 				static_cast<typename cast<T>::value_type>(x[0]),
 				static_cast<typename cast<T>::value_type>(x[1]),
 				static_cast<typename cast<T>::value_type>(x[2]),
@@ -440,21 +439,21 @@ namespace detail
 
 
 	template<typename T, qualifier Q>
-	struct compute_to_string<tquat<T, Q> >
+	struct compute_to_string<qua<T, Q> >
 	{
-		GLM_FUNC_QUALIFIER static std::string call(tquat<T, Q> const& x)
+		GLM_FUNC_QUALIFIER static std::string call(qua<T, Q> const& q)
 		{
 			char const * PrefixStr = prefix<T>::value();
 			char const * LiteralStr = literal<T, std::numeric_limits<T>::is_iec559>::value();
-			std::string FormatStr(detail::format("%squat(%s, %s, %s, %s)",
+			std::string FormatStr(detail::format("%squat(%s, {%s, %s, %s})",
 				PrefixStr,
 				LiteralStr, LiteralStr, LiteralStr, LiteralStr));
 
 			return detail::format(FormatStr.c_str(),
-				static_cast<typename cast<T>::value_type>(x[0]),
-				static_cast<typename cast<T>::value_type>(x[1]),
-				static_cast<typename cast<T>::value_type>(x[2]),
-				static_cast<typename cast<T>::value_type>(x[3]));
+				static_cast<typename cast<T>::value_type>(q.w),
+				static_cast<typename cast<T>::value_type>(q.x),
+				static_cast<typename cast<T>::value_type>(q.y),
+				static_cast<typename cast<T>::value_type>(q.z));
 		}
 	};
 
@@ -465,19 +464,20 @@ namespace detail
 		{
 			char const * PrefixStr = prefix<T>::value();
 			char const * LiteralStr = literal<T, std::numeric_limits<T>::is_iec559>::value();
-			std::string FormatStr(detail::format("%sdualquat((%s, %s, %s, %s), (%s, %s, %s, %s))",
+			std::string FormatStr(detail::format("%sdualquat((%s, {%s, %s, %s}), (%s, {%s, %s, %s}))",
 				PrefixStr,
+				LiteralStr, LiteralStr, LiteralStr, LiteralStr,
 				LiteralStr, LiteralStr, LiteralStr, LiteralStr));
 
 			return detail::format(FormatStr.c_str(),
-				static_cast<typename cast<T>::value_type>(x.real[0]),
-				static_cast<typename cast<T>::value_type>(x.real[1]),
-				static_cast<typename cast<T>::value_type>(x.real[2]),
-				static_cast<typename cast<T>::value_type>(x.real[3]),
-				static_cast<typename cast<T>::value_type>(x.dual[0]),
-				static_cast<typename cast<T>::value_type>(x.dual[1]),
-				static_cast<typename cast<T>::value_type>(x.dual[2]),
-				static_cast<typename cast<T>::value_type>(x.dual[3]));
+				static_cast<typename cast<T>::value_type>(x.real.w),
+				static_cast<typename cast<T>::value_type>(x.real.x),
+				static_cast<typename cast<T>::value_type>(x.real.y),
+				static_cast<typename cast<T>::value_type>(x.real.z),
+				static_cast<typename cast<T>::value_type>(x.dual.w),
+				static_cast<typename cast<T>::value_type>(x.dual.x),
+				static_cast<typename cast<T>::value_type>(x.dual.y),
+				static_cast<typename cast<T>::value_type>(x.dual.z));
 		}
 	};
 

@@ -226,6 +226,9 @@
 /// Represents an immutable rigid transformation from one coordinate
 /// space to another.
 
+/// @defgroup ArRecordingConfig ArRecordingConfig
+/// Session recording management.
+
 /// @defgroup ArSegmentation ArSegmentation
 /// Segmentation of people from the background camera image.
 
@@ -277,6 +280,15 @@ typedef void *ArJavaObject;
 /// - Create with: ::ArCameraConfigFilter_create
 /// - Release with: ::ArCameraConfigFilter_destroy
 typedef struct ArCameraConfigFilter_ ArCameraConfigFilter;
+
+/// @ingroup ArRecordingConfig
+/// A recording config struct that contains the config to set the recorder.
+///
+/// (@ref ownership "value type").
+///
+/// - Create with: ::ArRecordingConfig_create
+/// - Release with: ::ArRecordingConfig_destroy
+typedef struct ArRecordingConfig_ ArRecordingConfig;
 
 /// @ingroup ArSession
 /// The ARCore session (@ref ownership "value type").
@@ -728,6 +740,14 @@ AR_DEFINE_ENUM(ArStatus){
     /// unreleased image.
     AR_ERROR_ILLEGAL_STATE = -20,
 
+    /// When recording failed.
+    AR_ERROR_RECORDING_FAILED = -23,
+
+    /// When playback failed.
+    AR_ERROR_PLAYBACK_FAILED = -24,
+    /// Operation is unsupported with the current session.
+    AR_ERROR_SESSION_UNSUPPORTED = -25,
+
     /// The requested metadata tag cannot be found in input metadata.
     AR_ERROR_METADATA_NOT_FOUND = -26,
 
@@ -958,6 +978,17 @@ AR_DEFINE_ENUM(ArPlaneFindingMode){
     AR_PLANE_FINDING_MODE_VERTICAL = 2,
     /// Detection of horizontal and vertical planes is enabled.
     AR_PLANE_FINDING_MODE_HORIZONTAL_AND_VERTICAL = 3,
+};
+
+/// @ingroup ArRecordingConfig
+/// Describe the current recording status.
+AR_DEFINE_ENUM(ArRecordingStatus){
+    // The dataset recorder is not recording.
+    AR_RECORDING_NONE = 0,
+    // The dataset recorder is recording normally.
+    AR_RECORDING_OK = 1,
+    // The dataset recorder encountered an error while recording.
+    AR_RECORDING_IO_ERROR = 2,
 };
 
 /// @ingroup ArConfig
@@ -1224,42 +1255,48 @@ void ArCoreApk_checkAvailability(void *env,
                                  ArAvailability *out_availability);
 
 /// @ingroup ArCoreApk
-/// Initiates installation of ARCore if needed. When your apllication launches
-/// or enters an AR mode, it should call this function with
-/// @p user_requested_install = 1.
+/// On supported devices initiates download and installation of
+/// Google Play Services for AR (ARCore) and ARCore device profile data, see
+/// https://developers.google.com/ar/develop/c/enable-arcore.
 ///
-/// If ARCore is installed and compatible, this function will set
-/// @p out_install_status to #AR_INSTALL_STATUS_INSTALLED.
+/// Do not call this function unless ::ArCoreApk_checkAvailability has returned
+/// either #AR_AVAILABILITY_SUPPORTED_APK_TOO_OLD or
+/// #AR_AVAILABILITY_SUPPORTED_NOT_INSTALLED.
 ///
-/// If ARCore is not currently installed or the installed version not
-/// compatible, the function will set @p out_install_status to
-/// #AR_INSTALL_STATUS_INSTALL_REQUESTED and return immediately. Your current
-/// activity will then pause while the user is offered the opportunity to
-/// install it.
+/// When your application launches or wishes to enter AR mode, call this
+/// function with @p user_requested_install = 1.
 ///
-/// When your activity resumes, you should call this function again, this time
-/// with @p user_requested_install = 0. This will either set
-/// @p out_install_status to #AR_INSTALL_STATUS_INSTALLED or return an error
-/// code indicating the reason that installation could not be completed.
+/// If Google Play Services for AR and device profile data are fully installed
+/// and up to date, this function will set @p out_install_status to
+/// #AR_INSTALL_STATUS_INSTALLED.
 ///
-/// ARCore-optional applications must ensure that ::ArCoreApk_checkAvailability
-/// returns one of #AR_AVAILABILITY_SUPPORTED_INSTALLED,
-/// #AR_AVAILABILITY_SUPPORTED_APK_TOO_OLD, or
-/// #AR_AVAILABILITY_SUPPORTED_NOT_INSTALLED before calling this function.
+/// If Google Play Services for AR or device profile data is not installed or
+/// not up to date, the function will set @p out_install_status to
+/// #AR_INSTALL_STATUS_INSTALL_REQUESTED and return immediately. The current
+/// activity will then pause while the user is prompted to install
+/// Google Play Services for AR (market://details?id=com.google.ar.core) and/or
+/// ARCore downloads required device profile data.
 ///
-/// See <A
-/// href="https://github.com/google-ar/arcore-android-sdk/tree/master/samples">
-/// our sample code</A> for an example of how an ARCore-required application
-/// should use this function.
+/// When your activity resumes, call this function again, this time with
+/// @p user_requested_install = 0. This will either set @p out_install_status
+/// to #AR_INSTALL_STATUS_INSTALLED or return an error code indicating the
+/// reason that installation could not be completed.
 ///
-/// May be called prior to ::ArSession_create.
+/// Once this function returns with @p out_install_status set to
+/// #AR_INSTALL_STATUS_INSTALLED, it is safe to call ::ArSession_create.
+///
+/// Side-loading Google Play Services for AR (ARCore) on unsupported devices
+/// will not work. Although ::ArCoreApk_checkAvailability may return
+/// #AR_AVAILABILITY_SUPPORTED_APK_TOO_OLD or
+/// #AR_AVAILABILITY_SUPPORTED_INSTALLED after side-loading the ARCore APK, the
+/// device will still fail to create an AR session, because it is unable to
+/// locate the required ARCore device profile data.
 ///
 /// For more control over the message displayed and ease of exiting the process,
 /// see ::ArCoreApk_requestInstallCustom.
 ///
-/// <b>Caution:</b> The value of @p *out_install_status should only be
-/// considered when #AR_SUCCESS is returned.  Otherwise this value must be
-/// ignored.
+/// <b>Caution:</b> The value of @p *out_install_status is only valid when
+/// #AR_SUCCESS is returned.  Otherwise this value must be ignored.
 ///
 /// @param[in] env The application's @c JNIEnv object
 /// @param[in] application_activity A @c JObject referencing the application's
@@ -1267,8 +1304,8 @@ void ArCoreApk_checkAvailability(void *env,
 /// @param[in] user_requested_install if set, override the previous installation
 ///     failure message and always show the installation interface.
 /// @param[out] out_install_status A pointer to an ::ArInstallStatus to receive
-///     the resulting install status, if successful.  Note: this value is only
-///     valid with the return value is #AR_SUCCESS.
+///     the resulting install status, if successful. Value is only valid when
+///     the return value is #AR_SUCCESS.
 /// @return #AR_SUCCESS, or any of:
 /// - #AR_ERROR_FATAL if an error occurs while checking for or requesting
 ///     installation
@@ -1282,15 +1319,15 @@ ArStatus ArCoreApk_requestInstall(void *env,
                                   ArInstallStatus *out_install_status);
 
 /// @ingroup ArCoreApk
-/// Initiates installation of ARCore if required, with configurable behavior.
+/// Initiates installation of Google Play Services for AR (ARCore) and required
+/// device profile data, with configurable behavior.
 ///
-/// This is a more flexible version of ::ArCoreApk_requestInstall allowing the
+/// This is a more flexible version of ::ArCoreApk_requestInstall, allowing the
 /// application control over the initial informational dialog and ease of
 /// exiting or cancelling the installation.
 ///
-/// See ::ArCoreApk_requestInstall for details of use and behavior.
-///
-/// May be called prior to ::ArSession_create.
+/// Refer to ::ArCoreApk_requestInstall for correct use and expected runtime
+/// behavior.
 ///
 /// @param[in] env The application's @c JNIEnv object
 /// @param[in] application_activity A @c JObject referencing the application's
@@ -1303,8 +1340,8 @@ ArStatus ArCoreApk_requestInstall(void *env,
 /// @param[in] message_type controls the text of the of message displayed
 ///     before showing the install prompt, or disables display of this message.
 /// @param[out] out_install_status A pointer to an ::ArInstallStatus to receive
-///     the resulting install status, if successful.  Note: this value is only
-///     valid with the return value is #AR_SUCCESS.
+///     the resulting install status, if successful. Value is only valid when
+///     the return value is #AR_SUCCESS.
 /// @return #AR_SUCCESS, or any of:
 /// - #AR_ERROR_FATAL if an error occurs while checking for or requesting
 ///     installation
@@ -1530,6 +1567,8 @@ void ArConfig_setAugmentedFaceMode(const ArSession *session,
 /// ACAMERA_LENS_INFO_MINIMUM_FOCUS_DISTANCE, which is 0 for fixed-focus
 /// cameras.
 ///
+/// The desired focus mode is ignored while an MP4 dataset file is being played
+/// back.
 void ArConfig_setFocusMode(const ArSession *session,
                            ArConfig *config,
                            ArFocusMode focus_mode);
@@ -1658,7 +1697,8 @@ void ArCameraConfig_getDepthSensorUsage(const ArSession *session,
 
 /// @ingroup ArCameraConfig
 /// Obtains the camera id for the given camera config which is obtained from the
-/// list of ARCore compatible camera configs.
+/// list of ARCore compatible camera configs. The acquired ID must be released
+/// after use by the ::ArString_release function.
 void ArCameraConfig_getCameraId(const ArSession *session,
                                 const ArCameraConfig *camera_config,
                                 char **out_camera_id);
@@ -1730,6 +1770,51 @@ AR_DEFINE_ENUM(ArCameraConfigDepthSensorUsage){
 };
 
 /// @ingroup ArCameraConfigFilter
+/// Stereo camera usage.
+// TODO(b/166280987) Finalize documentation
+AR_DEFINE_ENUM(ArCameraConfigStereoCameraUsage){
+    /// When used as a camera filter, via
+    /// ::ArCameraConfigFilter_setStereoCameraUsage, indicates that a stereo
+    /// camera must be present on the device, and the stereo multi-camera
+    /// (https://source.android.com/devices/camera/multi-camera) must be used by
+    /// ARCore. Increases CPU and device power consumption. Not supported on all
+    /// devices.
+    ///
+    /// See the ARCore supported devices
+    /// (https://developers.google.com/ar/discover/supported-devices)
+    /// page for a list of devices that currently have supported stereo camera
+    /// capability.
+    ///
+    /// When returned by ::ArCameraConfig_getStereoCameraUsage, indicates that a
+    /// stereo camera is present on the device and that the camera config will
+    /// use the available stereo camera.
+    AR_CAMERA_CONFIG_STEREO_CAMERA_USAGE_REQUIRE_AND_USE = 0x0001,
+
+    /// When used as a camera filter, via
+    /// ::ArCameraConfigFilter_setStereoCameraUsage, indicates that ARCore will
+    /// not attempt to use a stereo multi-camera
+    /// (https://source.android.com/devices/camera/multi-camera), even if one is
+    /// present. Can be used to limit power consumption. Available on all ARCore
+    /// supported devices.
+    ///
+    /// When returned by ::ArCameraConfig_getStereoCameraUsage, indicates that
+    /// the camera config will not use a stereo camera, even if one is present
+    /// on the device.
+    AR_CAMERA_CONFIG_STEREO_CAMERA_USAGE_DO_NOT_USE = 0x0002,
+};
+
+/// @ingroup ArCameraConfig
+/// Gets the stereo multi-camera
+/// (https://source.android.com/devices/camera/multi-camera) usage settings. @p
+/// out_stereo_camera_usage will contain one of the values from
+/// ::ArCameraConfigStereoCameraUsage enum.
+// TODO(b/166280987) Finalize documentation
+void ArCameraConfig_getStereoCameraUsage(
+    const ArSession *session,
+    const ArCameraConfig *camera_config,
+    ArCameraConfigStereoCameraUsage *out_stereo_camera_usage);
+
+/// @ingroup ArCameraConfigFilter
 /// Creates a camera config filter object.
 ///
 /// @param[in]   session     The ARCore session
@@ -1789,6 +1874,118 @@ void ArCameraConfigFilter_setDepthSensorUsage(
 void ArCameraConfigFilter_getDepthSensorUsage(const ArSession *session,
                                               ArCameraConfigFilter *filter,
                                               uint32_t *out_depth_sensor_usage);
+
+/// @ingroup ArCameraConfigFilter
+/// Sets the stereo multi-camera
+/// (https://source.android.com/devices/camera/multi-camera) usage filter.
+/// Default is to not filter.
+///
+/// @param[in]      session                      The ARCore session
+/// @param[in, out] filter                       The filter object to change
+/// @param[in]      stereo_camera_usage_filters  A 32bit integer representing
+///     multiple ::ArCameraConfigStereoCameraUsage values, bitwise-or'd together
+// TODO(b/166280987) Finalize documentation
+void ArCameraConfigFilter_setStereoCameraUsage(
+    const ArSession *session,
+    ArCameraConfigFilter *filter,
+    uint32_t stereo_camera_usage_filters);
+
+/// @ingroup ArCameraConfigFilter
+/// Get the stereo multi-camera
+/// (https://source.android.com/devices/camera/multi-camera) usage filter state.
+///
+/// @param[in]  session                  The ARCore session
+/// @param[in]  filter                   The filter object to query
+/// @param[out] out_stereo_camera_usage  To be filled in with the desired stereo
+///     camera usages allowed
+// TODO(b/166280987) Finalize documentation
+void ArCameraConfigFilter_getStereoCameraUsage(
+    const ArSession *session,
+    ArCameraConfigFilter *filter,
+    uint32_t *out_stereo_camera_usage);
+
+/// @ingroup ArRecordingConfig
+/// Creates a dataset recording config object.
+///
+/// @param[in]   session     The ARCore session
+/// @param[out]  out_config  Pointer to an ::ArRecordingConfig* to receive
+///     the address of the newly allocated ::ArRecordingConfig
+void ArRecordingConfig_create(const ArSession *session,
+                              ArRecordingConfig **out_config);
+
+/// @ingroup ArRecordingConfig
+/// Releases memory used by the provided recording config object.
+///
+/// @param[in] config The config to release memory for.
+void ArRecordingConfig_destroy(ArRecordingConfig *config);
+
+/// @ingroup ArRecordingConfig
+/// Gets the file path to save an MP4 dataset file for the recording.
+///
+/// @param[in]  session                   The ARCore session
+/// @param[in]  config                    The config object to query
+/// @param[out] out_mp4_dataset_file_path Pointer to an @c char* to receive
+///     the address of the newly allocated file path.
+void ArRecordingConfig_getMp4DatasetFilePath(const ArSession *session,
+                                             const ArRecordingConfig *config,
+                                             char **out_mp4_dataset_file_path);
+
+/// @ingroup ArRecordingConfig
+/// Sets the file path to save an MP4 dataset file for the recording.
+///
+/// @param[in] session               The ARCore session
+/// @param[in, out] config           The config object to change
+/// @param[in] mp4_dataset_file_path A string representing the file path
+void ArRecordingConfig_setMp4DatasetFilePath(const ArSession *session,
+                                             ArRecordingConfig *config,
+                                             const char *mp4_dataset_file_path);
+
+/// @ingroup ArRecordingConfig
+/// Gets the setting that indicates whether the recording should stop
+/// automatically when the ARCore session is paused.
+///
+/// @param[in]  session            The ARCore session
+/// @param[in]  config             The config object to query
+/// @param[out] out_config_enabled To be filled in with the state used (1 for
+///     enabled, 0 for disabled)
+void ArRecordingConfig_getAutoStopOnPause(const ArSession *session,
+                                          const ArRecordingConfig *config,
+                                          int32_t *out_config_enabled);
+
+/// @ingroup ArRecordingConfig
+/// Specifies whether recording should stop automatically when the ARCore
+/// session is paused.
+///
+/// @param[in] session        The ARCore session
+/// @param[in, out] config    The config object to change
+/// @param[in] config_enabled Desired state (1 to enable, 0 to disable)
+void ArRecordingConfig_setAutoStopOnPause(const ArSession *session,
+                                          ArRecordingConfig *config,
+                                          int32_t config_enabled);
+
+/// @ingroup ArRecordingConfig
+/// Gets the clockwise rotation in degrees that should be applied to the
+/// recorded image.
+///
+/// @param[in]  session                The ARCore session
+/// @param[in]  config                 The config object to query
+/// @param[out] out_recording_rotation To be filled in with the clockwise
+///     rotation in degrees (0, 90, 180, 270, or -1 for unspecified)
+void ArRecordingConfig_getRecordingRotation(const ArSession *session,
+                                            const ArRecordingConfig *config,
+                                            int32_t *out_recording_rotation);
+
+/// @ingroup ArRecordingConfig
+/// Specifies the clockwise rotation in degrees that should be applied to the
+/// recorded image.
+///
+/// @param[in] session            The ARCore session
+/// @param[in, out] config        The config object to change
+/// @param[in] recording_rotation The clockwise rotation in degrees (0, 90, 180,
+///     or 270).
+void ArRecordingConfig_setRecordingRotation(const ArSession *session,
+                                            ArRecordingConfig *config,
+                                            int32_t recording_rotation);
 
 // === ArSession functions ===
 
@@ -1899,6 +2096,11 @@ ArStatus ArSession_pause(ArSession *session);
 /// @c GL_TEXTURE_EXTERNAL_OES target for use. Shaders accessing these textures
 /// must use a @c samplerExternalOES sampler.
 ///
+/// The texture contents are not guaranteed to remain valid after another call
+/// to ::ArSession_setCameraTextureName or ::ArSession_setCameraTextureNames,
+/// and additionally are not guaranteed to remain valid after a call to
+/// ::ArSession_pause or ::ArSession_destroy.
+///
 /// Passing multiple textures allows for a multithreaded rendering pipeline,
 /// unlike ::ArSession_setCameraTextureName.
 ///
@@ -1917,15 +2119,20 @@ void ArSession_setCameraTextureNames(ArSession *session,
 /// Sets the OpenGL texture name (ID) that will allow GPU access to the camera
 /// image. The texture must be bound to the @c GL_TEXTURE_EXTERNAL_OES target
 /// for use. Shaders accessing this texture must use a @c samplerExternalOES
-/// sampler. See sample code for an example.
+/// sampler.
+///
+/// The texture contents are not guaranteed to remain valid after another call
+/// to ::ArSession_setCameraTextureName or ::ArSession_setCameraTextureNames,
+/// and additionally are not guaranteed to remain valid after a call to
+/// ::ArSession_pause or ::ArSession_destroy.
 void ArSession_setCameraTextureName(ArSession *session, uint32_t texture_id);
 
 /// @ingroup ArSession
 /// Sets the aspect ratio, coordinate scaling, and display rotation. This data
 /// is used by UV conversion, projection matrix generation, and hit test logic.
 ///
-/// Note: this function doesn't fail. If given invalid input, it logs a error
-/// and doesn't apply the changes.
+/// Note: this function always returns successfully. If given invalid input, it
+/// logs a error and doesn't apply the changes.
 ///
 /// @param[in] session   The ARCore session
 /// @param[in] rotation  Display rotation specified by @c android.view.Surface
@@ -2273,6 +2480,105 @@ void ArSession_getSupportedCameraConfigsWithFilter(
     const ArSession *session,
     const ArCameraConfigFilter *filter,
     ArCameraConfigList *list);
+
+/// @ingroup ArSession
+/// Sets a MP4 dataset file to playback instead of live camera feed.
+///
+/// Restrictions:
+/// - Can only be called while the session is paused. Playback of the MP4
+/// dataset file will start once the session is resumed.
+/// - The MP4 dataset file must use the same camera facing direction as is
+/// configured in the session.
+///
+/// When an MP4 dataset file is set:
+/// - All existing trackables (::ArAnchor and ::ArTrackable) immediately enter
+/// tracking state #AR_TRACKING_STATE_STOPPED.
+/// - The desired focus mode (::ArConfig_setFocusMode) is ignored, and will not
+/// affect the previously recorded camera images.
+/// - The current camera configuration (::ArCameraConfig) is immediately set to
+/// the default for the device the MP4 dataset file was recorded on.
+/// - Calls to ::ArSession_getSupportedCameraConfigs will return camera configs
+/// supported by the device the MP4 dataset file was recorded on.
+/// - Setting a previously obtained camera config to
+/// ::ArSession_setCameraConfig will have no effect.
+///
+/// @param[in] session               The ARCore session
+/// @param[in] mp4_dataset_file_path A string file path to a MP4 dataset file
+/// or @c NULL to use the live camera feed.
+///
+/// @return #AR_SUCCESS or any of:
+/// - #AR_ERROR_SESSION_NOT_PAUSED if called when session is not paused.
+/// - #AR_ERROR_SESSION_UNSUPPORTED if playback is incompatible with selected
+/// features.
+/// - #AR_ERROR_PLAYBACK_FAILED if an error occurred with the MP4 dataset file
+/// such as not being able to open the file or the file is unable to be decoded.
+ArStatus ArSession_setPlaybackDataset(ArSession *session,
+                                      const char *mp4_dataset_file_path);
+
+/// @ingroup ArRecording
+/// Describe the current playback status.
+AR_DEFINE_ENUM(ArPlaybackStatus){
+    // The session is not playing back an MP4 dataset file.
+    AR_PLAYBACK_NONE = 0,
+    // Playback is in process without issues.
+    AR_PLAYBACK_OK = 1,
+    // Playback has stopped due to an error.
+    AR_PLAYBACK_IO_ERROR = 2,
+    // Playback has finished successfully.
+    AR_PLAYBACK_FINISHED = 3,
+};
+
+/// @ingroup ArSession
+/// Gets the playback status.
+///
+/// @param[in]  session             The ARCore session.
+/// @param[out] out_playback_status The current playback status.
+void ArSession_getPlaybackStatus(ArSession *session,
+                                 ArPlaybackStatus *out_playback_status);
+
+/// @ingroup ArSession
+/// Starts a new MP4 dataset file recording that is written to the specific
+/// filesystem path.
+///
+/// Existing files will be overwritten.
+///
+///
+/// The MP4 video stream (VGA) bitrate is 5Mbps (40Mb per minute).
+///
+/// Recording introduces additional overhead and may affect app performance.
+///
+/// @param[in] session           The ARCore session
+/// @param[in] recording_config  The configuration defined for recording.
+///
+/// @return #AR_SUCCESS or any of:
+/// - #AR_ERROR_ILLEGAL_STATE
+/// - #AR_ERROR_INVALID_ARGUMENT
+/// - #AR_ERROR_RECORDING_FAILED
+ArStatus ArSession_startRecording(ArSession *session,
+                                  const ArRecordingConfig *recording_config);
+
+/// @ingroup ArSession
+/// Stops recording and flushes unwritten data to disk. The MP4 dataset file
+/// will be ready to read after this call.
+///
+/// Recording can be stopped automatically when ::ArSession_pause is called, if
+/// auto stop is enabled via ::ArRecordingConfig_setAutoStopOnPause.
+/// Recording errors that would be thrown in stopRecording() are silently
+/// ignored in ::ArSession_pause.
+///
+/// @param[in] session  The ARCore session
+///
+/// @return #AR_SUCCESS or any of:
+/// - #AR_ERROR_RECORDING_FAILED
+ArStatus ArSession_stopRecording(ArSession *session);
+
+/// @ingroup ArSession
+/// Returns the current recording status.
+///
+/// @param[in] session The ARCore session.
+/// @param[out] out_recording_status The current recording status.
+void ArSession_getRecordingStatus(ArSession *session,
+                                  ArRecordingStatus *out_recording_status);
 
 /// @ingroup ArSession
 /// Checks whether the provided ::ArDepthMode is supported on this device

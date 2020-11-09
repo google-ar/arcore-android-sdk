@@ -1,6 +1,3 @@
-/// @ref core
-/// @file glm/detail/type_half.hpp
-
 #pragma once
 
 #include "setup.hpp"

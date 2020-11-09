@@ -1,5 +1,4 @@
 /// @ref gtx_float_normalize
-/// @file glm/gtx/float_normalize.inl
 
 #include <limits>
 

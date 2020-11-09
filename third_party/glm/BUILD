@@ -51,6 +51,25 @@ cc_library(
     visibility = ["//third_party/glm:__pkg__"],
 )
 
+cc_library(
+    name = "glm_impl_force_pure",
+    srcs = ["glm/detail/glm.cpp"],
+    compatible_with = ["//buildenv/target:gce"],
+    copts = COMMON_COPTS + [
+        # GLM includes things in a few ways, and by doing this as a copt we
+        # avoid polluting the global header paths.
+        "-I.",
+        "-Ithird_party/glm/latest",
+    ],
+    defines = [
+        "GLM_ENABLE_EXPERIMENTAL",
+        "GLM_FORCE_PURE",
+    ],
+    features = ["-use_header_modules"],  # Incompatible with -std=c++11.
+    textual_hdrs = [":glm_all_hdrs"],
+    visibility = ["//third_party/glm:__pkg__"],
+)
+
 # This is not actually a test we care about but can be used to validate that
 # GLM compiles successfully.
 cc_test(

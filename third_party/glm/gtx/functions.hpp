@@ -1,6 +1,6 @@
 /// @ref gtx_functions
 /// @file glm/gtx/functions.hpp
-/// 
+///
 /// @see core (dependence)
 /// @see gtc_quaternion (dependence)
 ///
@@ -8,7 +8,7 @@
 /// @ingroup gtx
 ///
 /// Include <glm/gtx/functions.hpp> to use the features of this extension.
-/// 
+///
 /// List of useful common functions.
 
 #pragma once
@@ -18,8 +18,12 @@
 #include "../detail/qualifier.hpp"
 #include "../detail/type_vec2.hpp"
 
-#if GLM_MESSAGES == GLM_MESSAGES_ENABLED && !defined(GLM_EXT_INCLUDED)
-#	pragma message("GLM: GLM_GTX_functions extension included")
+#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
+#	ifndef GLM_ENABLE_EXPERIMENTAL
+#		pragma message("GLM: GLM_GTX_functions is an experimental extension and may change in the future. Use  before including it, if you really want to use it.")
+#	else
+#		pragma message("GLM: GLM_GTX_functions extension included")
+#	endif
 #endif
 
 namespace glm

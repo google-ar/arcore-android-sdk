@@ -108,11 +108,13 @@ public class PlaneRenderer {
    * SampleRender.Renderer#onSurfaceCreated}.
    */
   public PlaneRenderer(SampleRender render) throws IOException {
-    Texture texture = Texture.createFromAsset(render, TEXTURE_NAME, Texture.WrapMode.REPEAT);
+    Texture texture =
+        Texture.createFromAsset(
+            render, TEXTURE_NAME, Texture.WrapMode.REPEAT, Texture.ColorFormat.LINEAR);
     shader =
         Shader.createFromAssets(render, VERTEX_SHADER_NAME, FRAGMENT_SHADER_NAME, /*defines=*/ null)
             .setTexture("u_Texture", texture)
-            .set4("u_GridControl", GRID_CONTROL)
+            .setVec4("u_GridControl", GRID_CONTROL)
             .setBlend(
                 BlendFactor.DST_ALPHA, // RGB (src)
                 BlendFactor.ONE, // RGB (dest)
@@ -282,10 +284,10 @@ public class PlaneRenderer {
       Matrix.multiplyMM(modelViewProjectionMatrix, 0, cameraProjection, 0, modelViewMatrix, 0);
 
       // Populate the shader uniforms for this frame.
-      shader.setMatrix4("u_Model", modelMatrix);
-      shader.setMatrix4("u_ModelViewProjection", modelViewProjectionMatrix);
-      shader.setMatrix2("u_PlaneUvMatrix", planeAngleUvMatrix);
-      shader.set3("u_Normal", normalVector);
+      shader.setMat4("u_Model", modelMatrix);
+      shader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
+      shader.setMat2("u_PlaneUvMatrix", planeAngleUvMatrix);
+      shader.setVec3("u_Normal", normalVector);
 
       // Set the position of the plane
       vertexBufferObject.set(vertexBuffer);

@@ -34,8 +34,15 @@ class GpuBuffer {
   private int capacity;
 
   public GpuBuffer(int target, int numberOfBytesPerEntry, Buffer entries) {
-    if (entries != null && !entries.isDirect()) {
-      throw new IllegalArgumentException("If non-null, entries buffer must be a direct buffer");
+    if (entries != null) {
+      if (!entries.isDirect()) {
+        throw new IllegalArgumentException("If non-null, entries buffer must be a direct buffer");
+      }
+      // Some GPU drivers will fail with out of memory errors if glBufferData or glBufferSubData is
+      // called with a size of 0, so avoid this case.
+      if (entries.limit() == 0) {
+        entries = null;
+      }
     }
 
     this.target = target;
@@ -61,9 +68,9 @@ class GpuBuffer {
 
       if (entries != null) {
         entries.rewind();
+        GLES30.glBufferData(
+            target, entries.limit() * numberOfBytesPerEntry, entries, GLES30.GL_DYNAMIC_DRAW);
       }
-      GLES30.glBufferData(
-          target, capacity * numberOfBytesPerEntry, entries, GLES30.GL_DYNAMIC_DRAW);
       GLError.maybeThrowGLException("Failed to populate buffer object", "glBufferData");
     } catch (Throwable t) {
       free();
@@ -72,7 +79,9 @@ class GpuBuffer {
   }
 
   public void set(Buffer entries) {
-    if (entries == null) {
+    // Some GPU drivers will fail with out of memory errors if glBufferData or glBufferSubData is
+    // called with a size of 0, so avoid this case.
+    if (entries == null || entries.limit() == 0) {
       size = 0;
       return;
     }

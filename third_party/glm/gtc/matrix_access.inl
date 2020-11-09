@@ -1,5 +1,4 @@
 /// @ref gtc_matrix_access
-/// @file glm/gtc/matrix_access.inl
 
 namespace glm
 {
@@ -28,7 +27,7 @@ namespace glm
 	{
 		assert(index >= 0 && index < m[0].length());
 
-		typename genType::row_type Result;
+		typename genType::row_type Result(0);
 		for(length_t i = 0; i < m.length(); ++i)
 			Result[i] = m[i][index];
 		return Result;

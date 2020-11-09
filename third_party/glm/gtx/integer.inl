@@ -1,5 +1,4 @@
 /// @ref gtx_integer
-/// @file glm/gtx/integer.inl
 
 namespace glm
 {
@@ -66,7 +65,7 @@ namespace detail
 	// mod
 	GLM_FUNC_QUALIFIER int mod(int x, int y)
 	{
-		return x - y * (x / y);
+		return ((x % y) + y) % y;
 	}
 
 	// factorial (!12 max, integer only)
@@ -144,7 +143,7 @@ namespace detail
 
 #if(GLM_COMPILER & (GLM_COMPILER_VC | GLM_COMPILER_GCC))
 
-	GLM_FUNC_QUALIFIER unsigned int nlz(unsigned int x) 
+	GLM_FUNC_QUALIFIER unsigned int nlz(unsigned int x)
 	{
 		return 31u - findMSB(x);
 	}
@@ -152,7 +151,7 @@ namespace detail
 #else
 
 	// Hackers Delight: http://www.hackersdelight.org/HDcode/nlz.c.txt
-	GLM_FUNC_QUALIFIER unsigned int nlz(unsigned int x) 
+	GLM_FUNC_QUALIFIER unsigned int nlz(unsigned int x)
 	{
 		int y, m, n;
 

@@ -3,9 +3,7 @@
 
 #pragma once
 
-#include "../fwd.hpp"
 #include "type_vec2.hpp"
-#include "type_mat.hpp"
 #include <limits>
 #include <cstddef>
 
@@ -30,52 +28,49 @@ namespace glm
 		GLM_FUNC_DECL static GLM_CONSTEXPR length_type length() { return 2; }
 
 		GLM_FUNC_DECL col_type & operator[](length_type i);
-		GLM_FUNC_DECL col_type const& operator[](length_type i) const;
+		GLM_FUNC_DECL GLM_CONSTEXPR col_type const& operator[](length_type i) const;
 
 		// -- Constructors --
 
-		GLM_FUNC_DECL mat() GLM_DEFAULT;
-		GLM_FUNC_DECL mat(mat<2, 2, T, Q> const& m) GLM_DEFAULT;
+		GLM_FUNC_DECL GLM_CONSTEXPR mat() GLM_DEFAULT;
 		template<qualifier P>
-		GLM_FUNC_DECL mat(mat<2, 2, T, P> const& m);
+		GLM_FUNC_DECL GLM_CONSTEXPR mat(mat<2, 2, T, P> const& m);
 
-		GLM_FUNC_DECL explicit mat(T scalar);
-		GLM_FUNC_DECL mat(
+		GLM_FUNC_DECL explicit GLM_CONSTEXPR mat(T scalar);
+		GLM_FUNC_DECL GLM_CONSTEXPR mat(
 			T const& x1, T const& y1,
 			T const& x2, T const& y2);
-		GLM_FUNC_DECL mat(
+		GLM_FUNC_DECL GLM_CONSTEXPR mat(
 			col_type const& v1,
 			col_type const& v2);
 
 		// -- Conversions --
 
 		template<typename U, typename V, typename M, typename N>
-		GLM_FUNC_DECL mat(
+		GLM_FUNC_DECL GLM_CONSTEXPR mat(
 			U const& x1, V const& y1,
 			M const& x2, N const& y2);
 
 		template<typename U, typename V>
-		GLM_FUNC_DECL mat(
+		GLM_FUNC_DECL GLM_CONSTEXPR mat(
 			vec<2, U, Q> const& v1,
 			vec<2, V, Q> const& v2);
 
 		// -- Matrix conversions --
 
 		template<typename U, qualifier P>
-		GLM_FUNC_DECL GLM_EXPLICIT mat(mat<2, 2, U, P> const& m);
+		GLM_FUNC_DECL GLM_EXPLICIT GLM_CONSTEXPR mat(mat<2, 2, U, P> const& m);
 
-		GLM_FUNC_DECL GLM_EXPLICIT mat(mat<3, 3, T, Q> const& x);
-		GLM_FUNC_DECL GLM_EXPLICIT mat(mat<4, 4, T, Q> const& x);
-		GLM_FUNC_DECL GLM_EXPLICIT mat(mat<2, 3, T, Q> const& x);
-		GLM_FUNC_DECL GLM_EXPLICIT mat(mat<3, 2, T, Q> const& x);
-		GLM_FUNC_DECL GLM_EXPLICIT mat(mat<2, 4, T, Q> const& x);
-		GLM_FUNC_DECL GLM_EXPLICIT mat(mat<4, 2, T, Q> const& x);
-		GLM_FUNC_DECL GLM_EXPLICIT mat(mat<3, 4, T, Q> const& x);
-		GLM_FUNC_DECL GLM_EXPLICIT mat(mat<4, 3, T, Q> const& x);
+		GLM_FUNC_DECL GLM_EXPLICIT GLM_CONSTEXPR mat(mat<3, 3, T, Q> const& x);
+		GLM_FUNC_DECL GLM_EXPLICIT GLM_CONSTEXPR mat(mat<4, 4, T, Q> const& x);
+		GLM_FUNC_DECL GLM_EXPLICIT GLM_CONSTEXPR mat(mat<2, 3, T, Q> const& x);
+		GLM_FUNC_DECL GLM_EXPLICIT GLM_CONSTEXPR mat(mat<3, 2, T, Q> const& x);
+		GLM_FUNC_DECL GLM_EXPLICIT GLM_CONSTEXPR mat(mat<2, 4, T, Q> const& x);
+		GLM_FUNC_DECL GLM_EXPLICIT GLM_CONSTEXPR mat(mat<4, 2, T, Q> const& x);
+		GLM_FUNC_DECL GLM_EXPLICIT GLM_CONSTEXPR mat(mat<3, 4, T, Q> const& x);
+		GLM_FUNC_DECL GLM_EXPLICIT GLM_CONSTEXPR mat(mat<4, 3, T, Q> const& x);
 
 		// -- Unary arithmetic operators --
-
-		GLM_FUNC_DECL mat<2, 2, T, Q> & operator=(mat<2, 2, T, Q> const& v) GLM_DEFAULT;
 
 		template<typename U>
 		GLM_FUNC_DECL mat<2, 2, T, Q> & operator=(mat<2, 2, U, Q> const& m);

@@ -23,7 +23,7 @@
 #include "../mat4x3.hpp"
 #include "../mat4x4.hpp"
 
-#if GLM_MESSAGES == GLM_MESSAGES_ENABLED && !defined(GLM_EXT_INCLUDED)
+#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
 #	pragma message("GLM: GLM_GTC_matrix_integer extension included")
 #endif
 
@@ -134,7 +134,7 @@ namespace glm
 	/// Low-qualifier signed integer 2x2 matrix.
 	/// @see gtc_matrix_integer
 	typedef mat<2, 2, int, lowp>				lowp_imat2;
-	
+
 	/// Low-qualifier signed integer 3x3 matrix.
 	/// @see gtc_matrix_integer
 	typedef mat<3, 3, int, lowp>				lowp_imat3;
@@ -183,7 +183,7 @@ namespace glm
 
 	/// High-qualifier unsigned integer 2x2 matrix.
 	/// @see gtc_matrix_integer
-	typedef mat<2, 2, uint, highp>				highp_umat2;	
+	typedef mat<2, 2, uint, highp>				highp_umat2;
 
 	/// High-qualifier unsigned integer 3x3 matrix.
 	/// @see gtc_matrix_integer
@@ -283,7 +283,7 @@ namespace glm
 	/// Low-qualifier unsigned integer 2x2 matrix.
 	/// @see gtc_matrix_integer
 	typedef mat<2, 2, uint, lowp>				lowp_umat2;
-	
+
 	/// Low-qualifier unsigned integer 3x3 matrix.
 	/// @see gtc_matrix_integer
 	typedef mat<3, 3, uint, lowp>				lowp_umat3;
@@ -329,159 +329,105 @@ namespace glm
 	/// @see gtc_matrix_integer
 	typedef mat<4, 4, uint, lowp>				lowp_umat4x4;
 
-#if(defined(GLM_PRECISION_HIGHP_INT))
-	typedef highp_imat2								imat2;
-	typedef highp_imat3								imat3;
-	typedef highp_imat4								imat4;
-	typedef highp_imat2x2							imat2x2;
-	typedef highp_imat2x3							imat2x3;
-	typedef highp_imat2x4							imat2x4;
-	typedef highp_imat3x2							imat3x2;
-	typedef highp_imat3x3							imat3x3;
-	typedef highp_imat3x4							imat3x4;
-	typedef highp_imat4x2							imat4x2;
-	typedef highp_imat4x3							imat4x3;
-	typedef highp_imat4x4							imat4x4;
-#elif(defined(GLM_PRECISION_LOWP_INT))
-	typedef lowp_imat2								imat2;
-	typedef lowp_imat3								imat3;
-	typedef lowp_imat4								imat4;
-	typedef lowp_imat2x2							imat2x2;
-	typedef lowp_imat2x3							imat2x3;
-	typedef lowp_imat2x4							imat2x4;
-	typedef lowp_imat3x2							imat3x2;
-	typedef lowp_imat3x3							imat3x3;
-	typedef lowp_imat3x4							imat3x4;
-	typedef lowp_imat4x2							imat4x2;
-	typedef lowp_imat4x3							imat4x3;
-	typedef lowp_imat4x4							imat4x4;
-#else //if(defined(GLM_PRECISION_MEDIUMP_INT))
+
 
 	/// Signed integer 2x2 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_imat2							imat2;
+	typedef mat<2, 2, int, defaultp>				imat2;
 
 	/// Signed integer 3x3 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_imat3							imat3;
+	typedef mat<3, 3, int, defaultp>				imat3;
 
 	/// Signed integer 4x4 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_imat4							imat4;
+	typedef mat<4, 4, int, defaultp>				imat4;
 
 	/// Signed integer 2x2 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_imat2x2							imat2x2;
+	typedef mat<2, 2, int, defaultp>				imat2x2;
 
 	/// Signed integer 2x3 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_imat2x3							imat2x3;
+	typedef mat<2, 3, int, defaultp>				imat2x3;
 
 	/// Signed integer 2x4 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_imat2x4							imat2x4;
+	typedef mat<2, 4, int, defaultp>				imat2x4;
 
 	/// Signed integer 3x2 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_imat3x2							imat3x2;
+	typedef mat<3, 2, int, defaultp>				imat3x2;
 
 	/// Signed integer 3x3 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_imat3x3							imat3x3;
+	typedef mat<3, 3, int, defaultp>				imat3x3;
 
 	/// Signed integer 3x4 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_imat3x4							imat3x4;
+	typedef mat<3, 4, int, defaultp>				imat3x4;
 
 	/// Signed integer 4x2 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_imat4x2							imat4x2;
+	typedef mat<4, 2, int, defaultp>				imat4x2;
 
 	/// Signed integer 4x3 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_imat4x3							imat4x3;
+	typedef mat<4, 3, int, defaultp>				imat4x3;
 
 	/// Signed integer 4x4 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_imat4x4							imat4x4;
-#endif//GLM_PRECISION
+	typedef mat<4, 4, int, defaultp>				imat4x4;
 
-#if(defined(GLM_PRECISION_HIGHP_UINT))
-	typedef highp_umat2								umat2;
-	typedef highp_umat3								umat3;
-	typedef highp_umat4								umat4;
-	typedef highp_umat2x2							umat2x2;
-	typedef highp_umat2x3							umat2x3;
-	typedef highp_umat2x4							umat2x4;
-	typedef highp_umat3x2							umat3x2;
-	typedef highp_umat3x3							umat3x3;
-	typedef highp_umat3x4							umat3x4;
-	typedef highp_umat4x2							umat4x2;
-	typedef highp_umat4x3							umat4x3;
-	typedef highp_umat4x4							umat4x4;
-#elif(defined(GLM_PRECISION_LOWP_UINT))
-	typedef lowp_umat2								umat2;
-	typedef lowp_umat3								umat3;
-	typedef lowp_umat4								umat4;
-	typedef lowp_umat2x2							umat2x2;
-	typedef lowp_umat2x3							umat2x3;
-	typedef lowp_umat2x4							umat2x4;
-	typedef lowp_umat3x2							umat3x2;
-	typedef lowp_umat3x3							umat3x3;
-	typedef lowp_umat3x4							umat3x4;
-	typedef lowp_umat4x2							umat4x2;
-	typedef lowp_umat4x3							umat4x3;
-	typedef lowp_umat4x4							umat4x4;
-#else //if(defined(GLM_PRECISION_MEDIUMP_UINT))
-	
+
+
 	/// Unsigned integer 2x2 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_umat2							umat2;
+	typedef mat<2, 2, uint, defaultp>				umat2;
 
 	/// Unsigned integer 3x3 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_umat3							umat3;
+	typedef mat<3, 3, uint, defaultp>				umat3;
 
 	/// Unsigned integer 4x4 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_umat4							umat4;
+	typedef mat<4, 4, uint, defaultp>				umat4;
 
 	/// Unsigned integer 2x2 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_umat2x2							umat2x2;
+	typedef mat<2, 2, uint, defaultp>				umat2x2;
 
 	/// Unsigned integer 2x3 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_umat2x3							umat2x3;
+	typedef mat<2, 3, uint, defaultp>				umat2x3;
 
 	/// Unsigned integer 2x4 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_umat2x4							umat2x4;
+	typedef mat<2, 4, uint, defaultp>				umat2x4;
 
 	/// Unsigned integer 3x2 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_umat3x2							umat3x2;
+	typedef mat<3, 2, uint, defaultp>				umat3x2;
 
 	/// Unsigned integer 3x3 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_umat3x3							umat3x3;
+	typedef mat<3, 3, uint, defaultp>				umat3x3;
 
 	/// Unsigned integer 3x4 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_umat3x4							umat3x4;
+	typedef mat<3, 4, uint, defaultp>				umat3x4;
 
 	/// Unsigned integer 4x2 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_umat4x2							umat4x2;
+	typedef mat<4, 2, uint, defaultp>				umat4x2;
 
 	/// Unsigned integer 4x3 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_umat4x3							umat4x3;
+	typedef mat<4, 3, uint, defaultp>				umat4x3;
 
 	/// Unsigned integer 4x4 matrix.
 	/// @see gtc_matrix_integer
-	typedef mediump_umat4x4							umat4x4;
-#endif//GLM_PRECISION
+	typedef mat<4, 4, uint, defaultp>				umat4x4;
 
 	/// @}
 }//namespace glm

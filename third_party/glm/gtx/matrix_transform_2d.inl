@@ -1,13 +1,12 @@
 /// @ref gtx_matrix_transform_2d
-/// @file glm/gtc/matrix_transform_2d.inl
 /// @author Miguel Ángel Pérez Martínez
 
 #include "../trigonometric.hpp"
 
 namespace glm
 {
-	
-	template<typename T, qualifier Q> 
+
+	template<typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER mat<3, 3, T, Q> translate(
 		mat<3, 3, T, Q> const& m,
 		vec<2, T, Q> const& v)
@@ -18,7 +17,7 @@ namespace glm
 	}
 
 
-	template<typename T, qualifier Q> 
+	template<typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER mat<3, 3, T, Q> rotate(
 		mat<3, 3, T, Q> const& m,
 		T angle)
@@ -34,7 +33,7 @@ namespace glm
 		return Result;
 	}
 
-	template<typename T, qualifier Q> 
+	template<typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER mat<3, 3, T, Q> scale(
 		mat<3, 3, T, Q> const& m,
 		vec<2, T, Q> const& v)
@@ -46,7 +45,7 @@ namespace glm
 		return Result;
 	}
 
-	template<typename T, qualifier Q> 
+	template<typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER mat<3, 3, T, Q> shearX(
 		mat<3, 3, T, Q> const& m,
 		T y)
@@ -56,7 +55,7 @@ namespace glm
 		return m * Result;
 	}
 
-	template<typename T, qualifier Q> 
+	template<typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER mat<3, 3, T, Q> shearY(
 		mat<3, 3, T, Q> const& m,
 		T x)

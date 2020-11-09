@@ -8,10 +8,10 @@
 ///
 /// Include <glm/gtc/noise.hpp> to use the features of this extension.
 ///
-/// Defines 2D, 3D and 4D procedural noise functions 
-/// Based on the work of Stefan Gustavson and Ashima Arts on "webgl-noise": 
-/// https://github.com/ashima/webgl-noise 
-/// Following Stefan Gustavson's paper "Simplex noise demystified": 
+/// Defines 2D, 3D and 4D procedural noise functions
+/// Based on the work of Stefan Gustavson and Ashima Arts on "webgl-noise":
+/// https://github.com/ashima/webgl-noise
+/// Following Stefan Gustavson's paper "Simplex noise demystified":
 /// http://www.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf
 
 #pragma once
@@ -27,7 +27,7 @@
 #include "../vec3.hpp"
 #include "../vec4.hpp"
 
-#if GLM_MESSAGES == GLM_MESSAGES_ENABLED && !defined(GLM_EXT_INCLUDED)
+#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
 #	pragma message("GLM: GLM_GTC_noise extension included")
 #endif
 
@@ -41,7 +41,7 @@ namespace glm
 	template<length_t L, typename T, qualifier Q>
 	GLM_FUNC_DECL T perlin(
 		vec<L, T, Q> const& p);
-		
+
 	/// Periodic perlin noise.
 	/// @see gtc_noise
 	template<length_t L, typename T, qualifier Q>

@@ -1,5 +1,4 @@
 /// @ref gtx_matrix_decompose
-/// @file glm/gtx/matrix_decompose.inl
 
 #include "../gtc/constants.hpp"
 #include "../gtc/epsilon.hpp"
@@ -11,7 +10,7 @@ namespace detail
 	// result = (a * ascl) + (b * bscl)
 	template<typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<3, T, Q> combine(
-		vec<3, T, Q> const& a, 
+		vec<3, T, Q> const& a,
 		vec<3, T, Q> const& b,
 		T ascl, T bscl)
 	{
@@ -30,7 +29,7 @@ namespace detail
 	// Decomposes the mode matrix to translations,rotation scale components
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER bool decompose(mat<4, 4, T, Q> const& ModelMatrix, vec<3, T, Q> & Scale, tquat<T, Q> & Orientation, vec<3, T, Q> & Translation, vec<3, T, Q> & Skew, vec<4, T, Q> & Perspective)
+	GLM_FUNC_QUALIFIER bool decompose(mat<4, 4, T, Q> const& ModelMatrix, vec<3, T, Q> & Scale, qua<T, Q> & Orientation, vec<3, T, Q> & Translation, vec<3, T, Q> & Skew, vec<4, T, Q> & Perspective)
 	{
 		mat<4, 4, T, Q> LocalMatrix(ModelMatrix);
 
@@ -56,8 +55,8 @@ namespace detail
 
 		// First, isolate perspective.  This is the messiest.
 		if(
-			epsilonNotEqual(LocalMatrix[0][3], static_cast<T>(0), epsilon<T>()) || 
-			epsilonNotEqual(LocalMatrix[1][3], static_cast<T>(0), epsilon<T>()) || 
+			epsilonNotEqual(LocalMatrix[0][3], static_cast<T>(0), epsilon<T>()) ||
+			epsilonNotEqual(LocalMatrix[1][3], static_cast<T>(0), epsilon<T>()) ||
 			epsilonNotEqual(LocalMatrix[2][3], static_cast<T>(0), epsilon<T>()))
 		{
 			// rightHandSide is the right hand side of the equation.
@@ -154,7 +153,7 @@ namespace detail
 		// }
 
 		int i, j, k = 0;
-		float root, trace = Row[0].x + Row[1].y + Row[2].z;
+		T root, trace = Row[0].x + Row[1].y + Row[2].z;
 		if(trace > static_cast<T>(0))
 		{
 			root = sqrt(trace + static_cast<T>(1.0));

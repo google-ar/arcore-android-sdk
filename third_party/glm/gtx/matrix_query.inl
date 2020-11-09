@@ -1,5 +1,4 @@
 /// @ref gtx_matrix_query
-/// @file glm/gtx/matrix_query.inl
 
 namespace glm
 {

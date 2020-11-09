@@ -1,6 +1,6 @@
 /// @ref gtc_epsilon
 /// @file glm/gtc/epsilon.hpp
-/// 
+///
 /// @see core (dependence)
 /// @see gtc_quaternion (dependence)
 ///
@@ -8,7 +8,7 @@
 /// @ingroup gtc
 ///
 /// Include <glm/gtc/epsilon.hpp> to use the features of this extension.
-/// 
+///
 /// Comparison functions for a user defined epsilon values.
 
 #pragma once
@@ -17,7 +17,7 @@
 #include "../detail/setup.hpp"
 #include "../detail/qualifier.hpp"
 
-#if GLM_MESSAGES == GLM_MESSAGES_ENABLED && !defined(GLM_EXT_INCLUDED)
+#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
 #	pragma message("GLM: GLM_GTC_epsilon extension included")
 #endif
 

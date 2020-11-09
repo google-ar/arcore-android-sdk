@@ -19,7 +19,6 @@ package com.google.ar.core.examples.java.helloar;
 import android.content.DialogInterface;
 import android.content.res.Resources;
 import android.media.Image;
-import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.os.Bundle;
@@ -37,17 +36,17 @@ import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
 import com.google.ar.core.Config;
 import com.google.ar.core.Config.InstantPlacementMode;
-import com.google.ar.core.Coordinates2d;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.InstantPlacementPoint;
-import com.google.ar.core.InstantPlacementPoint.TrackingMethod;
+import com.google.ar.core.LightEstimate;
 import com.google.ar.core.Plane;
 import com.google.ar.core.Point;
 import com.google.ar.core.Point.OrientationMode;
 import com.google.ar.core.PointCloud;
 import com.google.ar.core.Session;
 import com.google.ar.core.Trackable;
+import com.google.ar.core.TrackingFailureReason;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
 import com.google.ar.core.examples.java.common.helpers.DepthSettings;
@@ -57,6 +56,7 @@ import com.google.ar.core.examples.java.common.helpers.InstantPlacementSettings;
 import com.google.ar.core.examples.java.common.helpers.SnackbarHelper;
 import com.google.ar.core.examples.java.common.helpers.TapHelper;
 import com.google.ar.core.examples.java.common.helpers.TrackingStateHelper;
+import com.google.ar.core.examples.java.common.samplerender.Framebuffer;
 import com.google.ar.core.examples.java.common.samplerender.Mesh;
 import com.google.ar.core.examples.java.common.samplerender.SampleRender;
 import com.google.ar.core.examples.java.common.samplerender.Shader;
@@ -73,19 +73,36 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 /**
  * This is a simple example that shows how to create an augmented reality (AR) application using the
  * ARCore API. The application will display any detected planes and will allow the user to tap on a
- * plane to place a 3d model of the Android robot.
+ * plane to place a 3D model.
  */
 public class HelloArActivity extends AppCompatActivity implements SampleRender.Renderer {
 
   private static final String TAG = HelloArActivity.class.getSimpleName();
 
   private static final String SEARCHING_PLANE_MESSAGE = "Searching for surfaces...";
+  private static final String WAITING_FOR_TAP_MESSAGE = "Tap on a surface to place an object.";
+
+  // See the definition of updateSphericalHarmonicsCoefficients for an explanation of these
+  // constants.
+  private static final float[] sphericalHarmonicFactors = {
+    0.282095f,
+    -0.325735f,
+    0.325735f,
+    -0.325735f,
+    0.273137f,
+    -0.273137f,
+    0.078848f,
+    -0.273137f,
+    0.136569f,
+  };
+
+  private static final float Z_NEAR = 0.1f;
+  private static final float Z_FAR = 100f;
 
   // Rendering. The Renderers are created here, and initialized when the GL surface is created.
   private GLSurfaceView surfaceView;
@@ -99,10 +116,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private TapHelper tapHelper;
   private SampleRender render;
 
-  private Texture depthTexture;
-  private boolean calculateUVTransform = true;
   private PlaneRenderer planeRenderer;
   private BackgroundRenderer backgroundRenderer;
+  private Framebuffer virtualSceneFramebuffer;
   private boolean hasSetTextureNames = false;
 
   private final DepthSettings depthSettings = new DepthSettings();
@@ -120,8 +136,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private static final float APPROXIMATE_DISTANCE_METERS = 2.0f;
 
   // Point Cloud
-  private static final String POINT_CLOUD_VERTEX_SHADER_NAME = "shaders/point_cloud.vert";
-  private static final String POINT_CLOUD_FRAGMENT_SHADER_NAME = "shaders/point_cloud.frag";
   private VertexBuffer pointCloudVertexBuffer;
   private Mesh pointCloudMesh;
   private Shader pointCloudShader;
@@ -129,32 +143,10 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   // was not changed.  Do this using the timestamp since we can't compare PointCloud objects.
   private long lastPointCloudTimestamp = 0;
 
-  // Virtual object
-  private static final String AMBIENT_INTENSITY_VERTEX_SHADER_NAME =
-      "shaders/ambient_intensity.vert";
-  private static final String AMBIENT_INTENSITY_FRAGMENT_SHADER_NAME =
-      "shaders/ambient_intensity.frag";
-  // Note: the last component must be zero to avoid applying the translational part of the matrix.
-  private static final float[] LIGHT_DIRECTION = {0.250f, 0.866f, 0.433f, 0.0f};
+  // Virtual object (ARCore pawn)
   private Mesh virtualObjectMesh;
   private Shader virtualObjectShader;
-  private Shader virtualObjectDepthShader;
-
-  // Anchors created from taps used for object placing with a given color.
-  private static class ColoredAnchor {
-
-    public final Anchor anchor;
-    public float[] color;
-    public final Trackable trackable;
-
-    public ColoredAnchor(Anchor a, float[] color4f, Trackable trackable) {
-      this.anchor = a;
-      this.color = color4f;
-      this.trackable = trackable;
-    }
-  }
-
-  private final ArrayList<ColoredAnchor> anchors = new ArrayList<>();
+  private final ArrayList<Anchor> anchors = new ArrayList<>();
 
   // Temporary matrix allocated here to reduce number of allocations for each frame.
   private final float[] modelMatrix = new float[16];
@@ -162,7 +154,10 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private final float[] projectionMatrix = new float[16];
   private final float[] modelViewMatrix = new float[16]; // view x model
   private final float[] modelViewProjectionMatrix = new float[16]; // projection x view x model
-  private final float[] viewLightDirection = new float[4]; // view x LIGHT_DIRECTION
+  private final float[] sphericalHarmonicsCoefficients = new float[9 * 3];
+  private final float[] viewInverseMatrix = new float[16];
+  private final float[] worldLightDirection = {0.0f, 0.0f, 0.0f, 0.0f};
+  private final float[] viewLightDirection = new float[4]; // view x world light direction
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -179,7 +174,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     render = new SampleRender(surfaceView, this, getAssets());
 
     installRequested = false;
-    calculateUVTransform = true;
 
     depthSettings.onCreate(this);
     instantPlacementSettings.onCreate(this);
@@ -275,6 +269,12 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     // Note that order matters - see the note in onPause(), the reverse applies here.
     try {
       configureSession();
+      // To record a live camera session for later playback, call
+      // `session.startRecording(recorderConfig)` at anytime. To playback a previously recorded AR
+      // session instead of using the live camera feed, call
+      // `session.setPlaybackDataset(playbackDatasetPath)` before calling `session.resume()`. To
+      // learn more about recording and playback, see:
+      // https://developers.google.com/ar/develop/java/recording-and-playback
       session.resume();
     } catch (CameraNotAvailableException e) {
       messageSnackbarHelper.showError(this, "Camera not available. Try restarting the app.");
@@ -303,6 +303,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
     super.onRequestPermissionsResult(requestCode, permissions, results);
     if (!CameraPermissionHelper.hasCameraPermission(this)) {
+      // Use toast instead of snackbar here since the activity will exit.
       Toast.makeText(this, "Camera permission is needed to run this application", Toast.LENGTH_LONG)
           .show();
       if (!CameraPermissionHelper.shouldShowRequestPermissionRationale(this)) {
@@ -324,19 +325,17 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     // Prepare the rendering objects. This involves reading shaders and 3D model files, so may throw
     // an IOException.
     try {
-      depthTexture = new Texture(render, Texture.Target.TEXTURE_2D, Texture.WrapMode.CLAMP_TO_EDGE);
       planeRenderer = new PlaneRenderer(render);
-      backgroundRenderer = new BackgroundRenderer(render, depthTexture);
+      backgroundRenderer = new BackgroundRenderer(render);
+      virtualSceneFramebuffer = new Framebuffer(render, /*width=*/ 1, /*height=*/ 1);
 
       // Point cloud
       pointCloudShader =
           Shader.createFromAssets(
-                  render,
-                  POINT_CLOUD_VERTEX_SHADER_NAME,
-                  POINT_CLOUD_FRAGMENT_SHADER_NAME,
-                  /*defines=*/ null)
-              .set4("u_Color", new float[] {31.0f / 255.0f, 188.0f / 255.0f, 210.0f / 255.0f, 1.0f})
-              .set1("u_PointSize", 5.0f);
+                  render, "shaders/point_cloud.vert", "shaders/point_cloud.frag", /*defines=*/ null)
+              .setVec4(
+                  "u_Color", new float[] {31.0f / 255.0f, 188.0f / 255.0f, 210.0f / 255.0f, 1.0f})
+              .setFloat("u_PointSize", 5.0f);
       // four entries per vertex: X, Y, Z, confidence
       pointCloudVertexBuffer =
           new VertexBuffer(render, /*numberOfEntriesPerVertex=*/ 4, /*entries=*/ null);
@@ -345,24 +344,38 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
           new Mesh(
               render, Mesh.PrimitiveMode.POINTS, /*indexBuffer=*/ null, pointCloudVertexBuffers);
 
-      // Virtual object to render (Andy the android)
-      Texture virtualObjectTexture =
-          Texture.createFromAsset(render, "models/andy.png", Texture.WrapMode.CLAMP_TO_EDGE);
-      virtualObjectMesh = Mesh.createFromAsset(render, "models/andy.obj");
+      // Virtual object to render (ARCore pawn)
+      Texture virtualObjectAlbedoTexture =
+          Texture.createFromAsset(
+              render,
+              "models/pawn_albedo.png",
+              Texture.WrapMode.CLAMP_TO_EDGE,
+              Texture.ColorFormat.SRGB);
+      Texture virtualObjectPbrTexture =
+          Texture.createFromAsset(
+              render,
+              "models/pawn_roughness_metallic_ao.png",
+              Texture.WrapMode.CLAMP_TO_EDGE,
+              Texture.ColorFormat.LINEAR);
+      virtualObjectMesh = Mesh.createFromAsset(render, "models/pawn.obj");
       virtualObjectShader =
-          createVirtualObjectShader(
-              render, virtualObjectTexture, /*use_depth_for_occlusion=*/ false);
-      virtualObjectDepthShader =
-          createVirtualObjectShader(render, virtualObjectTexture, /*use_depth_for_occlusion=*/ true)
-              .setTexture("u_DepthTexture", depthTexture);
+          Shader.createFromAssets(
+                  render,
+                  "shaders/environmental_hdr.vert",
+                  "shaders/environmental_hdr.frag",
+                  /*defines=*/ null)
+              .setTexture("u_AlbedoTexture", virtualObjectAlbedoTexture)
+              .setTexture("u_RoughnessMetallicAmbientOcclusionTexture", virtualObjectPbrTexture);
     } catch (IOException e) {
-      Log.e(TAG, "Failed to read an asset file", e);
+      Log.e(TAG, "Failed to read a required asset file", e);
+      messageSnackbarHelper.showError(this, "Failed to read a required asset file: " + e);
     }
   }
 
   @Override
   public void onSurfaceChanged(SampleRender render, int width, int height) {
     displayRotationHelper.onSurfaceChanged(width, height);
+    virtualSceneFramebuffer.resize(width, height);
   }
 
   @Override
@@ -371,149 +384,155 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       return;
     }
 
+    // Texture names should only be set once on a GL thread unless they change. This is done during
+    // onDrawFrame rather than onSurfaceCreated since the session is not guaranteed to have been
+    // initialized during the execution of onSurfaceCreated.
     if (!hasSetTextureNames) {
-      session.setCameraTextureNames(new int[] {backgroundRenderer.getTextureId()});
+      session.setCameraTextureNames(
+          new int[] {backgroundRenderer.getCameraColorTexture().getTextureId()});
       hasSetTextureNames = true;
     }
+
+    // -- Update per-frame state
 
     // Notify ARCore session that the view size changed so that the perspective matrix and
     // the video background can be properly adjusted.
     displayRotationHelper.updateSessionIfNeeded(session);
 
+    // Obtain the current frame from ARSession. When the configuration is set to
+    // UpdateMode.BLOCKING (it is by default), this will throttle the rendering to the
+    // camera framerate.
+    Frame frame;
     try {
-      // Obtain the current frame from ARSession. When the configuration is set to
-      // UpdateMode.BLOCKING (it is by default), this will throttle the rendering to the
-      // camera framerate.
-      Frame frame = session.update();
-      Camera camera = frame.getCamera();
-
-      if (frame.hasDisplayGeometryChanged() || calculateUVTransform) {
-        // The UV Transform represents the transformation between screenspace in normalized units
-        // and screenspace in units of pixels.  Having the size of each pixel is necessary in the
-        // virtual object shader, to perform kernel-based blur effects.
-        calculateUVTransform = false;
-        float[] transform = getTextureTransformMatrix(frame);
-        virtualObjectDepthShader.setMatrix3("u_DepthUvTransform", transform);
-      }
-
-      if (camera.getTrackingState() == TrackingState.TRACKING
-          && session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
-        // The rendering abstraction leaks a bit here. Populate the depth texture with the current
-        // frame data.
-        try (Image depthImage = frame.acquireDepthImage()) {
-          GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, depthTexture.getTextureId());
-          GLES30.glTexImage2D(
-              GLES30.GL_TEXTURE_2D,
-              0,
-              GLES30.GL_RG8,
-              depthImage.getWidth(),
-              depthImage.getHeight(),
-              0,
-              GLES30.GL_RG,
-              GLES30.GL_UNSIGNED_BYTE,
-              depthImage.getPlanes()[0].getBuffer());
-          float aspectRatio = (float) depthImage.getWidth() / (float) depthImage.getHeight();
-          virtualObjectDepthShader.set1("u_DepthAspectRatio", aspectRatio);
-        } catch (NotYetAvailableException e) {
-          // This normally means that depth data is not available yet. This is normal so we will not
-          // spam the logcat with this.
-        }
-      }
-
-      // Handle one tap per frame.
-      handleTap(frame, camera);
-
-      // If frame is ready, render camera preview image to the GL surface.
-      backgroundRenderer.draw(render, frame, depthSettings.depthColorVisualizationEnabled());
-
-      // Keep the screen unlocked while tracking, but allow it to lock when tracking stops.
-      trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
-
-      // If not tracking, don't draw 3D objects, show tracking failure reason instead.
-      if (camera.getTrackingState() == TrackingState.PAUSED) {
-        messageSnackbarHelper.showMessage(
-            this, TrackingStateHelper.getTrackingFailureReasonString(camera));
-        return;
-      }
-
-      // Get projection matrix.
-      camera.getProjectionMatrix(projectionMatrix, 0, 0.1f, 100.0f);
-
-      // Get camera matrix and draw.
-      camera.getViewMatrix(viewMatrix, 0);
-
-      // Compute lighting from average intensity of the image.
-      // The first three components are color scaling factors.
-      // The last one is the average pixel intensity in gamma space.
-      final float[] colorCorrectionRgba = new float[4];
-      frame.getLightEstimate().getColorCorrection(colorCorrectionRgba, 0);
-
-      // Visualize tracked points.
-      // Use try-with-resources to automatically release the point cloud.
-      try (PointCloud pointCloud = frame.acquirePointCloud()) {
-        if (pointCloud.getTimestamp() > lastPointCloudTimestamp) {
-          pointCloudVertexBuffer.set(pointCloud.getPoints());
-          lastPointCloudTimestamp = pointCloud.getTimestamp();
-        }
-        Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
-        pointCloudShader.setMatrix4("u_ModelViewProjection", modelViewProjectionMatrix);
-        render.draw(pointCloudMesh, pointCloudShader);
-      }
-
-      // No tracking error at this point. If we detected any plane, then hide the
-      // message UI, otherwise show searchingPlane message.
-      if (hasTrackingPlane()) {
-        messageSnackbarHelper.hide(this);
-      } else {
-        messageSnackbarHelper.showMessage(this, SEARCHING_PLANE_MESSAGE);
-      }
-
-      // Visualize planes.
-      planeRenderer.drawPlanes(
-          render,
-          session.getAllTrackables(Plane.class),
-          camera.getDisplayOrientedPose(),
-          projectionMatrix);
-
-      // Visualize anchors created by touch.
-      for (ColoredAnchor coloredAnchor : anchors) {
-        if (coloredAnchor.anchor.getTrackingState() != TrackingState.TRACKING) {
-          continue;
-        }
-
-        // For anchors attached to Instant Placement points, update the color once the tracking
-        // method becomes FULL_TRACKING.
-        if (coloredAnchor.trackable instanceof InstantPlacementPoint
-            && ((InstantPlacementPoint) coloredAnchor.trackable).getTrackingMethod()
-                == TrackingMethod.FULL_TRACKING) {
-          coloredAnchor.color = getTrackableColor(coloredAnchor.trackable);
-        }
-
-        // Get the current pose of an Anchor in world space. The Anchor pose is updated
-        // during calls to session.update() as ARCore refines its estimate of the world.
-        coloredAnchor.anchor.getPose().toMatrix(modelMatrix, 0);
-
-        // Calculate model/view/projection matrices and view-space light direction
-        Matrix.multiplyMM(modelViewMatrix, 0, viewMatrix, 0, modelMatrix, 0);
-        Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0);
-        Matrix.multiplyMV(viewLightDirection, 0, viewMatrix, 0, LIGHT_DIRECTION, 0);
-
-        // Update shader properties and draw
-        Shader shader =
-            depthSettings.useDepthForOcclusion() ? virtualObjectDepthShader : virtualObjectShader;
-        shader
-            .setMatrix4("u_ModelView", modelViewMatrix)
-            .setMatrix4("u_ModelViewProjection", modelViewProjectionMatrix)
-            .set4("u_ColorCorrection", colorCorrectionRgba)
-            .set4("u_ViewLightDirection", viewLightDirection)
-            .set3("u_AlbedoColor", coloredAnchor.color);
-        render.draw(virtualObjectMesh, shader);
-      }
-
-    } catch (Throwable t) {
-      // Avoid crashing the application due to unhandled exceptions.
-      Log.e(TAG, "Exception on the OpenGL thread", t);
+      frame = session.update();
+    } catch (CameraNotAvailableException e) {
+      Log.e(TAG, "Camera not available during onDrawFrame", e);
+      messageSnackbarHelper.showError(this, "Camera not available. Try restarting the app.");
+      return;
     }
+    Camera camera = frame.getCamera();
+
+    // Update BackgroundRenderer state to match the depth settings.
+    try {
+      backgroundRenderer.setUseDepthVisualization(
+          render, depthSettings.depthColorVisualizationEnabled());
+      backgroundRenderer.setUseOcclusion(render, depthSettings.useDepthForOcclusion());
+    } catch (IOException e) {
+      Log.e(TAG, "Failed to read a required asset file", e);
+      messageSnackbarHelper.showError(this, "Failed to read a required asset file: " + e);
+      return;
+    }
+    // BackgroundRenderer.updateDisplayGeometry must be called every frame to update the coordinates
+    // used to draw the background camera image.
+    backgroundRenderer.updateDisplayGeometry(frame);
+
+    if (camera.getTrackingState() == TrackingState.TRACKING
+        && (depthSettings.useDepthForOcclusion()
+            || depthSettings.depthColorVisualizationEnabled())) {
+      try (Image depthImage = frame.acquireDepthImage()) {
+        backgroundRenderer.updateCameraDepthTexture(depthImage);
+      } catch (NotYetAvailableException e) {
+        // This normally means that depth data is not available yet. This is normal so we will not
+        // spam the logcat with this.
+      }
+    }
+
+    // Handle one tap per frame.
+    handleTap(frame, camera);
+
+    // Keep the screen unlocked while tracking, but allow it to lock when tracking stops.
+    trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
+
+    // Show a message based on whether tracking has failed, if planes are detected, and if the user
+    // has placed any objects.
+    String message = null;
+    if (camera.getTrackingState() == TrackingState.PAUSED) {
+      if (camera.getTrackingFailureReason() == TrackingFailureReason.NONE) {
+        message = SEARCHING_PLANE_MESSAGE;
+      } else {
+        message = TrackingStateHelper.getTrackingFailureReasonString(camera);
+      }
+    } else if (hasTrackingPlane()) {
+      if (anchors.isEmpty()) {
+        message = WAITING_FOR_TAP_MESSAGE;
+      }
+    } else {
+      message = SEARCHING_PLANE_MESSAGE;
+    }
+    if (message == null) {
+      messageSnackbarHelper.hide(this);
+    } else {
+      messageSnackbarHelper.showMessage(this, message);
+    }
+
+    // -- Draw background
+
+    if (frame.getTimestamp() != 0) {
+      // Suppress rendering if the camera did not produce the first frame yet. This is to avoid
+      // drawing possible leftover data from previous sessions if the texture is reused.
+      backgroundRenderer.drawBackground(render);
+    }
+
+    // If not tracking, don't draw 3D objects.
+    if (camera.getTrackingState() == TrackingState.PAUSED) {
+      return;
+    }
+
+    // -- Draw non-occluded virtual objects (planes, point cloud)
+
+    // Get projection matrix.
+    camera.getProjectionMatrix(projectionMatrix, 0, Z_NEAR, Z_FAR);
+
+    // Get camera matrix and draw.
+    camera.getViewMatrix(viewMatrix, 0);
+
+    // Visualize tracked points.
+    // Use try-with-resources to automatically release the point cloud.
+    try (PointCloud pointCloud = frame.acquirePointCloud()) {
+      if (pointCloud.getTimestamp() > lastPointCloudTimestamp) {
+        pointCloudVertexBuffer.set(pointCloud.getPoints());
+        lastPointCloudTimestamp = pointCloud.getTimestamp();
+      }
+      Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
+      pointCloudShader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
+      render.draw(pointCloudMesh, pointCloudShader);
+    }
+
+    // Visualize planes.
+    planeRenderer.drawPlanes(
+        render,
+        session.getAllTrackables(Plane.class),
+        camera.getDisplayOrientedPose(),
+        projectionMatrix);
+
+    // -- Draw occluded virtual objects
+
+    // Update lighting parameters in the shader
+    updateLightEstimation(frame.getLightEstimate(), viewMatrix);
+
+    // Visualize anchors created by touch.
+    render.clear(virtualSceneFramebuffer, 0f, 0f, 0f, 0f);
+    for (Anchor anchor : anchors) {
+      if (anchor.getTrackingState() != TrackingState.TRACKING) {
+        continue;
+      }
+
+      // Get the current pose of an Anchor in world space. The Anchor pose is updated
+      // during calls to session.update() as ARCore refines its estimate of the world.
+      anchor.getPose().toMatrix(modelMatrix, 0);
+
+      // Calculate model/view/projection matrices
+      Matrix.multiplyMM(modelViewMatrix, 0, viewMatrix, 0, modelMatrix, 0);
+      Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0);
+
+      // Update shader properties and draw
+      virtualObjectShader.setMat4("u_ModelView", modelViewMatrix);
+      virtualObjectShader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
+      render.draw(virtualObjectMesh, virtualObjectShader, virtualSceneFramebuffer);
+    }
+
+    // Compose the virtual scene with the background.
+    backgroundRenderer.drawVirtualScene(render, virtualSceneFramebuffer, Z_NEAR, Z_FAR);
   }
 
   // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
@@ -541,16 +560,14 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
           // Cap the number of objects created. This avoids overloading both the
           // rendering system and ARCore.
           if (anchors.size() >= 20) {
-            anchors.get(0).anchor.detach();
+            anchors.get(0).detach();
             anchors.remove(0);
           }
-
-          float[] objColor = getTrackableColor(trackable);
 
           // Adding an Anchor tells ARCore that it should track this position in
           // space. This anchor is created on the Plane to place the 3D model
           // in the correct position relative both to the world and to the plane.
-          anchors.add(new ColoredAnchor(hit.createAnchor(), objColor, trackable));
+          anchors.add(hit.createAnchor());
           // For devices that support the Depth API, shows a dialog to suggest enabling
           // depth-based occlusion. This dialog needs to be spawned on the UI thread.
           this.runOnUiThread(this::showOcclusionDialogIfNeeded);
@@ -668,64 +685,67 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     return false;
   }
 
-  /**
-   * Returns a transformation matrix that when applied to screen space uvs makes them match
-   * correctly with the quad texture coords used to render the camera feed. It takes into account
-   * device orientation.
-   */
-  private static float[] getTextureTransformMatrix(Frame frame) {
-    float[] frameTransform = new float[6];
-    float[] uvTransform = new float[9];
-    // XY pairs of coordinates in NDC space that constitute the origin and points along the two
-    // principal axes.
-    float[] ndcBasis = {0, 0, 1, 0, 0, 1};
+  /** Update state based on the current frame's light estimation. */
+  private void updateLightEstimation(LightEstimate lightEstimate, float[] viewMatrix) {
+    if (lightEstimate.getState() != LightEstimate.State.VALID) {
+      virtualObjectShader.setBool("u_LightEstimateIsValid", false);
+      return;
+    }
+    virtualObjectShader.setBool("u_LightEstimateIsValid", true);
 
-    // Temporarily store the transformed points into outputTransform.
-    frame.transformCoordinates2d(
-        Coordinates2d.OPENGL_NORMALIZED_DEVICE_COORDINATES,
-        ndcBasis,
-        Coordinates2d.TEXTURE_NORMALIZED,
-        frameTransform);
+    Matrix.invertM(viewInverseMatrix, 0, viewMatrix, 0);
+    virtualObjectShader.setMat4("u_ViewInverse", viewInverseMatrix);
 
-    // Convert the transformed points into an affine transform and transpose it.
-    float ndcOriginX = frameTransform[0];
-    float ndcOriginY = frameTransform[1];
-    uvTransform[0] = frameTransform[2] - ndcOriginX;
-    uvTransform[1] = frameTransform[3] - ndcOriginY;
-    uvTransform[2] = 0;
-    uvTransform[3] = frameTransform[4] - ndcOriginX;
-    uvTransform[4] = frameTransform[5] - ndcOriginY;
-    uvTransform[5] = 0;
-    uvTransform[6] = ndcOriginX;
-    uvTransform[7] = ndcOriginY;
-    uvTransform[8] = 1;
-
-    return uvTransform;
+    updateMainLight(
+        lightEstimate.getEnvironmentalHdrMainLightDirection(),
+        lightEstimate.getEnvironmentalHdrMainLightIntensity(),
+        viewMatrix);
+    updateSphericalHarmonicsCoefficients(
+        lightEstimate.getEnvironmentalHdrAmbientSphericalHarmonics());
   }
 
-  private static Shader createVirtualObjectShader(
-      SampleRender render, Texture virtualObjectTexture, boolean useDepthForOcclusion)
-      throws IOException {
-    return Shader.createFromAssets(
-            render,
-            AMBIENT_INTENSITY_VERTEX_SHADER_NAME,
-            AMBIENT_INTENSITY_FRAGMENT_SHADER_NAME,
-            new HashMap<String, String>() {
-              {
-                put("USE_DEPTH_FOR_OCCLUSION", useDepthForOcclusion ? "1" : "0");
-              }
-            })
-        .setBlend(Shader.BlendFactor.SRC_ALPHA, Shader.BlendFactor.ONE_MINUS_SRC_ALPHA)
-        .setTexture("u_AlbedoTexture", virtualObjectTexture)
-        .set1("u_UpperDiffuseIntensity", 1.0f)
-        .set1("u_LowerDiffuseIntensity", 0.5f)
-        .set1("u_SpecularIntensity", 0.2f)
-        .set1("u_SpecularPower", 8.0f);
+  private void updateMainLight(float[] direction, float[] intensity, float[] viewMatrix) {
+    // We need the direction in a vec4 with 0.0 as the final component to transform it to view space
+    worldLightDirection[0] = direction[0];
+    worldLightDirection[1] = direction[1];
+    worldLightDirection[2] = direction[2];
+    Matrix.multiplyMV(viewLightDirection, 0, viewMatrix, 0, worldLightDirection, 0);
+    virtualObjectShader.setVec4("u_ViewLightDirection", viewLightDirection);
+    virtualObjectShader.setVec3("u_LightIntensity", intensity);
+  }
+
+  private void updateSphericalHarmonicsCoefficients(float[] coefficients) {
+    // Pre-multiply the spherical harmonics coefficients before passing them to the shader. The
+    // constants in sphericalHarmonicFactors were derived from three terms:
+    //
+    // 1. The normalized spherical harmonics basis functions (y_lm)
+    //
+    // 2. The lambertian diffuse BRDF factor (1/pi)
+    //
+    // 3. A <cos> convolution. This is done to so that the resulting function outputs the irradiance
+    // of all incoming light over a hemisphere for a given surface normal, which is what the shader
+    // (environmental_hdr.frag) expects.
+    //
+    // You can read more details about the math here:
+    // https://google.github.io/filament/Filament.html#annex/sphericalharmonics
+
+    if (coefficients.length != 9 * 3) {
+      throw new IllegalArgumentException(
+          "The given coefficients array must be of length 27 (3 components per 9 coefficients");
+    }
+
+    // Apply each factor to every component of each coefficient
+    for (int i = 0; i < 9 * 3; ++i) {
+      sphericalHarmonicsCoefficients[i] = coefficients[i] * sphericalHarmonicFactors[i / 3];
+    }
+    virtualObjectShader.setVec3Array(
+        "u_SphericalHarmonicsCoefficients", sphericalHarmonicsCoefficients);
   }
 
   /** Configures the session with feature settings. */
   private void configureSession() {
     Config config = session.getConfig();
+    config.setLightEstimationMode(Config.LightEstimationMode.ENVIRONMENTAL_HDR);
     if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
       config.setDepthMode(Config.DepthMode.AUTOMATIC);
     } else {
@@ -737,36 +757,5 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       config.setInstantPlacementMode(InstantPlacementMode.DISABLED);
     }
     session.configure(config);
-  }
-
-  /**
-   * Assign a color to the object for rendering based on the trackable type this anchor attached to.
-   * For AR_TRACKABLE_POINT, it's blue color.
-   * For AR_TRACKABLE_PLANE, it's green color.
-   * For AR_TRACKABLE_INSTANT_PLACEMENT_POINT while tracking method is
-   * SCREENSPACE_WITH_APPROXIMATE_DISTANCE, it's white color.
-   * For AR_TRACKABLE_INSTANT_PLACEMENT_POINT once tracking method becomes FULL_TRACKING, it's
-   * orange color.
-   * The color will update for an InstantPlacementPoint once it updates its tracking method from
-   * SCREENSPACE_WITH_APPROXIMATE_DISTANCE to FULL_TRACKING.
-   */
-  private float[] getTrackableColor(Trackable trackable) {
-    if (trackable instanceof Point) {
-      return new float[] {66.0f / 255.0f, 133.0f / 255.0f, 244.0f / 255.0f};
-    }
-    if (trackable instanceof Plane) {
-      return new float[] {139.0f / 255.0f, 195.0f / 255.0f, 74.0f / 255.0f};
-    }
-    if (trackable instanceof InstantPlacementPoint) {
-      if (((InstantPlacementPoint) trackable).getTrackingMethod()
-          == TrackingMethod.SCREENSPACE_WITH_APPROXIMATE_DISTANCE) {
-        return new float[] {255.0f / 255.0f, 255.0f / 255.0f, 255.0f / 255.0f};
-      }
-      if (((InstantPlacementPoint) trackable).getTrackingMethod() == TrackingMethod.FULL_TRACKING) {
-        return new float[] {255.0f / 255.0f, 167.0f / 255.0f, 38.0f / 255.0f};
-      }
-    }
-    // Fallback color.
-    return new float[] {0f, 0f, 0f};
   }
 }

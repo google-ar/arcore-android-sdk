@@ -1,5 +1,4 @@
 /// @ref gtx_vector_query
-/// @file glm/gtx/vector_query.inl
 
 #include <cassert>
 

@@ -57,3 +57,12 @@ collects and processes data, prominently in your application, easily accessible
 to users. You can do this by adding the following text on your main menu or
 notice screen: "This application runs on [Google Play Services for AR](//play.google.com/store/apps/details?id=com.google.ar.core) (ARCore),
 which is provided by Google LLC and governed by the [Google Privacy Policy](//policies.google.com/privacy)".
+
+## Deprecation policy
+
+Apps built with **ARCore SDK 1.12.0 or higher** are covered by the
+[Cloud Anchor API deprecation policy](//developers.google.com/ar/distribute/deprecation-policy).
+
+Apps built with **ARCore SDK 1.11.0 or lower** will be unable to host or resolve
+Cloud Anchors beginning December 2020 due to the SDK's use of an older,
+deprecated ARCore Cloud Anchor service.

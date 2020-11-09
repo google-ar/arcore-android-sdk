@@ -15,12 +15,12 @@
 // Dependency:
 #include "../glm.hpp"
 
-#ifndef GLM_ENABLE_EXPERIMENTAL
-#	error "GLM: GLM_GTX_matrix_operation is an experimental extension and may change in the future. Use #define GLM_ENABLE_EXPERIMENTAL before including it, if you really want to use it."
-#endif
-
-#if GLM_MESSAGES == GLM_MESSAGES_ENABLED && !defined(GLM_EXT_INCLUDED)
-#	pragma message("GLM: GLM_GTX_matrix_operation extension included")
+#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
+#	ifndef GLM_ENABLE_EXPERIMENTAL
+#		pragma message("GLM: GLM_GTX_matrix_operation is an experimental extension and may change in the future. Use  before including it, if you really want to use it.")
+#	else
+#		pragma message("GLM: GLM_GTX_matrix_operation extension included")
+#	endif
 #endif
 
 namespace glm
@@ -81,6 +81,21 @@ namespace glm
 	template<typename T, qualifier Q>
 	GLM_FUNC_DECL mat<4, 4, T, Q> diagonal4x4(
 		vec<4, T, Q> const& v);
+
+	/// Build an adjugate  matrix.
+	/// From GLM_GTX_matrix_operation extension.
+	template<typename T, qualifier Q>
+	GLM_FUNC_DECL mat<2, 2, T, Q> adjugate(mat<2, 2, T, Q> const& m);
+
+	/// Build an adjugate  matrix.
+	/// From GLM_GTX_matrix_operation extension.
+	template<typename T, qualifier Q>
+	GLM_FUNC_DECL mat<3, 3, T, Q> adjugate(mat<3, 3, T, Q> const& m);
+
+	/// Build an adjugate  matrix.
+	/// From GLM_GTX_matrix_operation extension.
+	template<typename T, qualifier Q>
+	GLM_FUNC_DECL mat<4, 4, T, Q> adjugate(mat<4, 4, T, Q> const& m);
 
 	/// @}
 }//namespace glm

@@ -8,7 +8,7 @@
 /// @ingroup gtx
 ///
 /// Include <glm/gtx/exterior_product.hpp> to use the features of this extension.
-/// 
+///
 /// @brief Allow to perform bit operations on integer values
 
 #pragma once
@@ -17,8 +17,12 @@
 #include "../detail/setup.hpp"
 #include "../detail/qualifier.hpp"
 
-#if GLM_MESSAGES == GLM_MESSAGES_ENABLED && !defined(GLM_EXT_INCLUDED)
-#	pragma message("GLM: GLM_GTX_exterior_product extension included")
+#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
+#	ifndef GLM_ENABLE_EXPERIMENTAL
+#		pragma message("GLM: GLM_GTX_exterior_product is an experimental extension and may change in the future. Use  before including it, if you really want to use it.")
+#	else
+#		pragma message("GLM: GLM_GTX_exterior_product extension included")
+#	endif
 #endif
 
 namespace glm
@@ -30,7 +34,7 @@ namespace glm
 	///
 	/// @tparam T Floating-point scalar types
 	/// @tparam Q Value from qualifier enum
-	/// 
+	///
 	/// @see <a href="https://en.wikipedia.org/wiki/Exterior_algebra#Cross_and_triple_products">Exterior product</a>
 	template<typename T, qualifier Q>
 	GLM_FUNC_DECL T cross(vec<2, T, Q> const& v, vec<2, T, Q> const& u);

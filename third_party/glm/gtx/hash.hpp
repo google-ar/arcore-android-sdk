@@ -12,8 +12,12 @@
 
 #pragma once
 
-#ifndef GLM_ENABLE_EXPERIMENTAL
-#	error "GLM: GLM_GTX_hash is an experimental extension and may change in the future. Use #define GLM_ENABLE_EXPERIMENTAL before including it, if you really want to use it."
+#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
+#	ifndef GLM_ENABLE_EXPERIMENTAL
+#		pragma message("GLM: GLM_GTX_hash is an experimental extension and may change in the future. Use  before including it, if you really want to use it.")
+#	else
+#		pragma message("GLM: GLM_GTX_hash extension included")
+#	endif
 #endif
 
 #include <functional>
@@ -69,9 +73,9 @@ namespace std
 	};
 
 	template<typename T, glm::qualifier Q>
-	struct hash<glm::tquat<T,Q>>
+	struct hash<glm::qua<T,Q>>
 	{
-		GLM_FUNC_DECL size_t operator()(glm::tquat<T, Q> const& q) const;
+		GLM_FUNC_DECL size_t operator()(glm::qua<T, Q> const& q) const;
 	};
 
 	template<typename T, glm::qualifier Q>

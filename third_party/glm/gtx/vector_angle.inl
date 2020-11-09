@@ -1,9 +1,8 @@
 /// @ref gtx_vector_angle
-/// @file glm/gtx/vector_angle.inl
 
 namespace glm
 {
-	template<typename genType> 
+	template<typename genType>
 	GLM_FUNC_QUALIFIER genType angle
 	(
 		genType const& x,

@@ -288,6 +288,9 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
       // Keep the screen unlocked while tracking, but allow it to lock when tracking stops.
       trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
 
+      // ARCore's face detection works best on upright faces, relative to gravity.
+      // If the device cannot determine a screen side aligned with gravity, face
+      // detection may not work optimally.
       Collection<AugmentedFace> faces = session.getAllTrackables(AugmentedFace.class);
       for (AugmentedFace face : faces) {
         if (face.getTrackingState() != TrackingState.TRACKING) {

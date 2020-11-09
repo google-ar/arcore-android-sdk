@@ -1,11 +1,8 @@
 /// @ref gtc_epsilon
-/// @file glm/gtc/epsilon.inl
 
 // Dependency:
-#include "quaternion.hpp"
 #include "../vector_relational.hpp"
 #include "../common.hpp"
-#include "../detail/type_vec.hpp"
 
 namespace glm
 {
@@ -68,14 +65,14 @@ namespace glm
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER vec<4, bool, Q> epsilonEqual(tquat<T, Q> const& x, tquat<T, Q> const& y, T const& epsilon)
+	GLM_FUNC_QUALIFIER vec<4, bool, Q> epsilonEqual(qua<T, Q> const& x, qua<T, Q> const& y, T const& epsilon)
 	{
 		vec<4, T, Q> v(x.x - y.x, x.y - y.y, x.z - y.z, x.w - y.w);
 		return lessThan(abs(v), vec<4, T, Q>(epsilon));
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER vec<4, bool, Q> epsilonNotEqual(tquat<T, Q> const& x, tquat<T, Q> const& y, T const& epsilon)
+	GLM_FUNC_QUALIFIER vec<4, bool, Q> epsilonNotEqual(qua<T, Q> const& x, qua<T, Q> const& y, T const& epsilon)
 	{
 		vec<4, T, Q> v(x.x - y.x, x.y - y.y, x.z - y.z, x.w - y.w);
 		return greaterThanEqual(abs(v), vec<4, T, Q>(epsilon));

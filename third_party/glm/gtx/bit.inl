@@ -1,5 +1,4 @@
 /// @ref gtx_bit
-/// @file glm/gtx/bit.inl
 
 namespace glm
 {
@@ -22,7 +21,7 @@ namespace glm
 	template<length_t L, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<L, T, Q> highestBitValue(vec<L, T, Q> const& v)
 	{
-		return detail::functor1<L, T, T, Q>::call(highestBitValue, v);
+		return detail::functor1<vec, L, T, T, Q>::call(highestBitValue, v);
 	}
 
 	///////////////////
@@ -37,7 +36,7 @@ namespace glm
 	template<length_t L, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<L, T, Q> lowestBitValue(vec<L, T, Q> const& v)
 	{
-		return detail::functor1<L, T, T, Q>::call(lowestBitValue, v);
+		return detail::functor1<vec, L, T, T, Q>::call(lowestBitValue, v);
 	}
 
 	///////////////////
@@ -52,7 +51,7 @@ namespace glm
 	template<length_t L, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<L, T, Q> powerOfTwoAbove(vec<L, T, Q> const& v)
 	{
-		return detail::functor1<L, T, T, Q>::call(powerOfTwoAbove, v);
+		return detail::functor1<vec, L, T, T, Q>::call(powerOfTwoAbove, v);
 	}
 
 	///////////////////
@@ -67,7 +66,7 @@ namespace glm
 	template<length_t L, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<L, T, Q> powerOfTwoBelow(vec<L, T, Q> const& v)
 	{
-		return detail::functor1<L, T, T, Q>::call(powerOfTwoBelow, v);
+		return detail::functor1<vec, L, T, T, Q>::call(powerOfTwoBelow, v);
 	}
 
 	/////////////////////
@@ -87,7 +86,7 @@ namespace glm
 	template<length_t L, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<L, T, Q> powerOfTwoNearest(vec<L, T, Q> const& v)
 	{
-		return detail::functor1<L, T, T, Q>::call(powerOfTwoNearest, v);
+		return detail::functor1<vec, L, T, T, Q>::call(powerOfTwoNearest, v);
 	}
 
 }//namespace glm

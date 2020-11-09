@@ -1,6 +1,3 @@
-/// @ref core
-/// @file glm/detail/_swizzle_func.hpp
-
 #pragma once
 
 #define GLM_SWIZZLE_GEN_VEC2_ENTRY(T, P, CONST, A, B)	\

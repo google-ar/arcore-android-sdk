@@ -2,19 +2,20 @@
 /// @file glm/integer.hpp
 ///
 /// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.8 Integer Functions</a>
-/// 
+///
 /// @defgroup core_func_integer Integer functions
 /// @ingroup core
-/// 
-/// Include <glm/integer.hpp> to use these core features.
 ///
-/// These all operate component-wise. The description is per component. 
-/// The notation [a, b] means the set of bits from bit-number a through bit-number 
+/// Provides GLSL functions on integer types
+///
+/// These all operate component-wise. The description is per component.
+/// The notation [a, b] means the set of bits from bit-number a through bit-number
 /// b, inclusive. The lowest-order bit is bit 0.
+///
+/// Include <glm/integer.hpp> to use these core features.
 
 #pragma once
 
-#include "detail/setup.hpp"
 #include "detail/qualifier.hpp"
 #include "common.hpp"
 #include "vector_relational.hpp"
@@ -29,7 +30,7 @@ namespace glm
 	/// less than pow(2, 32), or to 1 otherwise.
 	///
 	/// @tparam L An integer between 1 and 4 included that qualify the dimension of the vector.
-	/// 
+	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/uaddCarry.xml">GLSL uaddCarry man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.8 Integer Functions</a>
 	template<length_t L, qualifier Q>
@@ -43,7 +44,7 @@ namespace glm
 	/// otherwise. The value borrow is set to 0 if x >= y, or to 1 otherwise.
 	///
 	/// @tparam L An integer between 1 and 4 included that qualify the dimension of the vector.
-	/// 
+	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/usubBorrow.xml">GLSL usubBorrow man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.8 Integer Functions</a>
 	template<length_t L, qualifier Q>
@@ -57,7 +58,7 @@ namespace glm
 	/// The 32 most-significant bits are returned in msb.
 	///
 	/// @tparam L An integer between 1 and 4 included that qualify the dimension of the vector.
-	/// 
+	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/umulExtended.xml">GLSL umulExtended man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.8 Integer Functions</a>
 	template<length_t L, qualifier Q>
@@ -70,7 +71,7 @@ namespace glm
 	/// Multiplies 32-bit integers x and y, producing a 64-bit
 	/// result. The 32 least-significant bits are returned in lsb.
 	/// The 32 most-significant bits are returned in msb.
-	/// 
+	///
 	/// @tparam L An integer between 1 and 4 included that qualify the dimension of the vector.
 	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/imulExtended.xml">GLSL imulExtended man page</a>
@@ -95,7 +96,7 @@ namespace glm
 	///
 	/// @tparam L An integer between 1 and 4 included that qualify the dimension of the vector.
 	/// @tparam T Signed or unsigned integer scalar types.
-	/// 
+	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/bitfieldExtract.xml">GLSL bitfieldExtract man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.8 Integer Functions</a>
 	template<length_t L, typename T, qualifier Q>
@@ -126,8 +127,8 @@ namespace glm
 		int Offset,
 		int Bits);
 
-	/// Returns the reversal of the bits of value. 
-	/// The bit numbered n of the result will be taken from bit (bits - 1) - n of value, 
+	/// Returns the reversal of the bits of value.
+	/// The bit numbered n of the result will be taken from bit (bits - 1) - n of value,
 	/// where bits is the total number of bits used to represent value.
 	///
 	/// @tparam L An integer between 1 and 4 included that qualify the dimension of the vector.
@@ -158,7 +159,7 @@ namespace glm
 	GLM_FUNC_DECL vec<L, int, Q> bitCount(vec<L, T, Q> const& v);
 
 	/// Returns the bit number of the least significant bit set to
-	/// 1 in the binary representation of value. 
+	/// 1 in the binary representation of value.
 	/// If value is zero, -1 will be returned.
 	///
 	/// @tparam genIUType Signed or unsigned integer scalar types.
@@ -169,7 +170,7 @@ namespace glm
 	GLM_FUNC_DECL int findLSB(genIUType x);
 
 	/// Returns the bit number of the least significant bit set to
-	/// 1 in the binary representation of value. 
+	/// 1 in the binary representation of value.
 	/// If value is zero, -1 will be returned.
 	///
 	/// @tparam L An integer between 1 and 4 included that qualify the dimension of the vector.
@@ -181,7 +182,7 @@ namespace glm
 	GLM_FUNC_DECL vec<L, int, Q> findLSB(vec<L, T, Q> const& v);
 
 	/// Returns the bit number of the most significant bit in the binary representation of value.
-	/// For positive integers, the result will be the bit number of the most significant bit set to 1. 
+	/// For positive integers, the result will be the bit number of the most significant bit set to 1.
 	/// For negative integers, the result will be the bit number of the most significant
 	/// bit set to 0. For a value of zero or negative one, -1 will be returned.
 	///
@@ -193,7 +194,7 @@ namespace glm
 	GLM_FUNC_DECL int findMSB(genIUType x);
 
 	/// Returns the bit number of the most significant bit in the binary representation of value.
-	/// For positive integers, the result will be the bit number of the most significant bit set to 1. 
+	/// For positive integers, the result will be the bit number of the most significant bit set to 1.
 	/// For negative integers, the result will be the bit number of the most significant
 	/// bit set to 0. For a value of zero or negative one, -1 will be returned.
 	///

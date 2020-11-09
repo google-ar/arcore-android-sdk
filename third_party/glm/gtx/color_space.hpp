@@ -15,12 +15,12 @@
 // Dependency:
 #include "../glm.hpp"
 
-#ifndef GLM_ENABLE_EXPERIMENTAL
-#	error "GLM: GLM_GTX_color_space is an experimental extension and may change in the future. Use #define GLM_ENABLE_EXPERIMENTAL before including it, if you really want to use it."
-#endif
-
-#if GLM_MESSAGES == GLM_MESSAGES_ENABLED && !defined(GLM_EXT_INCLUDED)
-#	pragma message("GLM: GLM_GTX_color_space extension included")
+#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
+#	ifndef GLM_ENABLE_EXPERIMENTAL
+#		pragma message("GLM: GLM_GTX_color_space is an experimental extension and may change in the future. Use  before including it, if you really want to use it.")
+#	else
+#		pragma message("GLM: GLM_GTX_color_space extension included")
+#	endif
 #endif
 
 namespace glm
@@ -39,7 +39,7 @@ namespace glm
 	template<typename T, qualifier Q>
 	GLM_FUNC_DECL vec<3, T, Q> hsvColor(
 		vec<3, T, Q> const& rgbValue);
-		
+
 	/// Build a saturation matrix.
 	/// @see gtx_color_space
 	template<typename T>
@@ -52,14 +52,14 @@ namespace glm
 	GLM_FUNC_DECL vec<3, T, Q> saturation(
 		T const s,
 		vec<3, T, Q> const& color);
-		
+
 	/// Modify the saturation of a color.
 	/// @see gtx_color_space
 	template<typename T, qualifier Q>
 	GLM_FUNC_DECL vec<4, T, Q> saturation(
 		T const s,
 		vec<4, T, Q> const& color);
-		
+
 	/// Compute color luminosity associating ratios (0.33, 0.59, 0.11) to RGB canals.
 	/// @see gtx_color_space
 	template<typename T, qualifier Q>

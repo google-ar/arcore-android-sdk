@@ -19,10 +19,10 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES30;
-import android.opengl.GLUtils;
 import android.util.Log;
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /** A GPU-side texture. */
 public class Texture implements Closeable {
@@ -69,6 +69,23 @@ public class Texture implements Closeable {
   }
 
   /**
+   * Describes the color format of the texture.
+   *
+   * @see <a
+   *     href="https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glTexImage2D.xhtml">glTexImage2d</a>.
+   */
+  public enum ColorFormat {
+    LINEAR(GLES30.GL_RGBA8),
+    SRGB(GLES30.GL_SRGB8_ALPHA8);
+
+    final int glesEnum;
+
+    private ColorFormat(int glesEnum) {
+      this.glesEnum = glesEnum;
+    }
+  }
+
+  /**
    * Construct an empty {@link Texture}.
    *
    * <p>Since {@link Texture}s created in this way are not populated with data, this method is
@@ -101,19 +118,46 @@ public class Texture implements Closeable {
 
   /** Create a texture from the given asset file name. */
   public static Texture createFromAsset(
-      SampleRender render, String assetFileName, WrapMode wrapMode) throws IOException {
+      SampleRender render, String assetFileName, WrapMode wrapMode, ColorFormat colorFormat)
+      throws IOException {
     Texture texture = new Texture(render, Target.TEXTURE_2D, wrapMode);
+    Bitmap bitmap = null;
     try {
+      // The following lines up to glTexImage2D could technically be replaced with
+      // GLUtils.texImage2d, but this method does not allow for loading sRGB images.
+
+      // Load and convert the bitmap and copy its contents to a direct ByteBuffer. Despite its name,
+      // the ARGB_8888 config is actually stored in RGBA order.
+      bitmap =
+          convertBitmapToConfig(
+              BitmapFactory.decodeStream(render.getAssets().open(assetFileName)),
+              Bitmap.Config.ARGB_8888);
+      ByteBuffer buffer = ByteBuffer.allocateDirect(bitmap.getByteCount());
+      bitmap.copyPixelsToBuffer(buffer);
+      buffer.rewind();
+
       GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, texture.getTextureId());
-      Bitmap bitmap = BitmapFactory.decodeStream(render.getAssets().open(assetFileName));
-      GLUtils.texImage2D(GLES30.GL_TEXTURE_2D, 0, bitmap, 0);
-      bitmap.recycle();
-      GLError.maybeThrowGLException("Failed to populate texture data", "GLUtils.texImage2D");
+      GLError.maybeThrowGLException("Failed to bind texture", "glBindTexture");
+      GLES30.glTexImage2D(
+          GLES30.GL_TEXTURE_2D,
+          /*level=*/ 0,
+          colorFormat.glesEnum,
+          bitmap.getWidth(),
+          bitmap.getHeight(),
+          /*border=*/ 0,
+          GLES30.GL_RGBA,
+          GLES30.GL_UNSIGNED_BYTE,
+          buffer);
+      GLError.maybeThrowGLException("Failed to populate texture data", "glTexImage2D");
       GLES30.glGenerateMipmap(GLES30.GL_TEXTURE_2D);
       GLError.maybeThrowGLException("Failed to generate mipmaps", "glGenerateMipmap");
     } catch (Throwable t) {
       texture.close();
       throw t;
+    } finally {
+      if (bitmap != null) {
+        bitmap.recycle();
+      }
     }
     return texture;
   }
@@ -135,5 +179,16 @@ public class Texture implements Closeable {
   /* package-private */
   Target getTarget() {
     return target;
+  }
+
+  private static Bitmap convertBitmapToConfig(Bitmap bitmap, Bitmap.Config config) {
+    // We use this method instead of BitmapFactory.Options.outConfig to support a minimum of Android
+    // API level 24.
+    if (bitmap.getConfig() == config) {
+      return bitmap;
+    }
+    Bitmap result = bitmap.copy(config, /*isMutable=*/ false);
+    bitmap.recycle();
+    return result;
   }
 }

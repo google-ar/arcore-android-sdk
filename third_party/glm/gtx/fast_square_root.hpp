@@ -9,7 +9,7 @@
 /// Include <glm/gtx/fast_square_root.hpp> to use the features of this extension.
 ///
 /// Fast but less accurate implementations of square root based functions.
-/// - Sqrt optimisation based on Newton's method, 
+/// - Sqrt optimisation based on Newton's method,
 /// www.gamedev.net/community/forums/topic.asp?topic id=139956
 
 #pragma once
@@ -19,12 +19,12 @@
 #include "../exponential.hpp"
 #include "../geometric.hpp"
 
-#ifndef GLM_ENABLE_EXPERIMENTAL
-#	error "GLM: GLM_GTX_fast_square_root is an experimental extension and may change in the future. Use #define GLM_ENABLE_EXPERIMENTAL before including it, if you really want to use it."
-#endif
-
-#if GLM_MESSAGES == GLM_MESSAGES_ENABLED && !defined(GLM_EXT_INCLUDED)
-#	pragma message("GLM: GLM_GTX_fast_square_root extension included")
+#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
+#	ifndef GLM_ENABLE_EXPERIMENTAL
+#		pragma message("GLM: GLM_GTX_fast_square_root is an experimental extension and may change in the future. Use  before including it, if you really want to use it.")
+#	else
+#		pragma message("GLM: GLM_GTX_fast_square_root extension included")
+#	endif
 #endif
 
 namespace glm
@@ -35,7 +35,7 @@ namespace glm
 	/// Faster than the common sqrt function but less accurate.
 	///
 	/// @see gtx_fast_square_root extension.
-	template<typename genType> 
+	template<typename genType>
 	GLM_FUNC_DECL genType fastSqrt(genType x);
 
 	/// Faster than the common sqrt function but less accurate.
@@ -47,7 +47,7 @@ namespace glm
 	/// Faster than the common inversesqrt function but less accurate.
 	///
 	/// @see gtx_fast_square_root extension.
-	template<typename genType> 
+	template<typename genType>
 	GLM_FUNC_DECL genType fastInverseSqrt(genType x);
 
 	/// Faster than the common inversesqrt function but less accurate.
@@ -83,7 +83,7 @@ namespace glm
 	/// Faster than the common normalize function but less accurate.
 	///
 	/// @see gtx_fast_square_root extension.
-	template<typename genType> 
+	template<typename genType>
 	GLM_FUNC_DECL genType fastNormalize(genType const& x);
 
 	/// @}

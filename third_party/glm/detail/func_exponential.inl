@@ -25,7 +25,9 @@ namespace detail
 	{
 		GLM_FUNC_QUALIFIER static vec<L, T, Q> call(vec<L, T, Q> const& v)
 		{
-			return detail::functor1<L, T, T, Q>::call(log2, v);
+			GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559, "'log2' only accept floating-point inputs. Include <glm/gtc/integer.hpp> for integer inputs.");
+
+			return detail::functor1<vec, L, T, T, Q>::call(log2, v);
 		}
 	};
 
@@ -34,7 +36,7 @@ namespace detail
 	{
 		GLM_FUNC_QUALIFIER static vec<L, T, Q> call(vec<L, T, Q> const& x)
 		{
-			return detail::functor1<L, T, T, Q>::call(std::sqrt, x);
+			return detail::functor1<vec, L, T, T, Q>::call(std::sqrt, x);
 		}
 	};
 
@@ -46,7 +48,7 @@ namespace detail
 			return static_cast<T>(1) / sqrt(x);
 		}
 	};
-		
+
 	template<length_t L, bool Aligned>
 	struct compute_inversesqrt<L, float, lowp, Aligned>
 	{
@@ -69,7 +71,7 @@ namespace detail
 	template<length_t L, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<L, T, Q> pow(vec<L, T, Q> const& base, vec<L, T, Q> const& exponent)
 	{
-		return detail::functor2<L, T, Q>::call(pow, base, exponent);
+		return detail::functor2<vec, L, T, Q>::call(pow, base, exponent);
 	}
 
 	// exp
@@ -77,7 +79,7 @@ namespace detail
 	template<length_t L, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<L, T, Q> exp(vec<L, T, Q> const& x)
 	{
-		return detail::functor1<L, T, T, Q>::call(exp, x);
+		return detail::functor1<vec, L, T, T, Q>::call(exp, x);
 	}
 
 	// log
@@ -85,9 +87,12 @@ namespace detail
 	template<length_t L, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<L, T, Q> log(vec<L, T, Q> const& x)
 	{
-		return detail::functor1<L, T, T, Q>::call(log, x);
+		return detail::functor1<vec, L, T, T, Q>::call(log, x);
 	}
 
+#   if GLM_HAS_CXX11_STL
+    using std::exp2;
+#   else
 	//exp2, ln2 = 0.69314718055994530941723212145818f
 	template<typename genType>
 	GLM_FUNC_QUALIFIER genType exp2(genType x)
@@ -96,11 +101,12 @@ namespace detail
 
 		return std::exp(static_cast<genType>(0.69314718055994530941723212145818) * x);
 	}
+#   endif
 
 	template<length_t L, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<L, T, Q> exp2(vec<L, T, Q> const& x)
 	{
-		return detail::functor1<L, T, T, Q>::call(exp2, x);
+		return detail::functor1<vec, L, T, T, Q>::call(exp2, x);
 	}
 
 	// log2, ln2 = 0.69314718055994530941723212145818f
@@ -131,7 +137,7 @@ namespace detail
 	{
 		return static_cast<genType>(1) / sqrt(x);
 	}
-	
+
 	template<length_t L, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<L, T, Q> inversesqrt(vec<L, T, Q> const& x)
 	{
@@ -140,7 +146,7 @@ namespace detail
 	}
 }//namespace glm
 
-#if GLM_ARCH != GLM_ARCH_PURE && GLM_HAS_UNRESTRICTED_UNIONS
+#if GLM_CONFIG_SIMD == GLM_ENABLE
 #	include "func_exponential_simd.inl"
 #endif
 

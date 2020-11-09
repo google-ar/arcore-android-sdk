@@ -19,6 +19,7 @@ namespace detail
 		}
 	};
 
+#	if GLM_CONFIG_ALIGNED_GENTYPES == GLM_ENABLE
 	template<>
 	struct compute_sqrt<4, float, aligned_lowp, true>
 	{
@@ -29,6 +30,7 @@ namespace detail
 			return Result;
 		}
 	};
+#	endif
 }//namespace detail
 }//namespace glm
 

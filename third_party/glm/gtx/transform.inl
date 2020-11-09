@@ -1,5 +1,4 @@
 /// @ref gtx_transform
-/// @file glm/gtx/transform.inl
 
 namespace glm
 {

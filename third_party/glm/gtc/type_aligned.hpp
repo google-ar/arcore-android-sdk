@@ -12,17 +12,27 @@
 
 #pragma once
 
-#if !GLM_HAS_ALIGNED_TYPE
-#	error "GLM: Aligned types are not supported on this platform"
+#if (GLM_CONFIG_ALIGNED_GENTYPES == GLM_DISABLE)
+#	error "GLM: Aligned gentypes require to enable C++ language extensions. Define GLM_FORCE_ALIGNED_GENTYPES before including GLM headers to use aligned types."
 #endif
-#if GLM_MESSAGES == GLM_MESSAGES_ENABLED && !defined(GLM_EXT_INCLUDED)
+
+#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
 # pragma message("GLM: GLM_GTC_type_aligned extension included")
 #endif
 
+#include "../mat4x4.hpp"
+#include "../mat4x3.hpp"
+#include "../mat4x2.hpp"
+#include "../mat3x4.hpp"
+#include "../mat3x3.hpp"
+#include "../mat3x2.hpp"
+#include "../mat2x4.hpp"
+#include "../mat2x3.hpp"
+#include "../mat2x2.hpp"
+#include "../gtc/vec1.hpp"
 #include "../vec2.hpp"
 #include "../vec3.hpp"
 #include "../vec4.hpp"
-#include "../gtc/vec1.hpp"
 
 namespace glm
 {
@@ -397,6 +407,462 @@ namespace glm
 	/// 4 components vector tightly packed in memory of bool values.
 	typedef vec<4, bool, packed_lowp>		packed_lowp_bvec4;
 
+	// -- *mat2 --
+
+	/// 2 by 2 matrix aligned in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<2, 2, float, aligned_highp>		aligned_highp_mat2;
+
+	/// 2 by 2 matrix aligned in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<2, 2, float, aligned_mediump>	aligned_mediump_mat2;
+
+	/// 2 by 2 matrix aligned in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<2, 2, float, aligned_lowp>		aligned_lowp_mat2;
+
+	/// 2 by 2 matrix aligned in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<2, 2, double, aligned_highp>	aligned_highp_dmat2;
+
+	/// 2 by 2 matrix aligned in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<2, 2, double, aligned_mediump>	aligned_mediump_dmat2;
+
+	/// 2 by 2 matrix aligned in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<2, 2, double, aligned_lowp>		aligned_lowp_dmat2;
+
+	/// 2 by 2 matrix tightly packed in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<2, 2, float, packed_highp>		packed_highp_mat2;
+
+	/// 2 by 2 matrix tightly packed in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<2, 2, float, packed_mediump>	packed_mediump_mat2;
+
+	/// 2 by 2 matrix tightly packed in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<2, 2, float, packed_lowp>		packed_lowp_mat2;
+
+	/// 2 by 2 matrix tightly packed in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<2, 2, double, packed_highp>		packed_highp_dmat2;
+
+	/// 2 by 2 matrix tightly packed in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<2, 2, double, packed_mediump>	packed_mediump_dmat2;
+
+	/// 2 by 2 matrix tightly packed in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<2, 2, double, packed_lowp>		packed_lowp_dmat2;
+
+	// -- *mat3 --
+
+	/// 3 by 3 matrix aligned in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<3, 3, float, aligned_highp>		aligned_highp_mat3;
+
+	/// 3 by 3 matrix aligned in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<3, 3, float, aligned_mediump>	aligned_mediump_mat3;
+
+	/// 3 by 3 matrix aligned in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<3, 3, float, aligned_lowp>		aligned_lowp_mat3;
+
+	/// 3 by 3 matrix aligned in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<3, 3, double, aligned_highp>	aligned_highp_dmat3;
+
+	/// 3 by 3 matrix aligned in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<3, 3, double, aligned_mediump>	aligned_mediump_dmat3;
+
+	/// 3 by 3 matrix aligned in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<3, 3, double, aligned_lowp>		aligned_lowp_dmat3;
+
+	/// 3 by 3 matrix tightly packed in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<3, 3, float, packed_highp>		packed_highp_mat3;
+
+	/// 3 by 3 matrix tightly packed in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<3, 3, float, packed_mediump>	packed_mediump_mat3;
+
+	/// 3 by 3 matrix tightly packed in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<3, 3, float, packed_lowp>		packed_lowp_mat3;
+
+	/// 3 by 3 matrix tightly packed in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<3, 3, double, packed_highp>		packed_highp_dmat3;
+
+	/// 3 by 3 matrix tightly packed in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<3, 3, double, packed_mediump>	packed_mediump_dmat3;
+
+	/// 3 by 3 matrix tightly packed in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<3, 3, double, packed_lowp>		packed_lowp_dmat3;
+
+	// -- *mat4 --
+
+	/// 4 by 4 matrix aligned in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<4, 4, float, aligned_highp>		aligned_highp_mat4;
+
+	/// 4 by 4 matrix aligned in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<4, 4, float, aligned_mediump>	aligned_mediump_mat4;
+
+	/// 4 by 4 matrix aligned in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<4, 4, float, aligned_lowp>		aligned_lowp_mat4;
+
+	/// 4 by 4 matrix aligned in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<4, 4, double, aligned_highp>	aligned_highp_dmat4;
+
+	/// 4 by 4 matrix aligned in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<4, 4, double, aligned_mediump>	aligned_mediump_dmat4;
+
+	/// 4 by 4 matrix aligned in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<4, 4, double, aligned_lowp>		aligned_lowp_dmat4;
+
+	/// 4 by 4 matrix tightly packed in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<4, 4, float, packed_highp>		packed_highp_mat4;
+
+	/// 4 by 4 matrix tightly packed in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<4, 4, float, packed_mediump>	packed_mediump_mat4;
+
+	/// 4 by 4 matrix tightly packed in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<4, 4, float, packed_lowp>		packed_lowp_mat4;
+
+	/// 4 by 4 matrix tightly packed in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<4, 4, double, packed_highp>		packed_highp_dmat4;
+
+	/// 4 by 4 matrix tightly packed in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<4, 4, double, packed_mediump>	packed_mediump_dmat4;
+
+	/// 4 by 4 matrix tightly packed in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<4, 4, double, packed_lowp>		packed_lowp_dmat4;
+
+	// -- *mat2x2 --
+
+	/// 2 by 2 matrix aligned in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<2, 2, float, aligned_highp>		aligned_highp_mat2x2;
+
+	/// 2 by 2 matrix aligned in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<2, 2, float, aligned_mediump>	aligned_mediump_mat2x2;
+
+	/// 2 by 2 matrix aligned in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<2, 2, float, aligned_lowp>		aligned_lowp_mat2x2;
+
+	/// 2 by 2 matrix aligned in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<2, 2, double, aligned_highp>	aligned_highp_dmat2x2;
+
+	/// 2 by 2 matrix aligned in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<2, 2, double, aligned_mediump>	aligned_mediump_dmat2x2;
+
+	/// 2 by 2 matrix aligned in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<2, 2, double, aligned_lowp>		aligned_lowp_dmat2x2;
+
+	/// 2 by 2 matrix tightly packed in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<2, 2, float, packed_highp>		packed_highp_mat2x2;
+
+	/// 2 by 2 matrix tightly packed in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<2, 2, float, packed_mediump>	packed_mediump_mat2x2;
+
+	/// 2 by 2 matrix tightly packed in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<2, 2, float, packed_lowp>		packed_lowp_mat2x2;
+
+	/// 2 by 2 matrix tightly packed in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<2, 2, double, packed_highp>		packed_highp_dmat2x2;
+
+	/// 2 by 2 matrix tightly packed in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<2, 2, double, packed_mediump>	packed_mediump_dmat2x2;
+
+	/// 2 by 2 matrix tightly packed in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<2, 2, double, packed_lowp>		packed_lowp_dmat2x2;
+
+	// -- *mat2x3 --
+
+	/// 2 by 3 matrix aligned in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<2, 3, float, aligned_highp>		aligned_highp_mat2x3;
+
+	/// 2 by 3 matrix aligned in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<2, 3, float, aligned_mediump>	aligned_mediump_mat2x3;
+
+	/// 2 by 3 matrix aligned in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<2, 3, float, aligned_lowp>		aligned_lowp_mat2x3;
+
+	/// 2 by 3 matrix aligned in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<2, 3, double, aligned_highp>	aligned_highp_dmat2x3;
+
+	/// 2 by 3 matrix aligned in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<2, 3, double, aligned_mediump>	aligned_mediump_dmat2x3;
+
+	/// 2 by 3 matrix aligned in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<2, 3, double, aligned_lowp>		aligned_lowp_dmat2x3;
+
+	/// 2 by 3 matrix tightly packed in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<2, 3, float, packed_highp>		packed_highp_mat2x3;
+
+	/// 2 by 3 matrix tightly packed in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<2, 3, float, packed_mediump>	packed_mediump_mat2x3;
+
+	/// 2 by 3 matrix tightly packed in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<2, 3, float, packed_lowp>		packed_lowp_mat2x3;
+
+	/// 2 by 3 matrix tightly packed in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<2, 3, double, packed_highp>		packed_highp_dmat2x3;
+
+	/// 2 by 3 matrix tightly packed in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<2, 3, double, packed_mediump>	packed_mediump_dmat2x3;
+
+	/// 2 by 3 matrix tightly packed in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<2, 3, double, packed_lowp>		packed_lowp_dmat2x3;
+
+	// -- *mat2x4 --
+
+	/// 2 by 4 matrix aligned in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<2, 4, float, aligned_highp>		aligned_highp_mat2x4;
+
+	/// 2 by 4 matrix aligned in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<2, 4, float, aligned_mediump>	aligned_mediump_mat2x4;
+
+	/// 2 by 4 matrix aligned in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<2, 4, float, aligned_lowp>		aligned_lowp_mat2x4;
+
+	/// 2 by 4 matrix aligned in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<2, 4, double, aligned_highp>	aligned_highp_dmat2x4;
+
+	/// 2 by 4 matrix aligned in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<2, 4, double, aligned_mediump>	aligned_mediump_dmat2x4;
+
+	/// 2 by 4 matrix aligned in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<2, 4, double, aligned_lowp>		aligned_lowp_dmat2x4;
+
+	/// 2 by 4 matrix tightly packed in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<2, 4, float, packed_highp>		packed_highp_mat2x4;
+
+	/// 2 by 4 matrix tightly packed in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<2, 4, float, packed_mediump>	packed_mediump_mat2x4;
+
+	/// 2 by 4 matrix tightly packed in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<2, 4, float, packed_lowp>		packed_lowp_mat2x4;
+
+	/// 2 by 4 matrix tightly packed in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<2, 4, double, packed_highp>		packed_highp_dmat2x4;
+
+	/// 2 by 4 matrix tightly packed in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<2, 4, double, packed_mediump>	packed_mediump_dmat2x4;
+
+	/// 2 by 4 matrix tightly packed in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<2, 4, double, packed_lowp>		packed_lowp_dmat2x4;
+
+	// -- *mat3x2 --
+
+	/// 3 by 2 matrix aligned in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<3, 2, float, aligned_highp>		aligned_highp_mat3x2;
+
+	/// 3 by 2 matrix aligned in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<3, 2, float, aligned_mediump>	aligned_mediump_mat3x2;
+
+	/// 3 by 2 matrix aligned in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<3, 2, float, aligned_lowp>		aligned_lowp_mat3x2;
+
+	/// 3 by 2 matrix aligned in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<3, 2, double, aligned_highp>	aligned_highp_dmat3x2;
+
+	/// 3 by 2 matrix aligned in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<3, 2, double, aligned_mediump>	aligned_mediump_dmat3x2;
+
+	/// 3 by 2 matrix aligned in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<3, 2, double, aligned_lowp>		aligned_lowp_dmat3x2;
+
+	/// 3 by 2 matrix tightly packed in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<3, 2, float, packed_highp>		packed_highp_mat3x2;
+
+	/// 3 by 2 matrix tightly packed in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<3, 2, float, packed_mediump>	packed_mediump_mat3x2;
+
+	/// 3 by 2 matrix tightly packed in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<3, 2, float, packed_lowp>		packed_lowp_mat3x2;
+
+	/// 3 by 2 matrix tightly packed in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<3, 2, double, packed_highp>		packed_highp_dmat3x2;
+
+	/// 3 by 2 matrix tightly packed in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<3, 2, double, packed_mediump>	packed_mediump_dmat3x2;
+
+	/// 3 by 2 matrix tightly packed in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<3, 2, double, packed_lowp>		packed_lowp_dmat3x2;
+
+	// -- *mat3x3 --
+
+	/// 3 by 3 matrix aligned in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<3, 3, float, aligned_highp>		aligned_highp_mat3x3;
+
+	/// 3 by 3 matrix aligned in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<3, 3, float, aligned_mediump>	aligned_mediump_mat3x3;
+
+	/// 3 by 3 matrix aligned in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<3, 3, float, aligned_lowp>		aligned_lowp_mat3x3;
+
+	/// 3 by 3 matrix aligned in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<3, 3, double, aligned_highp>	aligned_highp_dmat3x3;
+
+	/// 3 by 3 matrix aligned in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<3, 3, double, aligned_mediump>	aligned_mediump_dmat3x3;
+
+	/// 3 by 3 matrix aligned in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<3, 3, double, aligned_lowp>		aligned_lowp_dmat3x3;
+
+	/// 3 by 3 matrix tightly packed in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<3, 3, float, packed_highp>		packed_highp_mat3x3;
+
+	/// 3 by 3 matrix tightly packed in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<3, 3, float, packed_mediump>	packed_mediump_mat3x3;
+
+	/// 3 by 3 matrix tightly packed in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<3, 3, float, packed_lowp>		packed_lowp_mat3x3;
+
+	/// 3 by 3 matrix tightly packed in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<3, 3, double, packed_highp>		packed_highp_dmat3x3;
+
+	/// 3 by 3 matrix tightly packed in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<3, 3, double, packed_mediump>	packed_mediump_dmat3x3;
+
+	/// 3 by 3 matrix tightly packed in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<3, 3, double, packed_lowp>		packed_lowp_dmat3x3;
+
+	// -- *mat3x4 --
+
+	/// 3 by 4 matrix aligned in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<3, 4, float, aligned_highp>		aligned_highp_mat3x4;
+
+	/// 3 by 4 matrix aligned in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<3, 4, float, aligned_mediump>	aligned_mediump_mat3x4;
+
+	/// 3 by 4 matrix aligned in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<3, 4, float, aligned_lowp>		aligned_lowp_mat3x4;
+
+	/// 3 by 4 matrix aligned in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<3, 4, double, aligned_highp>	aligned_highp_dmat3x4;
+
+	/// 3 by 4 matrix aligned in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<3, 4, double, aligned_mediump>	aligned_mediump_dmat3x4;
+
+	/// 3 by 4 matrix aligned in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<3, 4, double, aligned_lowp>		aligned_lowp_dmat3x4;
+
+	/// 3 by 4 matrix tightly packed in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<3, 4, float, packed_highp>		packed_highp_mat3x4;
+
+	/// 3 by 4 matrix tightly packed in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<3, 4, float, packed_mediump>	packed_mediump_mat3x4;
+
+	/// 3 by 4 matrix tightly packed in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<3, 4, float, packed_lowp>		packed_lowp_mat3x4;
+
+	/// 3 by 4 matrix tightly packed in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<3, 4, double, packed_highp>		packed_highp_dmat3x4;
+
+	/// 3 by 4 matrix tightly packed in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<3, 4, double, packed_mediump>	packed_mediump_dmat3x4;
+
+	/// 3 by 4 matrix tightly packed in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<3, 4, double, packed_lowp>		packed_lowp_dmat3x4;
+
+	// -- *mat4x2 --
+
+	/// 4 by 2 matrix aligned in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<4, 2, float, aligned_highp>		aligned_highp_mat4x2;
+
+	/// 4 by 2 matrix aligned in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<4, 2, float, aligned_mediump>	aligned_mediump_mat4x2;
+
+	/// 4 by 2 matrix aligned in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<4, 2, float, aligned_lowp>		aligned_lowp_mat4x2;
+
+	/// 4 by 2 matrix aligned in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<4, 2, double, aligned_highp>	aligned_highp_dmat4x2;
+
+	/// 4 by 2 matrix aligned in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<4, 2, double, aligned_mediump>	aligned_mediump_dmat4x2;
+
+	/// 4 by 2 matrix aligned in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<4, 2, double, aligned_lowp>		aligned_lowp_dmat4x2;
+
+	/// 4 by 2 matrix tightly packed in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<4, 2, float, packed_highp>		packed_highp_mat4x2;
+
+	/// 4 by 2 matrix tightly packed in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<4, 2, float, packed_mediump>	packed_mediump_mat4x2;
+
+	/// 4 by 2 matrix tightly packed in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<4, 2, float, packed_lowp>		packed_lowp_mat4x2;
+
+	/// 4 by 2 matrix tightly packed in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<4, 2, double, packed_highp>		packed_highp_dmat4x2;
+
+	/// 4 by 2 matrix tightly packed in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<4, 2, double, packed_mediump>	packed_mediump_dmat4x2;
+
+	/// 4 by 2 matrix tightly packed in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<4, 2, double, packed_lowp>		packed_lowp_dmat4x2;
+
+	// -- *mat4x3 --
+
+	/// 4 by 3 matrix aligned in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<4, 3, float, aligned_highp>		aligned_highp_mat4x3;
+
+	/// 4 by 3 matrix aligned in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<4, 3, float, aligned_mediump>	aligned_mediump_mat4x3;
+
+	/// 4 by 3 matrix aligned in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<4, 3, float, aligned_lowp>		aligned_lowp_mat4x3;
+
+	/// 4 by 3 matrix aligned in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<4, 3, double, aligned_highp>	aligned_highp_dmat4x3;
+
+	/// 4 by 3 matrix aligned in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<4, 3, double, aligned_mediump>	aligned_mediump_dmat4x3;
+
+	/// 4 by 3 matrix aligned in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<4, 3, double, aligned_lowp>		aligned_lowp_dmat4x3;
+
+	/// 4 by 3 matrix tightly packed in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<4, 3, float, packed_highp>		packed_highp_mat4x3;
+
+	/// 4 by 3 matrix tightly packed in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<4, 3, float, packed_mediump>	packed_mediump_mat4x3;
+
+	/// 4 by 3 matrix tightly packed in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<4, 3, float, packed_lowp>		packed_lowp_mat4x3;
+
+	/// 4 by 3 matrix tightly packed in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<4, 3, double, packed_highp>		packed_highp_dmat4x3;
+
+	/// 4 by 3 matrix tightly packed in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<4, 3, double, packed_mediump>	packed_mediump_dmat4x3;
+
+	/// 4 by 3 matrix tightly packed in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<4, 3, double, packed_lowp>		packed_lowp_dmat4x3;
+
+	// -- *mat4x4 --
+
+	/// 4 by 4 matrix aligned in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<4, 4, float, aligned_highp>		aligned_highp_mat4x4;
+
+	/// 4 by 4 matrix aligned in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<4, 4, float, aligned_mediump>	aligned_mediump_mat4x4;
+
+	/// 4 by 4 matrix aligned in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<4, 4, float, aligned_lowp>		aligned_lowp_mat4x4;
+
+	/// 4 by 4 matrix aligned in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<4, 4, double, aligned_highp>	aligned_highp_dmat4x4;
+
+	/// 4 by 4 matrix aligned in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<4, 4, double, aligned_mediump>	aligned_mediump_dmat4x4;
+
+	/// 4 by 4 matrix aligned in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<4, 4, double, aligned_lowp>		aligned_lowp_dmat4x4;
+
+	/// 4 by 4 matrix tightly packed in memory of single-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<4, 4, float, packed_highp>		packed_highp_mat4x4;
+
+	/// 4 by 4 matrix tightly packed in memory of single-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<4, 4, float, packed_mediump>	packed_mediump_mat4x4;
+
+	/// 4 by 4 matrix tightly packed in memory of single-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<4, 4, float, packed_lowp>		packed_lowp_mat4x4;
+
+	/// 4 by 4 matrix tightly packed in memory of double-precision floating-point numbers using high precision arithmetic in term of ULPs.
+	typedef mat<4, 4, double, packed_highp>		packed_highp_dmat4x4;
+
+	/// 4 by 4 matrix tightly packed in memory of double-precision floating-point numbers using medium precision arithmetic in term of ULPs.
+	typedef mat<4, 4, double, packed_mediump>	packed_mediump_dmat4x4;
+
+	/// 4 by 4 matrix tightly packed in memory of double-precision floating-point numbers using low precision arithmetic in term of ULPs.
+	typedef mat<4, 4, double, packed_lowp>		packed_lowp_dmat4x4;
+
 	// -- default --
 
 #if(defined(GLM_PRECISION_LOWP_FLOAT))
@@ -408,6 +874,32 @@ namespace glm
 	typedef packed_lowp_vec2			packed_vec2;
 	typedef packed_lowp_vec3			packed_vec3;
 	typedef packed_lowp_vec4			packed_vec4;
+
+	typedef aligned_lowp_mat2			aligned_mat2;
+	typedef aligned_lowp_mat3			aligned_mat3;
+	typedef aligned_lowp_mat4			aligned_mat4;
+	typedef packed_lowp_mat2			packed_mat2;
+	typedef packed_lowp_mat3			packed_mat3;
+	typedef packed_lowp_mat4			packed_mat4;
+
+	typedef aligned_lowp_mat2x2			aligned_mat2x2;
+	typedef aligned_lowp_mat2x3			aligned_mat2x3;
+	typedef aligned_lowp_mat2x4			aligned_mat2x4;
+	typedef aligned_lowp_mat3x2			aligned_mat3x2;
+	typedef aligned_lowp_mat3x3			aligned_mat3x3;
+	typedef aligned_lowp_mat3x4			aligned_mat3x4;
+	typedef aligned_lowp_mat4x2			aligned_mat4x2;
+	typedef aligned_lowp_mat4x3			aligned_mat4x3;
+	typedef aligned_lowp_mat4x4			aligned_mat4x4;
+	typedef packed_lowp_mat2x2			packed_mat2x2;
+	typedef packed_lowp_mat2x3			packed_mat2x3;
+	typedef packed_lowp_mat2x4			packed_mat2x4;
+	typedef packed_lowp_mat3x2			packed_mat3x2;
+	typedef packed_lowp_mat3x3			packed_mat3x3;
+	typedef packed_lowp_mat3x4			packed_mat3x4;
+	typedef packed_lowp_mat4x2			packed_mat4x2;
+	typedef packed_lowp_mat4x3			packed_mat4x3;
+	typedef packed_lowp_mat4x4			packed_mat4x4;
 #elif(defined(GLM_PRECISION_MEDIUMP_FLOAT))
 	typedef aligned_mediump_vec1		aligned_vec1;
 	typedef aligned_mediump_vec2		aligned_vec2;
@@ -417,6 +909,32 @@ namespace glm
 	typedef packed_mediump_vec2			packed_vec2;
 	typedef packed_mediump_vec3			packed_vec3;
 	typedef packed_mediump_vec4			packed_vec4;
+
+	typedef aligned_mediump_mat2		aligned_mat2;
+	typedef aligned_mediump_mat3		aligned_mat3;
+	typedef aligned_mediump_mat4		aligned_mat4;
+	typedef packed_mediump_mat2			packed_mat2;
+	typedef packed_mediump_mat3			packed_mat3;
+	typedef packed_mediump_mat4			packed_mat4;
+
+	typedef aligned_mediump_mat2x2		aligned_mat2x2;
+	typedef aligned_mediump_mat2x3		aligned_mat2x3;
+	typedef aligned_mediump_mat2x4		aligned_mat2x4;
+	typedef aligned_mediump_mat3x2		aligned_mat3x2;
+	typedef aligned_mediump_mat3x3		aligned_mat3x3;
+	typedef aligned_mediump_mat3x4		aligned_mat3x4;
+	typedef aligned_mediump_mat4x2		aligned_mat4x2;
+	typedef aligned_mediump_mat4x3		aligned_mat4x3;
+	typedef aligned_mediump_mat4x4		aligned_mat4x4;
+	typedef packed_mediump_mat2x2		packed_mat2x2;
+	typedef packed_mediump_mat2x3		packed_mat2x3;
+	typedef packed_mediump_mat2x4		packed_mat2x4;
+	typedef packed_mediump_mat3x2		packed_mat3x2;
+	typedef packed_mediump_mat3x3		packed_mat3x3;
+	typedef packed_mediump_mat3x4		packed_mat3x4;
+	typedef packed_mediump_mat4x2		packed_mat4x2;
+	typedef packed_mediump_mat4x3		packed_mat4x3;
+	typedef packed_mediump_mat4x4		packed_mat4x4;
 #else //defined(GLM_PRECISION_HIGHP_FLOAT)
 	/// 1 component vector aligned in memory of single-precision floating-point numbers.
 	typedef aligned_highp_vec1			aligned_vec1;
@@ -428,7 +946,7 @@ namespace glm
 	typedef aligned_highp_vec3			aligned_vec3;
 
 	/// 4 components vector aligned in memory of single-precision floating-point numbers.
-	typedef aligned_highp_vec4			aligned_vec4;
+	typedef aligned_highp_vec4 			aligned_vec4;
 
 	/// 1 component vector tightly packed in memory of single-precision floating-point numbers.
 	typedef packed_highp_vec1			packed_vec1;
@@ -441,6 +959,78 @@ namespace glm
 
 	/// 4 components vector tightly packed in memory of single-precision floating-point numbers.
 	typedef packed_highp_vec4			packed_vec4;
+
+	/// 2 by 2 matrix tightly aligned in memory of single-precision floating-point numbers.
+	typedef aligned_highp_mat2			aligned_mat2;
+
+	/// 3 by 3 matrix tightly aligned in memory of single-precision floating-point numbers.
+	typedef aligned_highp_mat3			aligned_mat3;
+
+	/// 4 by 4 matrix tightly aligned in memory of single-precision floating-point numbers.
+	typedef aligned_highp_mat4			aligned_mat4;
+
+	/// 2 by 2 matrix tightly packed in memory of single-precision floating-point numbers.
+	typedef packed_highp_mat2			packed_mat2;
+
+	/// 3 by 3 matrix tightly packed in memory of single-precision floating-point numbers.
+	typedef packed_highp_mat3			packed_mat3;
+
+	/// 4 by 4 matrix tightly packed in memory of single-precision floating-point numbers.
+	typedef packed_highp_mat4			packed_mat4;
+
+	/// 2 by 2 matrix tightly aligned in memory of single-precision floating-point numbers.
+	typedef aligned_highp_mat2x2		aligned_mat2x2;
+
+	/// 2 by 3 matrix tightly aligned in memory of single-precision floating-point numbers.
+	typedef aligned_highp_mat2x3		aligned_mat2x3;
+
+	/// 2 by 4 matrix tightly aligned in memory of single-precision floating-point numbers.
+	typedef aligned_highp_mat2x4		aligned_mat2x4;
+
+	/// 3 by 2 matrix tightly aligned in memory of single-precision floating-point numbers.
+	typedef aligned_highp_mat3x2		aligned_mat3x2;
+
+	/// 3 by 3 matrix tightly aligned in memory of single-precision floating-point numbers.
+	typedef aligned_highp_mat3x3		aligned_mat3x3;
+
+	/// 3 by 4 matrix tightly aligned in memory of single-precision floating-point numbers.
+	typedef aligned_highp_mat3x4		aligned_mat3x4;
+
+	/// 4 by 2 matrix tightly aligned in memory of single-precision floating-point numbers.
+	typedef aligned_highp_mat4x2		aligned_mat4x2;
+
+	/// 4 by 3 matrix tightly aligned in memory of single-precision floating-point numbers.
+	typedef aligned_highp_mat4x3		aligned_mat4x3;
+
+	/// 4 by 4 matrix tightly aligned in memory of single-precision floating-point numbers.
+	typedef aligned_highp_mat4x4		aligned_mat4x4;
+
+	/// 2 by 2 matrix tightly packed in memory of single-precision floating-point numbers.
+	typedef packed_highp_mat2x2			packed_mat2x2;
+
+	/// 2 by 3 matrix tightly packed in memory of single-precision floating-point numbers.
+	typedef packed_highp_mat2x3			packed_mat2x3;
+
+	/// 2 by 4 matrix tightly packed in memory of single-precision floating-point numbers.
+	typedef packed_highp_mat2x4			packed_mat2x4;
+
+	/// 3 by 2 matrix tightly packed in memory of single-precision floating-point numbers.
+	typedef packed_highp_mat3x2			packed_mat3x2;
+
+	/// 3 by 3 matrix tightly packed in memory of single-precision floating-point numbers.
+	typedef packed_highp_mat3x3			packed_mat3x3;
+
+	/// 3 by 4 matrix tightly packed in memory of single-precision floating-point numbers.
+	typedef packed_highp_mat3x4			packed_mat3x4;
+
+	/// 4 by 2 matrix tightly packed in memory of single-precision floating-point numbers.
+	typedef packed_highp_mat4x2			packed_mat4x2;
+
+	/// 4 by 3 matrix tightly packed in memory of single-precision floating-point numbers.
+	typedef packed_highp_mat4x3			packed_mat4x3;
+
+	/// 4 by 4 matrix tightly packed in memory of single-precision floating-point numbers.
+	typedef packed_highp_mat4x4			packed_mat4x4;
 #endif//GLM_PRECISION
 
 #if(defined(GLM_PRECISION_LOWP_DOUBLE))
@@ -452,6 +1042,32 @@ namespace glm
 	typedef packed_lowp_dvec2			packed_dvec2;
 	typedef packed_lowp_dvec3			packed_dvec3;
 	typedef packed_lowp_dvec4			packed_dvec4;
+
+	typedef aligned_lowp_dmat2			aligned_dmat2;
+	typedef aligned_lowp_dmat3			aligned_dmat3;
+	typedef aligned_lowp_dmat4			aligned_dmat4;
+	typedef packed_lowp_dmat2			packed_dmat2;
+	typedef packed_lowp_dmat3			packed_dmat3;
+	typedef packed_lowp_dmat4			packed_dmat4;
+
+	typedef aligned_lowp_dmat2x2		aligned_dmat2x2;
+	typedef aligned_lowp_dmat2x3		aligned_dmat2x3;
+	typedef aligned_lowp_dmat2x4		aligned_dmat2x4;
+	typedef aligned_lowp_dmat3x2		aligned_dmat3x2;
+	typedef aligned_lowp_dmat3x3		aligned_dmat3x3;
+	typedef aligned_lowp_dmat3x4		aligned_dmat3x4;
+	typedef aligned_lowp_dmat4x2		aligned_dmat4x2;
+	typedef aligned_lowp_dmat4x3		aligned_dmat4x3;
+	typedef aligned_lowp_dmat4x4		aligned_dmat4x4;
+	typedef packed_lowp_dmat2x2			packed_dmat2x2;
+	typedef packed_lowp_dmat2x3			packed_dmat2x3;
+	typedef packed_lowp_dmat2x4			packed_dmat2x4;
+	typedef packed_lowp_dmat3x2			packed_dmat3x2;
+	typedef packed_lowp_dmat3x3			packed_dmat3x3;
+	typedef packed_lowp_dmat3x4			packed_dmat3x4;
+	typedef packed_lowp_dmat4x2			packed_dmat4x2;
+	typedef packed_lowp_dmat4x3			packed_dmat4x3;
+	typedef packed_lowp_dmat4x4			packed_dmat4x4;
 #elif(defined(GLM_PRECISION_MEDIUMP_DOUBLE))
 	typedef aligned_mediump_dvec1		aligned_dvec1;
 	typedef aligned_mediump_dvec2		aligned_dvec2;
@@ -461,6 +1077,32 @@ namespace glm
 	typedef packed_mediump_dvec2		packed_dvec2;
 	typedef packed_mediump_dvec3		packed_dvec3;
 	typedef packed_mediump_dvec4		packed_dvec4;
+
+	typedef aligned_mediump_dmat2		aligned_dmat2;
+	typedef aligned_mediump_dmat3		aligned_dmat3;
+	typedef aligned_mediump_dmat4		aligned_dmat4;
+	typedef packed_mediump_dmat2		packed_dmat2;
+	typedef packed_mediump_dmat3		packed_dmat3;
+	typedef packed_mediump_dmat4		packed_dmat4;
+
+	typedef aligned_mediump_dmat2x2		aligned_dmat2x2;
+	typedef aligned_mediump_dmat2x3		aligned_dmat2x3;
+	typedef aligned_mediump_dmat2x4		aligned_dmat2x4;
+	typedef aligned_mediump_dmat3x2		aligned_dmat3x2;
+	typedef aligned_mediump_dmat3x3		aligned_dmat3x3;
+	typedef aligned_mediump_dmat3x4		aligned_dmat3x4;
+	typedef aligned_mediump_dmat4x2		aligned_dmat4x2;
+	typedef aligned_mediump_dmat4x3		aligned_dmat4x3;
+	typedef aligned_mediump_dmat4x4		aligned_dmat4x4;
+	typedef packed_mediump_dmat2x2		packed_dmat2x2;
+	typedef packed_mediump_dmat2x3		packed_dmat2x3;
+	typedef packed_mediump_dmat2x4		packed_dmat2x4;
+	typedef packed_mediump_dmat3x2		packed_dmat3x2;
+	typedef packed_mediump_dmat3x3		packed_dmat3x3;
+	typedef packed_mediump_dmat3x4		packed_dmat3x4;
+	typedef packed_mediump_dmat4x2		packed_dmat4x2;
+	typedef packed_mediump_dmat4x3		packed_dmat4x3;
+	typedef packed_mediump_dmat4x4		packed_dmat4x4;
 #else //defined(GLM_PRECISION_HIGHP_DOUBLE)
 	/// 1 component vector aligned in memory of double-precision floating-point numbers.
 	typedef aligned_highp_dvec1			aligned_dvec1;
@@ -485,6 +1127,78 @@ namespace glm
 
 	/// 4 components vector tightly packed in memory of double-precision floating-point numbers.
 	typedef packed_highp_dvec4			packed_dvec4;
+
+	/// 2 by 2 matrix tightly aligned in memory of double-precision floating-point numbers.
+	typedef aligned_highp_dmat2			aligned_dmat2;
+
+	/// 3 by 3 matrix tightly aligned in memory of double-precision floating-point numbers.
+	typedef aligned_highp_dmat3			aligned_dmat3;
+
+	/// 4 by 4 matrix tightly aligned in memory of double-precision floating-point numbers.
+	typedef aligned_highp_dmat4			aligned_dmat4;
+
+	/// 2 by 2 matrix tightly packed in memory of double-precision floating-point numbers.
+	typedef packed_highp_dmat2			packed_dmat2;
+
+	/// 3 by 3 matrix tightly packed in memory of double-precision floating-point numbers.
+	typedef packed_highp_dmat3			packed_dmat3;
+
+	/// 4 by 4 matrix tightly packed in memory of double-precision floating-point numbers.
+	typedef packed_highp_dmat4			packed_dmat4;
+
+	/// 2 by 2 matrix tightly aligned in memory of double-precision floating-point numbers.
+	typedef aligned_highp_dmat2x2		aligned_dmat2x2;
+
+	/// 2 by 3 matrix tightly aligned in memory of double-precision floating-point numbers.
+	typedef aligned_highp_dmat2x3		aligned_dmat2x3;
+
+	/// 2 by 4 matrix tightly aligned in memory of double-precision floating-point numbers.
+	typedef aligned_highp_dmat2x4		aligned_dmat2x4;
+
+	/// 3 by 2 matrix tightly aligned in memory of double-precision floating-point numbers.
+	typedef aligned_highp_dmat3x2		aligned_dmat3x2;
+
+	/// 3 by 3 matrix tightly aligned in memory of double-precision floating-point numbers.
+	typedef aligned_highp_dmat3x3		aligned_dmat3x3;
+
+	/// 3 by 4 matrix tightly aligned in memory of double-precision floating-point numbers.
+	typedef aligned_highp_dmat3x4		aligned_dmat3x4;
+
+	/// 4 by 2 matrix tightly aligned in memory of double-precision floating-point numbers.
+	typedef aligned_highp_dmat4x2		aligned_dmat4x2;
+
+	/// 4 by 3 matrix tightly aligned in memory of double-precision floating-point numbers.
+	typedef aligned_highp_dmat4x3		aligned_dmat4x3;
+
+	/// 4 by 4 matrix tightly aligned in memory of double-precision floating-point numbers.
+	typedef aligned_highp_dmat4x4		aligned_dmat4x4;
+
+	/// 2 by 2 matrix tightly packed in memory of double-precision floating-point numbers.
+	typedef packed_highp_dmat2x2		packed_dmat2x2;
+
+	/// 2 by 3 matrix tightly packed in memory of double-precision floating-point numbers.
+	typedef packed_highp_dmat2x3		packed_dmat2x3;
+
+	/// 2 by 4 matrix tightly packed in memory of double-precision floating-point numbers.
+	typedef packed_highp_dmat2x4		packed_dmat2x4;
+
+	/// 3 by 2 matrix tightly packed in memory of double-precision floating-point numbers.
+	typedef packed_highp_dmat3x2		packed_dmat3x2;
+
+	/// 3 by 3 matrix tightly packed in memory of double-precision floating-point numbers.
+	typedef packed_highp_dmat3x3		packed_dmat3x3;
+
+	/// 3 by 4 matrix tightly packed in memory of double-precision floating-point numbers.
+	typedef packed_highp_dmat3x4		packed_dmat3x4;
+
+	/// 4 by 2 matrix tightly packed in memory of double-precision floating-point numbers.
+	typedef packed_highp_dmat4x2		packed_dmat4x2;
+
+	/// 4 by 3 matrix tightly packed in memory of double-precision floating-point numbers.
+	typedef packed_highp_dmat4x3		packed_dmat4x3;
+
+	/// 4 by 4 matrix tightly packed in memory of double-precision floating-point numbers.
+	typedef packed_highp_dmat4x4		packed_dmat4x4;
 #endif//GLM_PRECISION
 
 #if(defined(GLM_PRECISION_LOWP_INT))
@@ -521,7 +1235,6 @@ namespace glm
 
 	/// 4 components vector tightly packed in memory of signed integer numbers.
 	typedef packed_highp_ivec4			packed_ivec4;
-
 #endif//GLM_PRECISION
 
 	// -- Unsigned integer definition --

@@ -1,5 +1,4 @@
 /// @ref gtc_matrix_inverse
-/// @file glm/gtc/matrix_inverse.inl
 
 namespace glm
 {
@@ -77,14 +76,13 @@ namespace glm
 		T SubFactor08 = m[1][1] * m[3][2] - m[3][1] * m[1][2];
 		T SubFactor09 = m[1][0] * m[3][3] - m[3][0] * m[1][3];
 		T SubFactor10 = m[1][0] * m[3][2] - m[3][0] * m[1][2];
-		T SubFactor11 = m[1][1] * m[3][3] - m[3][1] * m[1][3];
-		T SubFactor12 = m[1][0] * m[3][1] - m[3][0] * m[1][1];
-		T SubFactor13 = m[1][2] * m[2][3] - m[2][2] * m[1][3];
-		T SubFactor14 = m[1][1] * m[2][3] - m[2][1] * m[1][3];
-		T SubFactor15 = m[1][1] * m[2][2] - m[2][1] * m[1][2];
-		T SubFactor16 = m[1][0] * m[2][3] - m[2][0] * m[1][3];
-		T SubFactor17 = m[1][0] * m[2][2] - m[2][0] * m[1][2];
-		T SubFactor18 = m[1][0] * m[2][1] - m[2][0] * m[1][1];
+		T SubFactor11 = m[1][0] * m[3][1] - m[3][0] * m[1][1];
+		T SubFactor12 = m[1][2] * m[2][3] - m[2][2] * m[1][3];
+		T SubFactor13 = m[1][1] * m[2][3] - m[2][1] * m[1][3];
+		T SubFactor14 = m[1][1] * m[2][2] - m[2][1] * m[1][2];
+		T SubFactor15 = m[1][0] * m[2][3] - m[2][0] * m[1][3];
+		T SubFactor16 = m[1][0] * m[2][2] - m[2][0] * m[1][2];
+		T SubFactor17 = m[1][0] * m[2][1] - m[2][0] * m[1][1];
 
 		mat<4, 4, T, Q> Inverse;
 		Inverse[0][0] = + (m[1][1] * SubFactor00 - m[1][2] * SubFactor01 + m[1][3] * SubFactor02);
@@ -99,13 +97,13 @@ namespace glm
 
 		Inverse[2][0] = + (m[0][1] * SubFactor06 - m[0][2] * SubFactor07 + m[0][3] * SubFactor08);
 		Inverse[2][1] = - (m[0][0] * SubFactor06 - m[0][2] * SubFactor09 + m[0][3] * SubFactor10);
-		Inverse[2][2] = + (m[0][0] * SubFactor11 - m[0][1] * SubFactor09 + m[0][3] * SubFactor12);
-		Inverse[2][3] = - (m[0][0] * SubFactor08 - m[0][1] * SubFactor10 + m[0][2] * SubFactor12);
+		Inverse[2][2] = + (m[0][0] * SubFactor07 - m[0][1] * SubFactor09 + m[0][3] * SubFactor11);
+		Inverse[2][3] = - (m[0][0] * SubFactor08 - m[0][1] * SubFactor10 + m[0][2] * SubFactor11);
 
-		Inverse[3][0] = - (m[0][1] * SubFactor13 - m[0][2] * SubFactor14 + m[0][3] * SubFactor15);
-		Inverse[3][1] = + (m[0][0] * SubFactor13 - m[0][2] * SubFactor16 + m[0][3] * SubFactor17);
-		Inverse[3][2] = - (m[0][0] * SubFactor14 - m[0][1] * SubFactor16 + m[0][3] * SubFactor18);
-		Inverse[3][3] = + (m[0][0] * SubFactor15 - m[0][1] * SubFactor17 + m[0][2] * SubFactor18);
+		Inverse[3][0] = - (m[0][1] * SubFactor12 - m[0][2] * SubFactor13 + m[0][3] * SubFactor14);
+		Inverse[3][1] = + (m[0][0] * SubFactor12 - m[0][2] * SubFactor15 + m[0][3] * SubFactor16);
+		Inverse[3][2] = - (m[0][0] * SubFactor13 - m[0][1] * SubFactor15 + m[0][3] * SubFactor17);
+		Inverse[3][3] = + (m[0][0] * SubFactor14 - m[0][1] * SubFactor16 + m[0][2] * SubFactor17);
 
 		T Determinant =
 			+ m[0][0] * Inverse[0][0]

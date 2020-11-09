@@ -1,11 +1,5 @@
-/// @ref core
-/// @file glm/detail/func_geometric.inl
-
 #include "../exponential.hpp"
 #include "../common.hpp"
-#include "type_vec2.hpp"
-#include "type_vec4.hpp"
-#include "type_float.hpp"
 
 namespace glm{
 namespace detail
@@ -122,7 +116,9 @@ namespace detail
 		{
 			T const dotValue(dot(N, I));
 			T const k(static_cast<T>(1) - eta * eta * (static_cast<T>(1) - dotValue * dotValue));
-			return (eta * I - (eta * dotValue + std::sqrt(k)) * N) * static_cast<T>(k >= static_cast<T>(0));
+			vec<L, T, Q> const Result =
+                (k >= static_cast<T>(0)) ? (eta * I - (eta * dotValue + std::sqrt(k)) * N) : vec<L, T, Q>(0);
+			return Result;
 		}
 	};
 }//namespace detail
@@ -180,7 +176,7 @@ namespace detail
 	{
 		return detail::compute_cross<T, Q, detail::is_aligned<Q>::value>::call(x, y);
 	}
-
+/*
 	// normalize
 	template<typename genType>
 	GLM_FUNC_QUALIFIER genType normalize(genType const& x)
@@ -189,7 +185,7 @@ namespace detail
 
 		return x < genType(0) ? genType(-1) : genType(1);
 	}
-
+*/
 	template<length_t L, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<L, T, Q> normalize(vec<L, T, Q> const& x)
 	{
@@ -242,6 +238,6 @@ namespace detail
 	}
 }//namespace glm
 
-#if GLM_ARCH != GLM_ARCH_PURE && GLM_HAS_UNRESTRICTED_UNIONS
+#if GLM_CONFIG_SIMD == GLM_ENABLE
 #	include "func_geometric_simd.inl"
 #endif

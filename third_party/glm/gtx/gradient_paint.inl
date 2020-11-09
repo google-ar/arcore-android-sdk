@@ -1,5 +1,4 @@
 /// @ref gtx_gradient_paint
-/// @file glm/gtx/gradient_paint.inl
 
 namespace glm
 {

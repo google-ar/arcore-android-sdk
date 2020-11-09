@@ -1,5 +1,4 @@
 /// @ref gtx_normalize_dot
-/// @file glm/gtx/normalize_dot.inl
 
 namespace glm
 {

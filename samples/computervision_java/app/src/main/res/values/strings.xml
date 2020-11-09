@@ -18,7 +18,7 @@
   <string name="app_name">CV Java</string>
   <string name="label_low_res">Low Resolution</string>
   <!-- Medium resolution label [CHAR_LIMIT=NONE] -->
-  <string name="label_medium_res">Medium Resoluion</string>
+  <string name="label_medium_res">Medium Resolution</string>
   <string name="label_high_res">High Resolution</string>
   <string name="switch_cv_mode">Computer Vision</string>
   <string name="switch_focus_mode">Auto Focus</string>

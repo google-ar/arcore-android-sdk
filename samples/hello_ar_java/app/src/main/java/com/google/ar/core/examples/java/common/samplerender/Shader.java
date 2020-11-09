@@ -39,7 +39,7 @@ public class Shader implements Closeable {
    * A factor to be used in a blend function.
    *
    * @see <a
-   *     https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glBlendFunc.xhtml">glBlendFunc</a>
+   *     href="https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glBlendFunc.xhtml">glBlendFunc</a>
    */
   public static enum BlendFactor {
     ZERO(GLES30.GL_ZERO),
@@ -80,7 +80,7 @@ public class Shader implements Closeable {
   private BlendFactor destAlphaBlend = BlendFactor.ZERO;
 
   /**
-   * Construct a {@link Shader} given the shader code.
+   * Constructs a {@link Shader} given the shader code.
    *
    * @param defines A map of shader precompiler symbols to be defined with the given names and
    *     values
@@ -135,7 +135,7 @@ public class Shader implements Closeable {
   }
 
   /**
-   * Create a {@link Shader} from the given asset file names.
+   * Creates a {@link Shader} from the given asset file names.
    *
    * <p>The file contents are interpreted as UTF-8 text.
    *
@@ -165,7 +165,7 @@ public class Shader implements Closeable {
   }
 
   /**
-   * Set depth test state.
+   * Sets depth test state.
    *
    * @see <a
    *     href="https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glEnable.xhtml">glEnable(GL_DEPTH_TEST)</a>.
@@ -176,7 +176,7 @@ public class Shader implements Closeable {
   }
 
   /**
-   * Set depth write state.
+   * Sets depth write state.
    *
    * @see <a
    *     href="https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glDepthMask.xhtml">glDepthMask</a>.
@@ -187,7 +187,7 @@ public class Shader implements Closeable {
   }
 
   /**
-   * Set blending function.
+   * Sets blending function.
    *
    * @see <a
    *     href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glBlendFunc.xhtml">glBlendFunc</a>
@@ -201,7 +201,7 @@ public class Shader implements Closeable {
   }
 
   /**
-   * Set blending functions separately for RGB and alpha channels.
+   * Sets blending functions separately for RGB and alpha channels.
    *
    * @see <a
    *     href="https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glBlendFuncSeparate.xhtml">glBlendFunc</a>
@@ -218,7 +218,7 @@ public class Shader implements Closeable {
     return this;
   }
 
-  /** Set a texture uniform. */
+  /** Sets a texture uniform. */
   public Shader setTexture(String name, Texture texture) {
     // Special handling for Textures. If replacing an existing texture uniform, reuse the texture
     // unit.
@@ -235,30 +235,30 @@ public class Shader implements Closeable {
     return this;
   }
 
-  /** Set a {@code bool} uniform. */
+  /** Sets a {@code bool} uniform. */
   public Shader setBool(String name, boolean v0) {
     int[] values = {v0 ? 1 : 0};
     uniforms.put(getUniformLocation(name), new UniformInt(values));
     return this;
   }
 
-  /** Set a {@code float} uniform. */
-  public Shader set1(String name, float v0) {
+  /** Sets a {@code float} uniform. */
+  public Shader setFloat(String name, float v0) {
     float[] values = {v0};
     uniforms.put(getUniformLocation(name), new Uniform1f(values));
     return this;
   }
 
-  /** Set a {@code vec2} uniform. */
-  public Shader set2(String name, float[] values) {
+  /** Sets a {@code vec2} uniform. */
+  public Shader setVec2(String name, float[] values) {
     if (values.length != 2) {
       throw new IllegalArgumentException("Value array length must be 2");
     }
     uniforms.put(getUniformLocation(name), new Uniform2f(values.clone()));
     return this;
   }
-  /** Set a {@code vec3} uniform. */
-  public Shader set3(String name, float[] values) {
+  /** Sets a {@code vec3} uniform. */
+  public Shader setVec3(String name, float[] values) {
     if (values.length != 3) {
       throw new IllegalArgumentException("Value array length must be 3");
     }
@@ -266,8 +266,8 @@ public class Shader implements Closeable {
     return this;
   }
 
-  /** Set a {@code vec4} uniform. */
-  public Shader set4(String name, float[] values) {
+  /** Sets a {@code vec4} uniform. */
+  public Shader setVec4(String name, float[] values) {
     if (values.length != 4) {
       throw new IllegalArgumentException("Value array length must be 4");
     }
@@ -275,28 +275,97 @@ public class Shader implements Closeable {
     return this;
   }
 
-  /** Set an {@code mat2} uniform. */
-  public Shader setMatrix2(String name, float[] values) {
+  /** Sets a {@code mat2} uniform. */
+  public Shader setMat2(String name, float[] values) {
     if (values.length != 4) {
-      throw new IllegalArgumentException("Value array must be 4 (2x2)");
+      throw new IllegalArgumentException("Value array length must be 4 (2x2)");
     }
     uniforms.put(getUniformLocation(name), new UniformMatrix2f(values.clone()));
     return this;
   }
 
-  /** Set an {@code mat3} uniform. */
-  public Shader setMatrix3(String name, float[] values) {
+  /** Sets a {@code mat3} uniform. */
+  public Shader setMat3(String name, float[] values) {
     if (values.length != 9) {
-      throw new IllegalArgumentException("Value array must be 9 (3x3)");
+      throw new IllegalArgumentException("Value array length must be 9 (3x3)");
     }
     uniforms.put(getUniformLocation(name), new UniformMatrix3f(values.clone()));
     return this;
   }
 
-  /** Set an {@code mat4} uniform. */
-  public Shader setMatrix4(String name, float[] values) {
+  /** Sets a {@code mat4} uniform. */
+  public Shader setMat4(String name, float[] values) {
     if (values.length != 16) {
-      throw new IllegalArgumentException("Value array must be 16 (4x4)");
+      throw new IllegalArgumentException("Value array length must be 16 (4x4)");
+    }
+    uniforms.put(getUniformLocation(name), new UniformMatrix4f(values.clone()));
+    return this;
+  }
+
+  /** Sets a {@code bool} array uniform. */
+  public Shader setBoolArray(String name, boolean[] values) {
+    int[] intValues = new int[values.length];
+    for (int i = 0; i < values.length; ++i) {
+      intValues[i] = values[i] ? 1 : 0;
+    }
+    uniforms.put(getUniformLocation(name), new UniformInt(intValues));
+    return this;
+  }
+
+  /** Sets a {@code float} array uniform. */
+  public Shader setFloatArray(String name, float[] values) {
+    uniforms.put(getUniformLocation(name), new Uniform1f(values.clone()));
+    return this;
+  }
+
+  /** Sets a {@code vec2} array uniform. */
+  public Shader setVec2Array(String name, float[] values) {
+    if (values.length % 2 != 0) {
+      throw new IllegalArgumentException("Value array length must be divisible by 2");
+    }
+    uniforms.put(getUniformLocation(name), new Uniform2f(values.clone()));
+    return this;
+  }
+  /** Sets a {@code vec3} array uniform. */
+  public Shader setVec3Array(String name, float[] values) {
+    if (values.length % 3 != 0) {
+      throw new IllegalArgumentException("Value array length must be divisible by 3");
+    }
+    uniforms.put(getUniformLocation(name), new Uniform3f(values.clone()));
+    return this;
+  }
+
+  /** Sets a {@code vec4} array uniform. */
+  public Shader setVec4Array(String name, float[] values) {
+    if (values.length % 4 != 0) {
+      throw new IllegalArgumentException("Value array length must be divisible by 4");
+    }
+    uniforms.put(getUniformLocation(name), new Uniform4f(values.clone()));
+    return this;
+  }
+
+  /** Sets a {@code mat2} array uniform. */
+  public Shader setMat2Array(String name, float[] values) {
+    if (values.length % 4 != 0) {
+      throw new IllegalArgumentException("Value array length must be divisible by 4 (2x2)");
+    }
+    uniforms.put(getUniformLocation(name), new UniformMatrix2f(values.clone()));
+    return this;
+  }
+
+  /** Sets a {@code mat3} array uniform. */
+  public Shader setMat3Array(String name, float[] values) {
+    if (values.length % 9 != 0) {
+      throw new IllegalArgumentException("Values array length must be divisible by 9 (3x3)");
+    }
+    uniforms.put(getUniformLocation(name), new UniformMatrix3f(values.clone()));
+    return this;
+  }
+
+  /** Sets a {@code mat4} uniform. */
+  public Shader setMat4Array(String name, float[] values) {
+    if (values.length % 16 != 0) {
+      throw new IllegalArgumentException("Value array length must be divisible by 16 (4x4)");
     }
     uniforms.put(getUniformLocation(name), new UniformMatrix4f(values.clone()));
     return this;

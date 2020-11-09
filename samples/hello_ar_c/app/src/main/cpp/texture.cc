@@ -48,6 +48,7 @@ void Texture::UpdateWithDepthImageOnGlThread(const ArSession& session,
   ArImage_getFormat(&session, depth_image, &image_format);
   if (image_format != AR_IMAGE_FORMAT_DEPTH16) {
     LOGE("Unexpected image format 0x%x", image_format);
+    ArImage_release(depth_image);
     abort();
     return;
   }
@@ -58,7 +59,10 @@ void Texture::UpdateWithDepthImageOnGlThread(const ArSession& session,
                        &plane_size_bytes);
 
   // Bails out if there's no depth_data.
-  if (depth_data == nullptr) return;
+  if (depth_data == nullptr) {
+    ArImage_release(depth_image);
+    return;
+  }
 
   // Sets texture sizes.
   int image_width = 0;
@@ -69,6 +73,7 @@ void Texture::UpdateWithDepthImageOnGlThread(const ArSession& session,
   ArImage_getHeight(&session, depth_image, &image_height);
   ArImage_getPlanePixelStride(&session, depth_image, 0, &image_pixel_stride);
   ArImage_getPlaneRowStride(&session, depth_image, 0, &image_row_stride);
+  ArImage_release(depth_image);
   glBindTexture(GL_TEXTURE_2D, texture_id_);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, image_width, image_height, 0, GL_RG,
                GL_UNSIGNED_BYTE, depth_data);
