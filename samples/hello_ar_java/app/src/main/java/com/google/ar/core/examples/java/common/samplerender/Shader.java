@@ -25,6 +25,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -242,6 +243,13 @@ public class Shader implements Closeable {
     return this;
   }
 
+  /** Sets an {@code int} uniform. */
+  public Shader setInt(String name, int v0) {
+    int[] values = {v0};
+    uniforms.put(getUniformLocation(name), new UniformInt(values));
+    return this;
+  }
+
   /** Sets a {@code float} uniform. */
   public Shader setFloat(String name, float v0) {
     float[] values = {v0};
@@ -312,6 +320,12 @@ public class Shader implements Closeable {
     return this;
   }
 
+  /** Sets an {@code int} array uniform. */
+  public Shader setIntArray(String name, int[] values) {
+    uniforms.put(getUniformLocation(name), new UniformInt(values.clone()));
+    return this;
+  }
+
   /** Sets a {@code float} array uniform. */
   public Shader setFloatArray(String name, float[] values) {
     uniforms.put(getUniformLocation(name), new Uniform1f(values.clone()));
@@ -371,8 +385,11 @@ public class Shader implements Closeable {
     return this;
   }
 
-  /* package-private */
-  void use() {
+  /**
+   * Activates the shader. Don't call this directly unless you are doing low level OpenGL code;
+   * instead, prefer {@link SampleRender#draw}.
+   */
+  public void lowLevelUse() {
     // Make active shader/set uniforms
     if (programId == 0) {
       throw new IllegalStateException("Attempted to use freed shader");
@@ -395,14 +412,21 @@ public class Shader implements Closeable {
       GLError.maybeThrowGLException("Failed to disable depth test", "glDisable");
     }
     try {
+      // Remove all non-texture uniforms from the map after setting them, since they're stored as
+      // part of the program.
+      ArrayList<Integer> obsoleteEntries = new ArrayList<>(uniforms.size());
       for (Map.Entry<Integer, Uniform> entry : uniforms.entrySet()) {
         try {
           entry.getValue().use(entry.getKey());
+          if (!(entry.getValue() instanceof UniformTexture)) {
+            obsoleteEntries.add(entry.getKey());
+          }
         } catch (GLException e) {
           String name = uniformNames.get(entry.getKey());
           throw new IllegalArgumentException("Error setting uniform `" + name + "'", e);
         }
       }
+      uniforms.keySet().removeAll(obsoleteEntries);
     } finally {
       GLES30.glActiveTexture(GLES30.GL_TEXTURE0);
       GLError.maybeLogGLError(Log.WARN, TAG, "Failed to set active texture", "glActiveTexture");

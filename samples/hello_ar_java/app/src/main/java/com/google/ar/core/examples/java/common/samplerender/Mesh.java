@@ -158,8 +158,11 @@ public class Mesh implements Closeable {
     }
   }
 
-  /* package-private */
-  void draw() {
+  /**
+   * Draws the mesh. Don't call this directly unless you are doing low level OpenGL code; instead,
+   * prefer {@link SampleRender#draw}.
+   */
+  public void lowLevelDraw() {
     if (vertexArrayId[0] == 0) {
       throw new IllegalStateException("Tried to draw a freed Mesh");
     }

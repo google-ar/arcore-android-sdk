@@ -37,8 +37,18 @@ public class Framebuffer implements Closeable {
    */
   public Framebuffer(SampleRender render, int width, int height) {
     try {
-      colorTexture = new Texture(render, Texture.Target.TEXTURE_2D, Texture.WrapMode.CLAMP_TO_EDGE);
-      depthTexture = new Texture(render, Texture.Target.TEXTURE_2D, Texture.WrapMode.CLAMP_TO_EDGE);
+      colorTexture =
+          new Texture(
+              render,
+              Texture.Target.TEXTURE_2D,
+              Texture.WrapMode.CLAMP_TO_EDGE,
+              /*useMipmaps=*/ false);
+      depthTexture =
+          new Texture(
+              render,
+              Texture.Target.TEXTURE_2D,
+              Texture.WrapMode.CLAMP_TO_EDGE,
+              /*useMipmaps=*/ false);
 
       // Set parameters of the depth texture so that it's readable by shaders.
       GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, depthTexture.getTextureId());

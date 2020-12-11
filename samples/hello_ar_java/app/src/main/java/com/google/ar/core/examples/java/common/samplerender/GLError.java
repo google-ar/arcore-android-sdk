@@ -23,8 +23,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/* package-private */
-class GLError {
+/** Module for handling OpenGL errors. */
+public class GLError {
+  /** Throws a {@link GLException} if a GL error occurred. */
   public static void maybeThrowGLException(String reason, String api) {
     List<Integer> errorCodes = getGlErrors();
     if (errorCodes != null) {
@@ -32,6 +33,7 @@ class GLError {
     }
   }
 
+  /** Logs a message with the given logcat priority if a GL error occurred. */
   public static void maybeLogGLError(int priority, String tag, String reason, String api) {
     List<Integer> errorCodes = getGlErrors();
     if (errorCodes != null) {

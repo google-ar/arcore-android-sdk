@@ -80,9 +80,17 @@ public class BackgroundRenderer {
    */
   public BackgroundRenderer(SampleRender render) {
     cameraColorTexture =
-        new Texture(render, Texture.Target.TEXTURE_EXTERNAL_OES, Texture.WrapMode.CLAMP_TO_EDGE);
+        new Texture(
+            render,
+            Texture.Target.TEXTURE_EXTERNAL_OES,
+            Texture.WrapMode.CLAMP_TO_EDGE,
+            /*useMipmaps=*/ false);
     cameraDepthTexture =
-        new Texture(render, Texture.Target.TEXTURE_2D, Texture.WrapMode.CLAMP_TO_EDGE);
+        new Texture(
+            render,
+            Texture.Target.TEXTURE_2D,
+            Texture.WrapMode.CLAMP_TO_EDGE,
+            /*useMipmaps=*/ false);
 
     // Create a Mesh with three vertex buffers: one for the screen coordinates (normalized device
     // coordinates), one for the camera texture coordinates (to be populated with proper data later

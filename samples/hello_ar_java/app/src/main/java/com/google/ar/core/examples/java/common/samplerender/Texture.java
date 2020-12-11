@@ -93,15 +93,21 @@ public class Texture implements Closeable {
    * #createFromAsset} if you want a texture with data.
    */
   public Texture(SampleRender render, Target target, WrapMode wrapMode) {
+    this(render, target, wrapMode, /*useMipmaps=*/ true);
+  }
+
+  public Texture(SampleRender render, Target target, WrapMode wrapMode, boolean useMipmaps) {
     this.target = target;
 
     GLES30.glGenTextures(1, textureId, 0);
     GLError.maybeThrowGLException("Texture creation failed", "glGenTextures");
 
+    int minFilter = useMipmaps ? GLES30.GL_LINEAR_MIPMAP_LINEAR : GLES30.GL_LINEAR;
+
     try {
       GLES30.glBindTexture(target.glesEnum, textureId[0]);
       GLError.maybeThrowGLException("Failed to bind texture", "glBindTexture");
-      GLES30.glTexParameteri(target.glesEnum, GLES30.GL_TEXTURE_MIN_FILTER, GLES30.GL_LINEAR);
+      GLES30.glTexParameteri(target.glesEnum, GLES30.GL_TEXTURE_MIN_FILTER, minFilter);
       GLError.maybeThrowGLException("Failed to set texture parameter", "glTexParameteri");
       GLES30.glTexParameteri(target.glesEnum, GLES30.GL_TEXTURE_MAG_FILTER, GLES30.GL_LINEAR);
       GLError.maybeThrowGLException("Failed to set texture parameter", "glTexParameteri");

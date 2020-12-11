@@ -19,6 +19,7 @@ package com.google.ar.core.examples.java.helloar;
 import android.content.DialogInterface;
 import android.content.res.Resources;
 import android.media.Image;
+import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.os.Bundle;
@@ -57,6 +58,7 @@ import com.google.ar.core.examples.java.common.helpers.SnackbarHelper;
 import com.google.ar.core.examples.java.common.helpers.TapHelper;
 import com.google.ar.core.examples.java.common.helpers.TrackingStateHelper;
 import com.google.ar.core.examples.java.common.samplerender.Framebuffer;
+import com.google.ar.core.examples.java.common.samplerender.GLError;
 import com.google.ar.core.examples.java.common.samplerender.Mesh;
 import com.google.ar.core.examples.java.common.samplerender.SampleRender;
 import com.google.ar.core.examples.java.common.samplerender.Shader;
@@ -64,6 +66,7 @@ import com.google.ar.core.examples.java.common.samplerender.Texture;
 import com.google.ar.core.examples.java.common.samplerender.VertexBuffer;
 import com.google.ar.core.examples.java.common.samplerender.arcore.BackgroundRenderer;
 import com.google.ar.core.examples.java.common.samplerender.arcore.PlaneRenderer;
+import com.google.ar.core.examples.java.common.samplerender.arcore.SpecularCubemapFilter;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
@@ -72,7 +75,10 @@ import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -103,6 +109,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
   private static final float Z_NEAR = 0.1f;
   private static final float Z_FAR = 100f;
+
+  private static final int CUBEMAP_RESOLUTION = 16;
+  private static final int CUBEMAP_NUMBER_OF_IMPORTANCE_SAMPLES = 32;
 
   // Rendering. The Renderers are created here, and initialized when the GL surface is created.
   private GLSurfaceView surfaceView;
@@ -147,6 +156,10 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private Mesh virtualObjectMesh;
   private Shader virtualObjectShader;
   private final ArrayList<Anchor> anchors = new ArrayList<>();
+
+  // Environmental HDR
+  private Texture dfgTexture;
+  private SpecularCubemapFilter cubemapFilter;
 
   // Temporary matrix allocated here to reduce number of allocations for each frame.
   private final float[] modelMatrix = new float[16];
@@ -329,6 +342,41 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       backgroundRenderer = new BackgroundRenderer(render);
       virtualSceneFramebuffer = new Framebuffer(render, /*width=*/ 1, /*height=*/ 1);
 
+      cubemapFilter =
+          new SpecularCubemapFilter(
+              render, CUBEMAP_RESOLUTION, CUBEMAP_NUMBER_OF_IMPORTANCE_SAMPLES);
+      // Load DFG lookup table for environmental lighting
+      dfgTexture =
+          new Texture(
+              render,
+              Texture.Target.TEXTURE_2D,
+              Texture.WrapMode.CLAMP_TO_EDGE,
+              /*useMipmaps=*/ false);
+      // The dfg.raw file is a raw half-float texture with two channels.
+      final int dfgResolution = 64;
+      final int dfgChannels = 2;
+      final int halfFloatSize = 2;
+
+      ByteBuffer buffer =
+          ByteBuffer.allocateDirect(dfgResolution * dfgResolution * dfgChannels * halfFloatSize);
+      try (InputStream is = getAssets().open("models/dfg.raw")) {
+        is.read(buffer.array());
+      }
+      // SampleRender abstraction leaks here.
+      GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, dfgTexture.getTextureId());
+      GLError.maybeThrowGLException("Failed to bind DFG texture", "glBindTexture");
+      GLES30.glTexImage2D(
+          GLES30.GL_TEXTURE_2D,
+          /*level=*/ 0,
+          GLES30.GL_RG16F,
+          /*width=*/ dfgResolution,
+          /*height=*/ dfgResolution,
+          /*border=*/ 0,
+          GLES30.GL_RG,
+          GLES30.GL_HALF_FLOAT,
+          buffer);
+      GLError.maybeThrowGLException("Failed to populate DFG texture", "glTexImage2D");
+
       // Point cloud
       pointCloudShader =
           Shader.createFromAssets(
@@ -363,9 +411,17 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
                   render,
                   "shaders/environmental_hdr.vert",
                   "shaders/environmental_hdr.frag",
-                  /*defines=*/ null)
+                  /*defines=*/ new HashMap<String, String>() {
+                    {
+                      put(
+                          "NUMBER_OF_MIPMAP_LEVELS",
+                          Integer.toString(cubemapFilter.getNumberOfMipmapLevels()));
+                    }
+                  })
               .setTexture("u_AlbedoTexture", virtualObjectAlbedoTexture)
-              .setTexture("u_RoughnessMetallicAmbientOcclusionTexture", virtualObjectPbrTexture);
+              .setTexture("u_RoughnessMetallicAmbientOcclusionTexture", virtualObjectPbrTexture)
+              .setTexture("u_Cubemap", cubemapFilter.getFilteredCubemapTexture())
+              .setTexture("u_DfgTexture", dfgTexture);
     } catch (IOException e) {
       Log.e(TAG, "Failed to read a required asset file", e);
       messageSnackbarHelper.showError(this, "Failed to read a required asset file: " + e);
@@ -702,6 +758,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         viewMatrix);
     updateSphericalHarmonicsCoefficients(
         lightEstimate.getEnvironmentalHdrAmbientSphericalHarmonics());
+    cubemapFilter.update(lightEstimate.acquireEnvironmentalHdrCubeMap());
   }
 
   private void updateMainLight(float[] direction, float[] intensity, float[] viewMatrix) {

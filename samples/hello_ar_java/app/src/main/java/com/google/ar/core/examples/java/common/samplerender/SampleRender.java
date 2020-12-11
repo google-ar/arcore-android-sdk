@@ -80,8 +80,8 @@ public class SampleRender {
    */
   public void draw(Mesh mesh, Shader shader, Framebuffer framebuffer) {
     useFramebuffer(framebuffer);
-    shader.use();
-    mesh.draw();
+    shader.lowLevelUse();
+    mesh.lowLevelDraw();
   }
 
   /**

@@ -19,18 +19,6 @@ precision mediump float;
 // This shader will light scenes based on ARCore's Environmental HDR mode with a
 // physically based rendering model.
 //
-// This shader and all ARCore Java samples do not use the HDR cubemap from
-// ARCore
-// (https://developers.google.com/ar/develop/java/light-estimation#hdr-cubemap).
-// This is reasonable for materials with low glossiness.
-//
-// If more detailed specular environmental reflections are desired, we would
-// filter the cubemap for each roughness level CPU-side and upload the mipmaps
-// to a texture. The Filament documentation has excellent documentation on this
-// concept:
-//
-// https://google.github.io/filament/Filament.md.html#lighting/imagebasedlights
-//
 // When using the HDR Cubemap from ARCore for specular reflections, please note
 // that the following equation is true of ARCore's Environmental HDR lighting
 // estimation, where E(x) is irradiance of x.
@@ -44,13 +32,21 @@ precision mediump float;
 //
 // Lo = Ld(spherical harmonics) + Ld(main light) + Ls(cubemap)
 //
-// The sample as it is written uses the following equation instead. As you can
-// see, the environmental specular component is absent.
+// The Filament documentation has excellent documentation on the subject of
+// image based lighting:
+// https://google.github.io/filament/Filament.md.html#lighting/imagebasedlights
+//
+// If you would rather not use the HDR cubemap in your application, you would
+// need to adjust the lighting calculations to reflect the following equation
+// instead.
 //
 // Lo = Ld(spherical harmonics) + Ld(main light) + Ls(main light)
 //
 // See the definitions of Pbr_CalculateMainLightRadiance and
 // Pbr_CalculateEnvironmentalRadiance.
+
+// Number of mipmap levels in the filtered cubemap.
+const int kNumberOfRoughnessLevels = NUMBER_OF_MIPMAP_LEVELS;
 
 // The albedo and roughness/metallic textures.
 uniform sampler2D u_AlbedoTexture;
@@ -69,6 +65,16 @@ uniform vec4 u_ViewLightDirection;
 // HelloArActivity.updateSphericalHarmonicsCoefficients for more information.
 uniform vec3 u_SphericalHarmonicsCoefficients[9];
 
+// The filtered cubemap texture which models the LD term (i.e. radiance (L)
+// times distribution function (D)) of the environmental specular calculation as
+// a function of direction and roughness.
+uniform samplerCube u_Cubemap;
+
+// The DFG lookup texture which models the DFG1 and DFG2 terms of the
+// environmental specular calculation as a function of normal dot view and
+// perceptual roughness.
+uniform sampler2D u_DfgTexture;
+
 // Inverse view matrix. Used for converting normals back into world space for
 // environmental radiance calculations.
 uniform mat4 u_ViewInverse;
@@ -79,10 +85,13 @@ uniform bool u_LightEstimateIsValid;
 
 struct MaterialParameters {
   vec3 diffuse;
-  float roughness;  // non-perceptually linear roughness
+  float perceptualRoughness;  // perceptually linear roughness
+  float roughness;            // non-perceptually linear roughness
   float metallic;
   float ambientOcclusion;
-  vec3 f0;  // reflectance
+  vec3 f0;                  // reflectance
+  vec2 dfg;                 // DFG1 and DFG2 terms
+  vec3 energyCompensation;  // energy preservation for multiscattering
 };
 
 struct ShadingParameters {
@@ -93,9 +102,10 @@ struct ShadingParameters {
   float viewDotHalfway;
   float oneMinusNormalDotHalfwaySquared;
 
-  // This unit vector is in world space and is used for the environmental
+  // These unit vectors are in world space and are used for the environmental
   // lighting math.
   vec3 worldNormalDirection;
+  vec3 worldReflectDirection;
 };
 
 in vec3 v_ViewPosition;
@@ -106,64 +116,17 @@ layout(location = 0) out vec4 o_FragColor;
 
 const float kPi = 3.14159265359;
 
-float Pbr_D_GGX(const ShadingParameters shading,
-                const MaterialParameters material) {
-  // Normal distribution factor, adapted from
-  // https://github.com/google/filament/blob/main/shaders/src/brdf.fs#L54
-  float roughness = material.roughness;
-  float NoH = shading.normalDotHalfway;
-  float oneMinusNoHSquared = shading.oneMinusNormalDotHalfwaySquared;
-
-  float a = NoH * roughness;
-  float k = roughness / (oneMinusNoHSquared + a * a);
-  float d = k * k * (1.0 / kPi);
-  return clamp(d, 0.0, 1.0);
-}
-
-float Pbr_V_SmithGGXCorrelated_Fast(const ShadingParameters shading,
-                                    const MaterialParameters material) {
-  // Visibility factor, adapted from
-  // https://github.com/google/filament/blob/main/shaders/src/brdf.fs#L115
-  //
-  // The visibility factor is the combination of the geometry factor and the
-  // denominator of the Cook-Torrance BRDF function, i.e. V = G / (4 * NoV *
-  // NoL)
-  float roughness = material.roughness;
-  float NoV = shading.normalDotView;
-  float NoL = shading.normalDotLight;
-  float v = 0.5 / mix(2.0 * NoL * NoV, NoL + NoV, roughness);
-  return clamp(v, 0.0, 1.0);
-}
-
-vec3 Pbr_F_Schlick(const ShadingParameters shading,
-                   const MaterialParameters material) {
-  // Fresnel factor, adapted from
-  // https://github.com/google/filament/blob/main/shaders/src/brdf.fs#L146
-  vec3 f0 = material.f0;
-  float VoH = shading.viewDotHalfway;
-  float f = pow(1.0 - VoH, 5.0);
-  return f + f0 * (1.0 - f);
-}
-
 vec3 Pbr_CalculateMainLightRadiance(const ShadingParameters shading,
                                     const MaterialParameters material,
                                     const vec3 mainLightIntensity) {
   // Lambertian diffuse
   vec3 diffuseTerm = material.diffuse / kPi;
 
-  // Cook-Torrance specular.
-  //
-  // Note that if we were using the HDR cubemap from ARCore for specular
-  // lighting, we would *not* add this contribution. See the note at the top of
-  // this file for a more detailed explanation.
-  float D = Pbr_D_GGX(shading, material);
-  float V = Pbr_V_SmithGGXCorrelated_Fast(shading, material);
-  vec3 F = Pbr_F_Schlick(shading, material);
+  // Note that if we were not using the HDR cubemap from ARCore for specular
+  // lighting, we would be adding a specular contribution from the main light
+  // here. See the top of the file for a more detailed explanation.
 
-  vec3 specularTerm = D * V * F;
-
-  return (specularTerm + diffuseTerm) * mainLightIntensity *
-         shading.normalDotLight;
+  return diffuseTerm * mainLightIntensity * shading.normalDotLight;
 }
 
 vec3 Pbr_CalculateDiffuseEnvironmentalRadiance(const vec3 normal,
@@ -180,19 +143,36 @@ vec3 Pbr_CalculateDiffuseEnvironmentalRadiance(const vec3 normal,
   return max(radiance, 0.0);
 }
 
+vec3 Pbr_CalculateSpecularEnvironmentalRadiance(
+    const ShadingParameters shading, const MaterialParameters material,
+    const samplerCube cubemap) {
+  // Lagarde and de Rousiers 2014, "Moving Frostbite to PBR"
+  float specularAO =
+      clamp(pow(shading.normalDotView + material.ambientOcclusion,
+                exp2(-16.0 * material.roughness - 1.0)) -
+                1.0 + material.ambientOcclusion,
+            0.0, 1.0);
+  // Combine DFG and LD terms
+  float lod =
+      material.perceptualRoughness * float(kNumberOfRoughnessLevels - 1);
+  vec3 LD = textureLod(cubemap, shading.worldReflectDirection, lod).rgb;
+  vec3 E = mix(material.dfg.xxx, material.dfg.yyy, material.f0);
+  return E * LD * specularAO * material.energyCompensation;
+}
+
 vec3 Pbr_CalculateEnvironmentalRadiance(
     const ShadingParameters shading, const MaterialParameters material,
-    const vec3 sphericalHarmonicsCoefficients[9]) {
+    const vec3 sphericalHarmonicsCoefficients[9], const samplerCube cubemap) {
   // The lambertian diffuse BRDF term (1/pi) is baked into
   // HelloArActivity.sphericalHarmonicsFactors.
   vec3 diffuseTerm =
       Pbr_CalculateDiffuseEnvironmentalRadiance(
           shading.worldNormalDirection, sphericalHarmonicsCoefficients) *
       material.diffuse * material.ambientOcclusion;
-  // If we wanted to use ARCore's cubemap, this would be the place to add the
-  // specular contribution. See the note at the top of this file for a more
-  // detailed explanation.
-  vec3 specularTerm = vec3(0.0, 0.0, 0.0);
+
+  vec3 specularTerm =
+      Pbr_CalculateSpecularEnvironmentalRadiance(shading, material, cubemap);
+
   return diffuseTerm + specularTerm;
 }
 
@@ -230,11 +210,16 @@ void Pbr_CreateShadingParameters(const in vec3 viewNormal,
   shading.oneMinusNormalDotHalfwaySquared = dot(NxH, NxH);
 
   shading.worldNormalDirection = (viewInverse * vec4(normalDirection, 0.0)).xyz;
+  vec3 reflectDirection = reflect(-viewDirection, normalDirection);
+  shading.worldReflectDirection =
+      (viewInverse * vec4(reflectDirection, 0.0)).xyz;
 }
 
 void Pbr_CreateMaterialParameters(const in vec2 texCoord,
                                   const in sampler2D albedoTexture,
                                   const in sampler2D pbrTexture,
+                                  const in sampler2D dfgTexture,
+                                  const in ShadingParameters shading,
                                   out MaterialParameters material) {
   // Read the material parameters from the textures
   vec3 albedo = texture(albedoTexture, texCoord).rgb;
@@ -245,9 +230,10 @@ void Pbr_CreateMaterialParameters(const in vec2 texCoord,
   // that (kMinPerceptualRoughness^4) > 0 in fp16 (i.e. 2^(-14/4), rounded up).
   // https://github.com/google/filament/blob/main/shaders/src/common_material.fs#L2
   const float kMinPerceptualRoughness = 0.089;
-  float perceptualRoughness =
+  material.perceptualRoughness =
       max(roughnessMetallicAmbientOcclusion.r, kMinPerceptualRoughness);
-  material.roughness = perceptualRoughness * perceptualRoughness;
+  material.roughness =
+      material.perceptualRoughness * material.perceptualRoughness;
   material.metallic = roughnessMetallicAmbientOcclusion.g;
   material.ambientOcclusion = roughnessMetallicAmbientOcclusion.b;
 
@@ -259,6 +245,18 @@ void Pbr_CreateMaterialParameters(const in vec2 texCoord,
   // reasonable constant for a simple roughness/metallic material workflow as
   // implemented by this shader.
   material.f0 = mix(vec3(0.04), albedo, material.metallic);
+
+  // The DFG texture is a simple lookup table indexed by [normal dot view,
+  // perceptualRoughness].
+  material.dfg =
+      textureLod(dfgTexture,
+                 vec2(shading.normalDotView, material.perceptualRoughness), 0.0)
+          .xy;
+
+  // Energy preservation for multiscattering (see
+  // https://google.github.io/filament/Filament.md.html#materialsystem/improvingthebrdfs)
+  material.energyCompensation =
+      1.0 + material.f0 * (1.0 / material.dfg.y - 1.0);
 }
 
 vec3 LinearToSrgb(const vec3 color) {
@@ -283,14 +281,14 @@ void main() {
   MaterialParameters material;
   Pbr_CreateMaterialParameters(texCoord, u_AlbedoTexture,
                                u_RoughnessMetallicAmbientOcclusionTexture,
-                               material);
+                               u_DfgTexture, shading, material);
 
   // Combine the radiance contributions of both the main light and environment
   vec3 mainLightRadiance =
       Pbr_CalculateMainLightRadiance(shading, material, u_LightIntensity);
 
   vec3 environmentalRadiance = Pbr_CalculateEnvironmentalRadiance(
-      shading, material, u_SphericalHarmonicsCoefficients);
+      shading, material, u_SphericalHarmonicsCoefficients, u_Cubemap);
 
   vec3 radiance = mainLightRadiance + environmentalRadiance;
 
