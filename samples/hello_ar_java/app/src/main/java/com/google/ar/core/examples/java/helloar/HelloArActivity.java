@@ -58,6 +58,8 @@ import com.google.ar.core.examples.java.common.helpers.InstantPlacementSettings;
 import com.google.ar.core.examples.java.common.helpers.SnackbarHelper;
 import com.google.ar.core.examples.java.common.helpers.TapHelper;
 import com.google.ar.core.examples.java.common.helpers.TrackingStateHelper;
+import com.google.ar.core.examples.java.common.rendering.BackgroundRenderer;
+import com.google.ar.core.examples.java.common.rendering.PlaneRenderer;
 import com.google.ar.core.examples.java.common.samplerender.Framebuffer;
 import com.google.ar.core.examples.java.common.samplerender.GLError;
 import com.google.ar.core.examples.java.common.samplerender.Mesh;
@@ -65,8 +67,8 @@ import com.google.ar.core.examples.java.common.samplerender.SampleRender;
 import com.google.ar.core.examples.java.common.samplerender.Shader;
 import com.google.ar.core.examples.java.common.samplerender.Texture;
 import com.google.ar.core.examples.java.common.samplerender.VertexBuffer;
-import com.google.ar.core.examples.java.common.samplerender.arcore.BackgroundRenderer;
-import com.google.ar.core.examples.java.common.samplerender.arcore.PlaneRenderer;
+import com.google.ar.core.examples.java.common.samplerender.arcore.BackgroundHelloRenderer;
+import com.google.ar.core.examples.java.common.samplerender.arcore.PlaneHelloRenderer;
 import com.google.ar.core.examples.java.common.samplerender.arcore.SpecularCubemapFilter;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.NotYetAvailableException;
@@ -126,8 +128,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private TapHelper tapHelper;
   private SampleRender render;
 
-  private PlaneRenderer planeRenderer;
-  private BackgroundRenderer backgroundRenderer;
+  private PlaneHelloRenderer planeRenderer;
+  private BackgroundHelloRenderer backgroundRenderer;
   private Framebuffer virtualSceneFramebuffer;
   private boolean hasSetTextureNames = false;
 
@@ -339,8 +341,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     // Prepare the rendering objects. This involves reading shaders and 3D model files, so may throw
     // an IOException.
     try {
-      planeRenderer = new PlaneRenderer(render);
-      backgroundRenderer = new BackgroundRenderer(render);
+      planeRenderer = new PlaneHelloRenderer(render);
+      backgroundRenderer = new BackgroundHelloRenderer(render);
       virtualSceneFramebuffer = new Framebuffer(render, /*width=*/ 1, /*height=*/ 1);
 
       cubemapFilter =
