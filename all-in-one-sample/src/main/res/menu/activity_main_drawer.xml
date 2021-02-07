@@ -5,6 +5,10 @@
         android:id="@+id/grp1"
         android:checkableBehavior="single">
         <item
+            android:id="@+id/nav_augmented_faces_java"
+            android:icon="@drawable/ic_face_recognition"
+            android:title="augmented_faces_java" />
+        <item
             android:id="@+id/nav_augmented_image_java"
             android:icon="@drawable/ic_menu_camera"
             android:title="augmented_image_java" />

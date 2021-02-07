@@ -63,6 +63,8 @@ abstract class NavigationActivity : AppCompatActivity(), NavigationView.OnNaviga
             openActivity(CloudAnchorActivity::class.java)
         } else if (id == R.id.nav_augmented_image_java) {
             openActivity(AugmentedImageActivity::class.java)
+        } else if (id == R.id.nav_augmented_faces_java) {
+            openActivity(com.google.ar.core.examples.java.augmentedfaces.AugmentedFacesActivity::class.java)
         } else if (id == R.id.nav_augmented_image_c) {
             openActivity(com.google.ar.core.examples.c.augmentedimage.AugmentedImageActivity::class.java)
         }
