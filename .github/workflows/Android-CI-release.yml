@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    name: Publish release ${{ github.ref }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 0
+      - name: Install JDK ${{ matrix.java_version }}
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Install Android SDK
+        uses: malinskiy/action-android/install-sdk@release/0.1.0
+      - name: Decrypt keystore
+        run: ./signing/decrypt.sh
+        env:
+          TAG_VERSION: ${{ github.ref }}
+          CRYPT_PASS: ${{ secrets.CRYPT_PASS }}
+      - name: Build project
+        run: ./gradlew clean assembleRelease
+        env:
+          TAG_VERSION: ${{ github.ref }}
+          CRYPT_PASS: ${{ secrets.CRYPT_PASS }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+          ALIAS_NAME: ${{ secrets.ALIAS_NAME }}
+          ALIAS_PASS: ${{ secrets.ALIAS_PASS }}
+      - name: cleanup keystore
+        run: ./signing/cleanup.sh
+      - name: Search for apk file
+        run: echo "APK_RELASE_FILE=$(find . -name *release.apk | head -n 1)" >> $GITHUB_ENV
+      - name: Search for APK release name
+        run: echo "APK_RELASE_NAME=$(find . -name *release.apk | head -n 1 | xargs basename)" >> $GITHUB_ENV
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
+          APK_RELASE: ${{ secrets.CRYPT_PASS }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ${{ env.APK_RELASE_FILE }}
+          asset_name: ${{ env.APK_RELASE_NAME }}
+          asset_content_type: application/zip
