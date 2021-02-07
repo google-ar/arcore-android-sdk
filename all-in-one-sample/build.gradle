@@ -75,6 +75,12 @@ android {
             versionNameSuffix ".debug"
         }
     }
+
+    packagingOptions {
+        pickFirst 'lib/armeabi-v7a/libarcore_sdk_c.so'
+        pickFirst 'lib/arm64-v8a/libarcore_sdk_c.so'
+        pickFirst 'lib/x86/libarcore_sdk_c.so'
+    }
 }
 
 dependencies {
