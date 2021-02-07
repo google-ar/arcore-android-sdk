@@ -29,7 +29,7 @@ dependencies {
 
     // Obj - a simple Wavefront OBJ file loader
     // https://github.com/javagl/Obj
-    implementation 'de.javagl:obj:0.2.1'
+    implementation 'de.javagl:obj:0.3.0'
 
     // Glide - An image loading and caching library for Android
     // https://github.com/bumptech/glide
