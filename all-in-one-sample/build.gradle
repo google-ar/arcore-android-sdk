@@ -94,6 +94,7 @@ dependencies {
     implementation 'com.github.AppDevNext.Logcat:LogcatCore:2.4.0'
 
     implementation project(':samples:shared_camera_java:app')
+    implementation project(':samples:persistent_cloud_anchor_java:app')
     implementation project(':samples:hello_ar_java:app')
     implementation project(':samples:hello_ar_c:app')
     implementation project(':samples:computervision_java:app')
