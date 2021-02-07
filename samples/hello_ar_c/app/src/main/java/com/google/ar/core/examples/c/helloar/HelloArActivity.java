@@ -37,6 +37,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.ar.core.examples.java.common.DepthSettings;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
+import com.google.ar.core.examples.java.common.helpers.InstantPlacementSettings;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
