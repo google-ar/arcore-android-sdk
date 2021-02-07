@@ -37,7 +37,7 @@ dependencies {
     // Override conflicting Firebase support-media-compat:26.1.0 dependency.
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
 
-    implementation 'com.google.guava:guava:27.0.1-android'
+    implementation 'com.google.guava:guava:30.1-android'
     implementation project(":samples:camera_tools")
 }
 
