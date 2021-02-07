@@ -6,6 +6,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
@@ -92,7 +93,10 @@ abstract class NavigationActivity : AppCompatActivity(), NavigationView.OnNaviga
                         this,
                         BuildConfig.GIT_USER,
                         BuildConfig.GIT_REPOSITORY,
-                        BuildConfig.VERSION_NAME)
+                        BuildConfig.VERSION_NAME,
+                        { msg -> Toast.makeText(this, msg, Toast.LENGTH_LONG).show() },
+                        force = true
+                )
                 true
             }
             R.id.action_logcat -> {

@@ -1,6 +1,7 @@
 package org.arcore.samples
 
 import android.os.Bundle
+import android.widget.Toast
 import info.hannes.github.AppUpdateHelper
 import org.arcore.samples.base.NavigationActivity
 
@@ -17,6 +18,8 @@ class MainActivity : NavigationActivity() {
                 this,
                 BuildConfig.GIT_USER,
                 BuildConfig.GIT_REPOSITORY,
-                BuildConfig.VERSION_NAME)
+                BuildConfig.VERSION_NAME,
+                { msg -> Toast.makeText(this, msg, Toast.LENGTH_LONG).show() }
+        )
     }
 }
