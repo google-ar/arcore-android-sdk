@@ -28,7 +28,7 @@ dependencies {
 
     // Obj - a simple Wavefront OBJ file loader
     // https://github.com/javagl/Obj
-    implementation 'de.javagl:obj:0.2.1'
+    implementation 'de.javagl:obj:0.3.0'
 
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'com.google.android.material:material:1.1.0'
