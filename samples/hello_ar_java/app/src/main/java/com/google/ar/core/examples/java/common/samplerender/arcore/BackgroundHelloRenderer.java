@@ -36,8 +36,8 @@ import java.util.HashMap;
  * background can be rendered as either camera image data or camera depth data. The virtual scene
  * can be composited with or without depth occlusion.
  */
-public class BackgroundRenderer {
-  private static final String TAG = BackgroundRenderer.class.getSimpleName();
+public class BackgroundHelloRenderer {
+  private static final String TAG = BackgroundHelloRenderer.class.getSimpleName();
 
   // components_per_vertex * number_of_vertices * float_size
   private static final int COORDS_BUFFER_SIZE = 2 * 4 * 4;
@@ -78,7 +78,7 @@ public class BackgroundRenderer {
    * during a {@link SampleRender.Renderer} callback, typically in {@link
    * SampleRender.Renderer#onSurfaceCreated()}.
    */
-  public BackgroundRenderer(SampleRender render) {
+  public BackgroundHelloRenderer(SampleRender render) {
     cameraColorTexture =
         new Texture(
             render,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Google LLC
+ * Copyright 2020 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,24 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.ar.core.examples.java.common.rendering;
+package com.google.ar.core.examples.java.common.samplerender.arcore;
 
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.opengl.GLES20;
-import android.opengl.GLSurfaceView;
-import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import com.google.ar.core.Camera;
 import com.google.ar.core.Plane;
 import com.google.ar.core.Pose;
 import com.google.ar.core.TrackingState;
+import com.google.ar.core.examples.java.common.samplerender.IndexBuffer;
+import com.google.ar.core.examples.java.common.samplerender.Mesh;
+import com.google.ar.core.examples.java.common.samplerender.SampleRender;
+import com.google.ar.core.examples.java.common.samplerender.Shader;
+import com.google.ar.core.examples.java.common.samplerender.Shader.BlendFactor;
+import com.google.ar.core.examples.java.common.samplerender.Texture;
+import com.google.ar.core.examples.java.common.samplerender.VertexBuffer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
-import java.nio.ShortBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,15 +41,16 @@ import java.util.List;
 import java.util.Map;
 
 /** Renders the detected AR planes. */
-public class PlaneRenderer {
-  private static final String TAG = PlaneRenderer.class.getSimpleName();
+public class PlaneHelloRenderer {
+  private static final String TAG = PlaneHelloRenderer.class.getSimpleName();
 
   // Shader names.
   private static final String VERTEX_SHADER_NAME = "shaders/plane.vert";
   private static final String FRAGMENT_SHADER_NAME = "shaders/plane.frag";
+  private static final String TEXTURE_NAME = "models/trigrid.png";
 
   private static final int BYTES_PER_FLOAT = Float.SIZE / 8;
-  private static final int BYTES_PER_SHORT = Short.SIZE / 8;
+  private static final int BYTES_PER_INT = Integer.SIZE / 8;
   private static final int COORDS_PER_VERTEX = 3; // x, z, alpha
 
   private static final int VERTS_PER_BOUNDARY_VERT = 2;
@@ -59,7 +61,7 @@ public class PlaneRenderer {
       BYTES_PER_FLOAT * COORDS_PER_VERTEX * VERTS_PER_BOUNDARY_VERT * INITIAL_BUFFER_BOUNDARY_VERTS;
 
   private static final int INITIAL_INDEX_BUFFER_SIZE_BYTES =
-      BYTES_PER_SHORT
+      BYTES_PER_INT
           * INDICES_PER_BOUNDARY_VERT
           * INDICES_PER_BOUNDARY_VERT
           * INITIAL_BUFFER_BOUNDARY_VERTS;
@@ -75,87 +77,55 @@ public class PlaneRenderer {
   // occlusionShrink: occluded planes will fade out between alpha = 0 and 1/occlusionShrink
   private static final float[] GRID_CONTROL = {0.2f, 0.4f, 2.0f, 1.5f};
 
-  private int planeProgram;
-  private final int[] textures = new int[1];
-
-  private int planeXZPositionAlphaAttribute;
-
-  private int planeModelUniform;
-  private int planeNormalUniform;
-  private int planeModelViewProjectionUniform;
-  private int textureUniform;
-  private int gridControlUniform;
-  private int planeUvMatrixUniform;
+  private final Mesh mesh;
+  private final IndexBuffer indexBufferObject;
+  private final VertexBuffer vertexBufferObject;
+  private final Shader shader;
 
   private FloatBuffer vertexBuffer =
       ByteBuffer.allocateDirect(INITIAL_VERTEX_BUFFER_SIZE_BYTES)
           .order(ByteOrder.nativeOrder())
           .asFloatBuffer();
-  private ShortBuffer indexBuffer =
+  private IntBuffer indexBuffer =
       ByteBuffer.allocateDirect(INITIAL_INDEX_BUFFER_SIZE_BYTES)
           .order(ByteOrder.nativeOrder())
-          .asShortBuffer();
+          .asIntBuffer();
 
   // Temporary lists/matrices allocated here to reduce number of allocations for each frame.
+  private final float[] viewMatrix = new float[16];
   private final float[] modelMatrix = new float[16];
   private final float[] modelViewMatrix = new float[16];
   private final float[] modelViewProjectionMatrix = new float[16];
   private final float[] planeAngleUvMatrix =
       new float[4]; // 2x2 rotation matrix applied to uv coords.
+  private final float[] normalVector = new float[3];
 
   private final Map<Plane, Integer> planeIndexMap = new HashMap<>();
 
-  public PlaneRenderer() {}
-
   /**
-   * Allocates and initializes OpenGL resources needed by the plane renderer. Must be called on the
-   * OpenGL thread, typically in {@link GLSurfaceView.Renderer#onSurfaceCreated(GL10, EGLConfig)}.
-   *
-   * @param context Needed to access shader source and texture PNG.
-   * @param gridDistanceTextureName Name of the PNG file containing the grid texture.
+   * Allocates and initializes OpenGL resources needed by the plane renderer. Must be called during
+   * a {@link SampleRender.Renderer} callback, typically in {@link
+   * SampleRender.Renderer#onSurfaceCreated}.
    */
-  public void createOnGlThread(Context context, String gridDistanceTextureName) throws IOException {
-    int vertexShader =
-        ShaderUtil.loadGLShader(TAG, context, GLES20.GL_VERTEX_SHADER, VERTEX_SHADER_NAME);
-    int passthroughShader =
-        ShaderUtil.loadGLShader(TAG, context, GLES20.GL_FRAGMENT_SHADER, FRAGMENT_SHADER_NAME);
+  public PlaneHelloRenderer(SampleRender render) throws IOException {
+    Texture texture =
+        Texture.createFromAsset(
+            render, TEXTURE_NAME, Texture.WrapMode.REPEAT, Texture.ColorFormat.LINEAR);
+    shader =
+        Shader.createFromAssets(render, VERTEX_SHADER_NAME, FRAGMENT_SHADER_NAME, /*defines=*/ null)
+            .setTexture("u_Texture", texture)
+            .setVec4("u_GridControl", GRID_CONTROL)
+            .setBlend(
+                BlendFactor.DST_ALPHA, // RGB (src)
+                BlendFactor.ONE, // RGB (dest)
+                BlendFactor.ZERO, // ALPHA (src)
+                BlendFactor.ONE_MINUS_SRC_ALPHA) // ALPHA (dest)
+            .setDepthWrite(false);
 
-    planeProgram = GLES20.glCreateProgram();
-    GLES20.glAttachShader(planeProgram, vertexShader);
-    GLES20.glAttachShader(planeProgram, passthroughShader);
-    GLES20.glLinkProgram(planeProgram);
-    GLES20.glUseProgram(planeProgram);
-
-    ShaderUtil.checkGLError(TAG, "Program creation");
-
-    // Read the texture.
-    Bitmap textureBitmap =
-        BitmapFactory.decodeStream(context.getAssets().open(gridDistanceTextureName));
-
-    GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-    GLES20.glGenTextures(textures.length, textures, 0);
-    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
-
-    GLES20.glTexParameteri(
-        GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR_MIPMAP_LINEAR);
-    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-    GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, textureBitmap, 0);
-    GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
-    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
-
-    ShaderUtil.checkGLError(TAG, "Texture loading");
-
-    planeXZPositionAlphaAttribute = GLES20.glGetAttribLocation(planeProgram, "a_XZPositionAlpha");
-
-    planeModelUniform = GLES20.glGetUniformLocation(planeProgram, "u_Model");
-    planeNormalUniform = GLES20.glGetUniformLocation(planeProgram, "u_Normal");
-    planeModelViewProjectionUniform =
-        GLES20.glGetUniformLocation(planeProgram, "u_ModelViewProjection");
-    textureUniform = GLES20.glGetUniformLocation(planeProgram, "u_Texture");
-    gridControlUniform = GLES20.glGetUniformLocation(planeProgram, "u_gridControl");
-    planeUvMatrixUniform = GLES20.glGetUniformLocation(planeProgram, "u_PlaneUvMatrix");
-
-    ShaderUtil.checkGLError(TAG, "Program parameters");
+    indexBufferObject = new IndexBuffer(render, /*entries=*/ null);
+    vertexBufferObject = new VertexBuffer(render, COORDS_PER_VERTEX, /*entries=*/ null);
+    VertexBuffer[] vertexBuffers = {vertexBufferObject};
+    mesh = new Mesh(render, Mesh.PrimitiveMode.TRIANGLE_STRIP, indexBufferObject, vertexBuffers);
   }
 
   /** Updates the plane model transform matrix and extents. */
@@ -200,9 +170,9 @@ public class PlaneRenderer {
         size *= 2;
       }
       indexBuffer =
-          ByteBuffer.allocateDirect(BYTES_PER_SHORT * size)
+          ByteBuffer.allocateDirect(BYTES_PER_INT * size)
               .order(ByteOrder.nativeOrder())
-              .asShortBuffer();
+              .asIntBuffer();
     }
     indexBuffer.rewind();
     indexBuffer.limit(numIndices);
@@ -244,53 +214,16 @@ public class PlaneRenderer {
     }
   }
 
-  private void draw(float[] cameraView, float[] cameraPerspective, float[] planeNormal) {
-    // Build the ModelView and ModelViewProjection matrices
-    // for calculating cube position and light.
-    Matrix.multiplyMM(modelViewMatrix, 0, cameraView, 0, modelMatrix, 0);
-    Matrix.multiplyMM(modelViewProjectionMatrix, 0, cameraPerspective, 0, modelViewMatrix, 0);
-
-    // Set the position of the plane
-    vertexBuffer.rewind();
-    GLES20.glVertexAttribPointer(
-        planeXZPositionAlphaAttribute,
-        COORDS_PER_VERTEX,
-        GLES20.GL_FLOAT,
-        false,
-        BYTES_PER_FLOAT * COORDS_PER_VERTEX,
-        vertexBuffer);
-
-    // Set the Model and ModelViewProjection matrices in the shader.
-    GLES20.glUniformMatrix4fv(planeModelUniform, 1, false, modelMatrix, 0);
-    GLES20.glUniform3f(planeNormalUniform, planeNormal[0], planeNormal[1], planeNormal[2]);
-    GLES20.glUniformMatrix4fv(
-        planeModelViewProjectionUniform, 1, false, modelViewProjectionMatrix, 0);
-
-    indexBuffer.rewind();
-    GLES20.glDrawElements(
-        GLES20.GL_TRIANGLE_STRIP, indexBuffer.limit(), GLES20.GL_UNSIGNED_SHORT, indexBuffer);
-    ShaderUtil.checkGLError(TAG, "Drawing plane");
-  }
-
-  static class SortablePlane {
-    final float distance;
-    final Plane plane;
-
-    SortablePlane(float distance, Plane plane) {
-      this.distance = distance;
-      this.plane = plane;
-    }
-  }
-
   /**
    * Draws the collection of tracked planes, with closer planes hiding more distant ones.
    *
    * @param allPlanes The collection of planes to draw.
    * @param cameraPose The pose of the camera, as returned by {@link Camera#getPose()}
-   * @param cameraPerspective The projection matrix, as returned by {@link
+   * @param cameraProjection The projection matrix, as returned by {@link
    *     Camera#getProjectionMatrix(float[], int, float, float)}
    */
-  public void drawPlanes(Collection<Plane> allPlanes, Pose cameraPose, float[] cameraPerspective) {
+  public void drawPlanes(
+      SampleRender render, Collection<Plane> allPlanes, Pose cameraPose, float[] cameraProjection) {
     // Planes must be sorted by distance from camera so that we draw closer planes first, and
     // they occlude the farther planes.
     List<SortablePlane> sortedPlanes = new ArrayList<>();
@@ -315,40 +248,15 @@ public class PlaneRenderer {
           }
         });
 
-    float[] cameraView = new float[16];
-    cameraPose.inverse().toMatrix(cameraView, 0);
-
-    // Disable depth write.
-    GLES20.glDepthMask(false);
-
-    // Normal alpha blending with premultiplied alpha.
-    GLES20.glEnable(GLES20.GL_BLEND);
-    GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
-
-    // Set up the shader.
-    GLES20.glUseProgram(planeProgram);
-
-    // Attach the texture.
-    GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
-    GLES20.glUniform1i(textureUniform, 0);
-
-    // Shared fragment uniforms.
-    GLES20.glUniform4fv(gridControlUniform, 1, GRID_CONTROL, 0);
-
-    // Enable vertex arrays
-    GLES20.glEnableVertexAttribArray(planeXZPositionAlphaAttribute);
-
-    ShaderUtil.checkGLError(TAG, "Setting up to draw planes");
+    cameraPose.inverse().toMatrix(viewMatrix, 0);
 
     for (SortablePlane sortedPlane : sortedPlanes) {
       Plane plane = sortedPlane.plane;
       float[] planeMatrix = new float[16];
       plane.getCenterPose().toMatrix(planeMatrix, 0);
 
-      float[] normal = new float[3];
       // Get transformed Y axis of plane's coordinate system.
-      plane.getCenterPose().getTransformedAxis(1, 1.0f, normal, 0);
+      plane.getCenterPose().getTransformedAxis(1, 1.0f, normalVector, 0);
 
       updatePlaneParameters(
           planeMatrix, plane.getExtentX(), plane.getExtentZ(), plane.getPolygon());
@@ -369,18 +277,34 @@ public class PlaneRenderer {
       planeAngleUvMatrix[1] = -(float) Math.sin(angleRadians) * vScale;
       planeAngleUvMatrix[2] = +(float) Math.sin(angleRadians) * uScale;
       planeAngleUvMatrix[3] = +(float) Math.cos(angleRadians) * vScale;
-      GLES20.glUniformMatrix2fv(planeUvMatrixUniform, 1, false, planeAngleUvMatrix, 0);
 
-      draw(cameraView, cameraPerspective, normal);
+      // Build the ModelView and ModelViewProjection matrices
+      // for calculating cube position and light.
+      Matrix.multiplyMM(modelViewMatrix, 0, viewMatrix, 0, modelMatrix, 0);
+      Matrix.multiplyMM(modelViewProjectionMatrix, 0, cameraProjection, 0, modelViewMatrix, 0);
+
+      // Populate the shader uniforms for this frame.
+      shader.setMat4("u_Model", modelMatrix);
+      shader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
+      shader.setMat2("u_PlaneUvMatrix", planeAngleUvMatrix);
+      shader.setVec3("u_Normal", normalVector);
+
+      // Set the position of the plane
+      vertexBufferObject.set(vertexBuffer);
+      indexBufferObject.set(indexBuffer);
+
+      render.draw(mesh, shader);
     }
+  }
 
-    // Clean up the state we set
-    GLES20.glDisableVertexAttribArray(planeXZPositionAlphaAttribute);
-    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
-    GLES20.glDisable(GLES20.GL_BLEND);
-    GLES20.glDepthMask(true);
+  private static class SortablePlane {
+    final float distance;
+    final Plane plane;
 
-    ShaderUtil.checkGLError(TAG, "Cleaning up after drawing planes");
+    SortablePlane(float distance, Plane plane) {
+      this.distance = distance;
+      this.plane = plane;
+    }
   }
 
   // Calculate the normal distance to plane from cameraPose, the given planePose should have y axis
