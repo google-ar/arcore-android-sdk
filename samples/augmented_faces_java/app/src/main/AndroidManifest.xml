@@ -38,10 +38,6 @@
         android:exported="true"
         android:theme="@style/Theme.AppCompat.NoActionBar"
         android:screenOrientation="locked">
-      <intent-filter>
-        <action android:name="android.intent.action.MAIN"/>
-        <category android:name="android.intent.category.LAUNCHER"/>
-      </intent-filter>
     </activity>
     <!-- Indicates whether "Google Play Services for AR" (ARCore) is "required" or "optional". -->
     <meta-data android:name="com.google.ar.core" android:value="required" />
