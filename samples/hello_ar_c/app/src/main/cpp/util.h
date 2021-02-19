@@ -50,6 +50,15 @@
   }
 #endif  // CHECK
 
+#ifndef CHECKANDTHROW
+#define CHECKANDTHROW(condition, env, msg, ...)                            \
+  if (!(condition)) {                                                      \
+    LOGE("*** CHECK FAILED at %s:%d: %s", __FILE__, __LINE__, #condition); \
+    util::ThrowJavaException(env, msg);                                    \
+    return ##__VA_ARGS__;                                                  \
+  }
+#endif  // CHECKANDTHROW
+
 namespace hello_ar {
 
 // Utilities for C hello AR project.
@@ -76,6 +85,12 @@ class ScopedArPose {
 //
 // @param operation, the name of the GL function call.
 void CheckGlError(const char* operation);
+
+// Throw a Java exception.
+//
+// @param env, the JNIEnv.
+// @param msg, the message of this exception.
+void ThrowJavaException(JNIEnv* env, const char* msg);
 
 // Create a shader program ID.
 //

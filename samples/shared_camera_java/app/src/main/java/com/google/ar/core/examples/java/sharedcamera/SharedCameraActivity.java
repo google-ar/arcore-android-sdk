@@ -154,6 +154,11 @@ public class SharedCameraActivity extends AppCompatActivity
   // Whether the GL surface has been created.
   private boolean surfaceCreated;
 
+  /**
+   * Whether an error was thrown during session creation.
+   */
+  private boolean errorCreatingSession = false;
+
   // Camera preview capture request builder
   private CaptureRequest.Builder previewCaptureRequestBuilder;
 
@@ -578,10 +583,15 @@ public class SharedCameraActivity extends AppCompatActivity
       try {
         // Create ARCore session that supports camera sharing.
         sharedSession = new Session(this, EnumSet.of(Session.Feature.SHARED_CAMERA));
-      } catch (UnavailableException e) {
+      } catch (Exception e) {
+        errorCreatingSession = true;
+        messageSnackbarHelper.showError(
+            this, "Failed to create ARCore session that supports camera sharing");
         Log.e(TAG, "Failed to create ARCore session that supports camera sharing", e);
         return;
       }
+
+      errorCreatingSession = false;
 
       // Enable auto focus mode while ARCore is running.
       Config config = sharedSession.getConfig();
@@ -853,6 +863,11 @@ public class SharedCameraActivity extends AppCompatActivity
   public void onDrawFrameARCore() throws CameraNotAvailableException {
     if (!arcoreActive) {
       // ARCore not yet active, so nothing to draw yet.
+      return;
+    }
+
+    if (errorCreatingSession) {
+      // Session not created, so nothing to draw.
       return;
     }
 

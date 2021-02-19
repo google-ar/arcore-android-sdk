@@ -41,7 +41,7 @@ class CpuImageRenderer {
 
   // Draws the pass through camera image and CPU image.
   void Draw(const ArSession* session, const ArFrame* frame,
-            const AImage* ndk_image, float screen_aspect_ratio,
+            const ArImage* image, float screen_aspect_ratio,
             int display_rotation, float splitter_pos);
 
   // Returns the generated texture name for the GL_TEXTURE_EXTERNAL_OES target.

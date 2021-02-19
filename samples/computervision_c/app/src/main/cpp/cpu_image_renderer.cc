@@ -35,53 +35,11 @@ constexpr int kTexCoordsPerVertex = 2;
 constexpr char kVertexShaderFilename[] = "shaders/cpu_image.vert";
 constexpr char kFragmentShaderFilename[] = "shaders/cpu_image.frag";
 
-bool GetNdkImageProperties(const AImage* ndk_image, int32_t* out_format,
-                           int32_t* out_width, int32_t* out_height,
-                           int32_t* out_plane_num, int32_t* out_stride) {
-  if (ndk_image == nullptr) {
-    return false;
-  }
-  media_status_t status = AImage_getFormat(ndk_image, out_format);
-  if (status != AMEDIA_OK) {
-    return false;
-  }
-
-  status = AImage_getWidth(ndk_image, out_width);
-  if (status != AMEDIA_OK) {
-    return false;
-  }
-
-  status = AImage_getHeight(ndk_image, out_height);
-  if (status != AMEDIA_OK) {
-    return false;
-  }
-
-  status = AImage_getNumberOfPlanes(ndk_image, out_plane_num);
-  if (status != AMEDIA_OK) {
-    return false;
-  }
-
-  status = AImage_getPlaneRowStride(ndk_image, 0, out_stride);
-  if (status != AMEDIA_OK) {
-    return false;
-  }
-
-  return true;
-}
-
-bool DetectEdge(const AImage* ndk_image, int32_t width, int32_t height,
-                int32_t stride, uint8_t* output_pixels) {
-  if (ndk_image == nullptr || output_pixels == nullptr) {
-    return false;
-  }
-
-  uint8_t* input_pixels = nullptr;
-  int length = 0;
-  media_status_t status =
-      AImage_getPlaneData(ndk_image, 0, &input_pixels, &length);
-  if (status != AMEDIA_OK) {
-    return false;
-  }
+void DetectEdge(const ArSession* session, const ArImage* image, int32_t width,
+                int32_t height, int32_t stride, uint8_t* output_pixels) {
+  const uint8_t* input_pixels = nullptr;
+  int32_t length = 0;
+  ArImage_getPlaneData(session, image, 0, &input_pixels, &length);
 
   // Detect edges.
   for (int j = 1; j < height - 1; j++) {
@@ -118,7 +76,6 @@ bool DetectEdge(const AImage* ndk_image, int32_t width, int32_t height,
       }
     }
   }
-  return true;
 }
 
 }  // namespace
@@ -159,31 +116,35 @@ void CpuImageRenderer::InitializeGlContent(AAssetManager* asset_manager) {
 }
 
 void CpuImageRenderer::Draw(const ArSession* session, const ArFrame* frame,
-                            const AImage* ndk_image, float screen_aspect_ratio,
+                            const ArImage* image, float screen_aspect_ratio,
                             int display_rotation, float splitter_pos) {
-  // Try to get the NDK image and get the post-processed edge detection image.
-  int32_t format = 0, width = 0, height = 0, num_plane = 0, stride = 0;
+  // Try to get the ar image and get the post-processed edge detection image.
+  ArImageFormat format;
+  int32_t width = 0, height = 0, num_plane = 0, stride = 0;
   bool is_valid_cpu_image = false;
   // No need to compute edge detection as it is not being displayed if the
   // splitter position is one.
-  if ((ndk_image != nullptr) && (splitter_pos < 1.0)) {
-    if (GetNdkImageProperties(ndk_image, &format, &width, &height, &num_plane,
-                              &stride)) {
-      if (format == AIMAGE_FORMAT_YUV_420_888) {
-        if (width > 0 || height > 0 || num_plane > 0 || stride > 0) {
-          if (processed_image_bytes_grayscale_ == nullptr ||
-              stride * height > cpu_image_buffer_size_) {
-            cpu_image_buffer_size_ = stride * height;
-            processed_image_bytes_grayscale_ =
-                std::unique_ptr<uint8_t[]>(new uint8_t[cpu_image_buffer_size_]);
-          }
-          DetectEdge(ndk_image, width, height, stride,
-                     processed_image_bytes_grayscale_.get());
-          is_valid_cpu_image = true;
+  if ((image != nullptr) && (splitter_pos < 1.0)) {
+    ArImage_getFormat(session, image, &format);
+    ArImage_getWidth(session, image, &width);
+    ArImage_getHeight(session, image, &height);
+    ArImage_getNumberOfPlanes(session, image, &num_plane);
+    ArImage_getPlaneRowStride(session, image, 0, &stride);
+
+    if (format == AR_IMAGE_FORMAT_YUV_420_888) {
+      if (width > 0 || height > 0 || num_plane > 0 || stride > 0) {
+        if (processed_image_bytes_grayscale_ == nullptr ||
+            stride * height > cpu_image_buffer_size_) {
+          cpu_image_buffer_size_ = stride * height;
+          processed_image_bytes_grayscale_ =
+              std::unique_ptr<uint8_t[]>(new uint8_t[cpu_image_buffer_size_]);
         }
-      } else {
-        LOGE("Expected image in YUV_420_888 format.");
+        DetectEdge(session, image, width, height, stride,
+                   processed_image_bytes_grayscale_.get());
+        is_valid_cpu_image = true;
       }
+    } else {
+      LOGE("Expected image in YUV_420_888 format.");
     }
   }
 

@@ -26,6 +26,8 @@ import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.AugmentedFace;
 import com.google.ar.core.AugmentedFace.RegionType;
 import com.google.ar.core.Camera;
+import com.google.ar.core.CameraConfig;
+import com.google.ar.core.CameraConfigFilter;
 import com.google.ar.core.Config;
 import com.google.ar.core.Config.AugmentedFaceMode;
 import com.google.ar.core.Frame;
@@ -47,6 +49,7 @@ import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationExceptio
 import java.io.IOException;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.List;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -134,10 +137,19 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
           return;
         }
 
-        // Configure session to use front facing camera.
-        EnumSet<Session.Feature> featureSet = EnumSet.of(Session.Feature.FRONT_CAMERA);
-        // Create the session.
-        session = new Session(/* context= */ this, featureSet);
+        // Create the session and configure it to use a front-facing (selfie) camera.
+        session = new Session(/* context= */ this, EnumSet.noneOf(Session.Feature.class));
+        CameraConfigFilter cameraConfigFilter = new CameraConfigFilter(session);
+        cameraConfigFilter.setFacingDirection(CameraConfig.FacingDirection.FRONT);
+        List<CameraConfig> cameraConfigs = session.getSupportedCameraConfigs(cameraConfigFilter);
+        if (!cameraConfigs.isEmpty()) {
+          // Element 0 contains the camera config that best matches the session feature
+          // and filter settings.
+          session.setCameraConfig(cameraConfigs.get(0));
+        } else {
+          message = "This device does not have a front-facing (selfie) camera";
+          exception = new UnavailableDeviceNotCompatibleException(message);
+        }
         configureSession();
 
       } catch (UnavailableArcoreNotInstalledException
@@ -221,18 +233,13 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
       backgroundRenderer.createOnGlThread(/*context=*/ this);
       augmentedFaceRenderer.createOnGlThread(this, "models/freckles.png");
       augmentedFaceRenderer.setMaterialProperties(0.0f, 1.0f, 0.1f, 6.0f);
-      noseObject.createOnGlThread(
-          /*context=*/ this,
-          "models/nose.obj",
-          "models/nose_fur.png");
+      noseObject.createOnGlThread(/*context=*/ this, "models/nose.obj", "models/nose_fur.png");
       noseObject.setMaterialProperties(0.0f, 1.0f, 0.1f, 6.0f);
       noseObject.setBlendMode(ObjectRenderer.BlendMode.AlphaBlending);
-      rightEarObject.createOnGlThread(
-          this, "models/forehead_right.obj", "models/ear_fur.png");
+      rightEarObject.createOnGlThread(this, "models/forehead_right.obj", "models/ear_fur.png");
       rightEarObject.setMaterialProperties(0.0f, 1.0f, 0.1f, 6.0f);
       rightEarObject.setBlendMode(ObjectRenderer.BlendMode.AlphaBlending);
-      leftEarObject.createOnGlThread(
-          this, "models/forehead_left.obj", "models/ear_fur.png");
+      leftEarObject.createOnGlThread(this, "models/forehead_left.obj", "models/ear_fur.png");
       leftEarObject.setMaterialProperties(0.0f, 1.0f, 0.1f, 6.0f);
       leftEarObject.setBlendMode(ObjectRenderer.BlendMode.AlphaBlending);
 

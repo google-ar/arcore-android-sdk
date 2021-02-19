@@ -620,7 +620,7 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
     }
   }
 
-  /** Adds a new anchor to the set of of resolved anchors. */
+  /** Adds a new anchor to the set of resolved anchors. */
   private void setAnchorAsResolved(Anchor newAnchor) {
     synchronized (anchorLock) {
       if (unresolvedAnchorIds.contains(newAnchor.getCloudAnchorId())) {

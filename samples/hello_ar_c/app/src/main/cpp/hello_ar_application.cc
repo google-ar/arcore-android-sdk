@@ -32,7 +32,7 @@ const glm::vec3 kWhite = {255, 255, 255};
 
 // Assumed distance from the device camera to the surface on which user will
 // try to place objects. This value affects the apparent scale of objects
-// while the tracking method of the the Instant Placement point is
+// while the tracking method of the Instant Placement point is
 // SCREENSPACE_WITH_APPROXIMATE_DISTANCE. Values in the [0.2, 2.0] meter
 // range are a good choice for most AR experiences. Use lower values for AR
 // experiences where users are expected to place objects on surfaces close
@@ -67,7 +67,7 @@ void HelloArApplication::OnPause() {
   }
 }
 
-void HelloArApplication::OnResume(void* env, void* context, void* activity) {
+void HelloArApplication::OnResume(JNIEnv* env, void* context, void* activity) {
   LOGI("OnResume()");
 
   if (ar_session_ == nullptr) {
@@ -81,8 +81,10 @@ void HelloArApplication::OnResume(void* env, void* context, void* activity) {
     // This method can and will fail in user-facing situations.  Your
     // application must handle these cases at least somewhat gracefully.  See
     // HelloAR Java sample code for reasonable behavior.
-    CHECK(ArCoreApk_requestInstall(env, activity, user_requested_install,
-                                   &install_status) == AR_SUCCESS);
+    CHECKANDTHROW(
+        ArCoreApk_requestInstall(env, activity, user_requested_install,
+                                 &install_status) == AR_SUCCESS,
+        env, "Please install Google Play Services for AR (ARCore).");
 
     switch (install_status) {
       case AR_INSTALL_STATUS_INSTALLED:
@@ -96,19 +98,18 @@ void HelloArApplication::OnResume(void* env, void* context, void* activity) {
     // This method can and will fail in user-facing situations.  Your
     // application must handle these cases at least somewhat gracefully.  See
     // HelloAR Java sample code for reasonable behavior.
-    CHECK(ArSession_create(env, context, &ar_session_) == AR_SUCCESS);
-    CHECK(ar_session_);
+    CHECKANDTHROW(ArSession_create(env, context, &ar_session_) == AR_SUCCESS,
+                  env, "Failed to create AR session.");
 
     ConfigureSession();
     ArFrame_create(ar_session_, &ar_frame_);
-    CHECK(ar_frame_);
 
     ArSession_setDisplayGeometry(ar_session_, display_rotation_, width_,
                                  height_);
   }
 
   const ArStatus status = ArSession_resume(ar_session_);
-  CHECK(status == AR_SUCCESS);
+  CHECKANDTHROW(status == AR_SUCCESS, env, "Failed to resume AR session.");
 }
 
 void HelloArApplication::OnSurfaceCreated() {

@@ -35,6 +35,12 @@ void CheckGlError(const char* operation) {
   }
 }
 
+void ThrowJavaException(JNIEnv* env, const char* msg) {
+  LOGE("Throw Java exception: %s", msg);
+  jclass c = env->FindClass("java/lang/RuntimeException");
+  env->ThrowNew(c, msg);
+}
+
 // Convenience function used in CreateProgram below.
 static GLuint LoadShader(GLenum shader_type, const char* shader_source) {
   GLuint shader = glCreateShader(shader_type);
@@ -174,7 +180,7 @@ bool LoadTextFileFromAssetManager(const char* file_name,
 bool LoadPngFromAssetManager(int target, const std::string& path) {
   JNIEnv* env = GetJniEnv();
 
-  // Put all the JNI values in a structure that is statically initalized on the
+  // Put all the JNI values in a structure that is statically initialized on the
   // first call to this method.  This makes it thread safe in the unlikely case
   // of multiple threads calling this method.
   static struct JNIData {
@@ -276,7 +282,7 @@ bool LoadObjFile(const std::string& file_name, AAssetManager* asset_manager,
       int matches = sscanf(line_header, "v %f %f %f\n", &vertex[0], &vertex[1],
                            &vertex[2]);
       if (matches != 3) {
-        LOGE("Format of 'v float float float' required for each vertice line");
+        LOGE("Format of 'v float float float' required for each vertex line");
         return false;
       }
 

@@ -131,7 +131,7 @@ void PlaneRenderer::UpdateForPlane(const ArSession& ar_session,
                      glm::value_ptr(raw_vertices.front()));
 
   // Fill vertex 0 to 3. Note that the vertex.xy are used for x and z
-  // position. vertex.z is used for alpha. The outter polygon's alpha
+  // position. vertex.z is used for alpha. The outer polygon's alpha
   // is 0.
   for (int32_t i = 0; i < vertices_size; ++i) {
     vertices_.push_back(glm::vec3(raw_vertices[i].x, raw_vertices[i].y, 0.0f));

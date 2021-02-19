@@ -66,7 +66,7 @@ public class HelloArActivity extends AppCompatActivity
   private long nativeApplication;
   private GestureDetector gestureDetector;
 
-  private Snackbar loadingMessageSnackbar;
+  private Snackbar snackbar;
   private Handler planeStatusCheckingHandler;
   private final Runnable planeStatusCheckingRunnable =
       new Runnable() {
@@ -75,10 +75,10 @@ public class HelloArActivity extends AppCompatActivity
           // The runnable is executed on main UI thread.
           try {
             if (JniInterface.hasDetectedPlanes(nativeApplication)) {
-              if (loadingMessageSnackbar != null) {
-                loadingMessageSnackbar.dismiss();
+              if (snackbar != null) {
+                snackbar.dismiss();
               }
-              loadingMessageSnackbar = null;
+              snackbar = null;
             } else {
               planeStatusCheckingHandler.postDelayed(
                   planeStatusCheckingRunnable, SNACKBAR_UPDATE_INTERVAL_MILLIS);
@@ -170,19 +170,18 @@ public class HelloArActivity extends AppCompatActivity
       return;
     }
 
-    JniInterface.onSettingsChange(
+    try {
+      JniInterface.onSettingsChange(
         nativeApplication, instantPlacementSettings.isInstantPlacementEnabled());
-    JniInterface.onResume(nativeApplication, getApplicationContext(), this);
-    surfaceView.onResume();
+      JniInterface.onResume(nativeApplication, getApplicationContext(), this);
+      surfaceView.onResume();
+    } catch (Exception e) {
+      Log.e(TAG, "Exception creating session", e);
+      displayInSnackbar(e.getMessage());
+      return;
+    }
 
-    loadingMessageSnackbar =
-        Snackbar.make(
-            HelloArActivity.this.findViewById(android.R.id.content),
-            "Searching for surfaces...",
-            Snackbar.LENGTH_INDEFINITE);
-    // Set the snackbar background to light transparent black color.
-    loadingMessageSnackbar.getView().setBackgroundColor(0xbf323232);
-    loadingMessageSnackbar.show();
+    displayInSnackbar("Searching for surfaces...");
     planeStatusCheckingHandler.postDelayed(
         planeStatusCheckingRunnable, SNACKBAR_UPDATE_INTERVAL_MILLIS);
 
@@ -276,6 +275,20 @@ public class HelloArActivity extends AppCompatActivity
       }
       finish();
     }
+  }
+
+  /**
+   * Display the message in the snackbar.
+   */
+  private void displayInSnackbar(String message) {
+    snackbar =
+        Snackbar.make(
+            HelloArActivity.this.findViewById(android.R.id.content),
+            message, Snackbar.LENGTH_INDEFINITE);
+
+    // Set the snackbar background to light transparent black color.
+    snackbar.getView().setBackgroundColor(0xbf323232);
+    snackbar.show();
   }
 
   /**

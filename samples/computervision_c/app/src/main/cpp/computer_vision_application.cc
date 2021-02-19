@@ -15,7 +15,6 @@
  */
 
 #include "computer_vision_application.h"
-#include <media/NdkImage.h>
 #include <array>
 #include <cmath>
 #include <iomanip>
@@ -166,21 +165,17 @@ void ComputerVisionApplication::OnDrawFrame(float split_position) {
   // released before session.resume() is called.
   std::lock_guard<std::mutex> lock(frame_image_in_use_mutex_);
 
-  ArImage* ar_image = nullptr;
-  const AImage* ndk_image = nullptr;
-  ArStatus status =
-      ArFrame_acquireCameraImage(ar_session_, ar_frame_, &ar_image);
-  if (status == AR_SUCCESS) {
-    ArImage_getNdkImage(ar_image, &ndk_image);
-  } else {
+  ArImage* image = nullptr;
+  ArStatus status = ArFrame_acquireCameraImage(ar_session_, ar_frame_, &image);
+  if (status != AR_SUCCESS) {
     LOGW(
         "ComputerVisionApplication::OnDrawFrame acquire camera image not "
         "ready.");
   }
 
-  cpu_image_renderer_.Draw(ar_session_, ar_frame_, ndk_image, aspect_ratio_,
+  cpu_image_renderer_.Draw(ar_session_, ar_frame_, image, aspect_ratio_,
                            camera_to_display_rotation_, split_position);
-  ArImage_release(ar_image);
+  ArImage_release(image);
 }
 
 std::string ComputerVisionApplication::getCameraConfigLabel(

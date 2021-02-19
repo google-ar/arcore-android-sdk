@@ -41,7 +41,7 @@ public class FrameTimeHelper implements DefaultLifecycleObserver {
     smoothedFrameTime = 0f;
   }
 
-  /** Capture current frame timestamp and calcuate smoothed frame-to-frame time. */
+  /** Capture current frame timestamp and calculate smoothed frame-to-frame time. */
   public void nextFrame() {
     long now = System.currentTimeMillis();
 

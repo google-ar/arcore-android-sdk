@@ -49,7 +49,7 @@ class HelloArApplication {
   void OnPause();
 
   // OnResume is called on the UI thread from the Activity's onResume method.
-  void OnResume(void* env, void* context, void* activity);
+  void OnResume(JNIEnv* env, void* context, void* activity);
 
   // OnSurfaceCreated is called on the OpenGL thread when GLSurfaceView
   // is created.
