@@ -38,7 +38,8 @@ android {
             keyAlias System.getenv("ALIAS_NAME")
             keyPassword System.getenv("ALIAS_PASS")
         }
-        debug {
+        debugCI {
+            storeFile file('./debug.keystore')
             storePassword "android"
             keyPassword "android"
             keyAlias "androiddebugkey"
@@ -67,10 +68,9 @@ android {
         }
         debug {
             if (System.getenv("CI") == "true") { // Github action
-                signingConfig signingConfigs.release
-            } else {
-                signingConfig signingConfigs.debug
+                signingConfig signingConfigs.debugCI
             }
+
             applicationIdSuffix ".debug"
             versionNameSuffix ".debug"
         }
