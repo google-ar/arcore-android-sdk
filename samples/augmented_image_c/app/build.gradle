@@ -32,10 +32,6 @@ android {
             abiFilters "arm64-v8a", "armeabi-v7a", "x86"
         }
     }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
     buildTypes {
         release {
             minifyEnabled false
