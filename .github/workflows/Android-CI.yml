@@ -1,6 +1,6 @@
 name: PullRequest
 
-on: [pull_request]
+on: [ pull_request ]
 
 jobs:
   buildRelease:
@@ -8,7 +8,7 @@ jobs:
     runs-on: macOS-latest
     strategy:
       matrix:
-        java_version: [1.8]
+        java_version: [ 8 ]
     steps:
       - name: Checkout
         uses: actions/checkout@v2.3.1
@@ -17,9 +17,10 @@ jobs:
       - name: Install JDK ${{ matrix.java_version }}
         uses: actions/setup-java@v2
         with:
+          distribution: "adopt"
           java-version: ${{ matrix.java_version }}
       - name: Install Android SDK
-        uses: malinskiy/action-android/install-sdk@release/0.1.1
+        uses: malinskiy/action-android/install-sdk@release/0.1.2
       - name: Decrypt keystore
         run: ./signing/decrypt.sh
         env:
@@ -38,7 +39,7 @@ jobs:
     runs-on: macOS-latest
     strategy:
       matrix:
-        java_version: [1.8]
+        java_version: [ 8 ]
     steps:
       - name: Checkout
         uses: actions/checkout@v2.3.1
@@ -47,9 +48,10 @@ jobs:
       - name: Install JDK ${{ matrix.java_version }}
         uses: actions/setup-java@v2
         with:
+          distribution: "adopt"
           java-version: ${{ matrix.java_version }}
       - name: Install Android SDK
-        uses: malinskiy/action-android/install-sdk@release/0.1.1
+        uses: malinskiy/action-android/install-sdk@release/0.1.2
       - name: Debug keystore
         run: keytool -genkey -v -keystore all-in-one-sample/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "C=US, O=Android, CN=Android Debug"
       - name: Build project
@@ -62,29 +64,29 @@ jobs:
         run: ./signing/cleanup.sh
       - name: Run tests
         run: ./gradlew test
-#      - name: Run instrumentation tests
-#        uses: malinskiy/action-android/emulator-run-cmd@release/0.1.1
-#        with:
-#          cmd: ./gradlew cAT
-#          api: 28
-#          tag: default
-#          abi: x86
-#      - name: Archive Espresso results
-#        uses: actions/upload-artifact@v2.0.1
-#        with:
-#          name: LiveEdgeDetection-Espresso-report
-#          path: app/build/reports/androidTests/connected
-#      - name: Save logcat output
-#        uses: actions/upload-artifact@master
-#        if: failure()
-#        with:
-#          name: LiveEdgeDetection-logcat
-#          path: artifacts/logcat.log
-#      - name: Archive screenshots
-#        uses: actions/upload-artifact@v2.2.2
-#        with:
-#          name: LiveEdgeDetection-Screenshots
-#          path: screenshots/adb
+  #      - name: Run instrumentation tests
+  #        uses: malinskiy/action-android/emulator-run-cmd@release/0.1.2
+  #        with:
+  #          cmd: ./gradlew cAT
+  #          api: 28
+  #          tag: default
+  #          abi: x86
+  #      - name: Archive Espresso results
+  #        uses: actions/upload-artifact@v2.0.1
+  #        with:
+  #          name: LiveEdgeDetection-Espresso-report
+  #          path: app/build/reports/androidTests/connected
+  #      - name: Save logcat output
+  #        uses: actions/upload-artifact@master
+  #        if: failure()
+  #        with:
+  #          name: LiveEdgeDetection-logcat
+  #          path: artifacts/logcat.log
+  #      - name: Archive screenshots
+  #        uses: actions/upload-artifact@v2.2.2
+  #        with:
+  #          name: LiveEdgeDetection-Screenshots
+  #          path: screenshots/adb
   Check:
     name: Check
     runs-on: macOS-latest
@@ -93,12 +95,13 @@ jobs:
         uses: actions/checkout@v2.3.1
         with:
           fetch-depth: 0
-      - name: Install JDK 1.8
+      - name: Install JDK 8
         uses: actions/setup-java@v2
         with:
-          java-version: 1.8
+          distribution: "adopt"
+          java-version: 8
       - name: Install Android SDK
-        uses: malinskiy/action-android/install-sdk@release/0.1.1
+        uses: malinskiy/action-android/install-sdk@release/0.1.2
       - name: Code checks
         run: ./gradlew check
       - name: Archive Lint report
