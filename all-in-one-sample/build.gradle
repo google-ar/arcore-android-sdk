@@ -23,7 +23,6 @@ android {
         versionCode getGitCommitCount()
         versionName setVersionName()
 
-        buildConfigField "String", 'GIT_USER', "\"" + getGitUser() + "\""
         buildConfigField "String", 'GIT_REPOSITORY', "\"" + getGitRepository() + "\""
     }
     compileOptions {
@@ -125,10 +124,6 @@ static def getGitOriginRemote() {
     return found.replace("origin", "").replace("(push)", "").replace(".git", "").trim()
 }
 
-static def getGitUser() {
-    def token = getGitOriginRemote().split("/")
-    return token[3]
-}
 
 static def getGitRepository() {
     def token = getGitOriginRemote().split("/")
