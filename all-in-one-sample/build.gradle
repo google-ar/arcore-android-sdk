@@ -86,7 +86,7 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
     implementation "androidx.preference:preference-ktx:1.1.1"
     implementation 'com.github.hannesa2:githubAppUpdate:1.3'
-    implementation 'com.github.AppDevNext.Logcat:LogcatCore:2.6.0'
+    implementation 'com.github.AppDevNext.Logcat:LogcatCore:2.8.0'
 
     implementation project(':samples:shared_camera_java:app')
     implementation project(':samples:persistent_cloud_anchor_java:app')
