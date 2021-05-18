@@ -1,0 +1,101 @@
+<!--
+   Copyright 2021 Google LLC
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.google.ar.core.examples.java.hellorecordingplayback.HelloRecordingPlaybackActivity">
+
+  <android.opengl.GLSurfaceView
+      android:id="@+id/surfaceview"
+      android:layout_width="fill_parent"
+      android:layout_height="fill_parent"
+      android:layout_gravity="top"/>
+
+  <LinearLayout
+      android:id="@+id/buttons_panel"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="horizontal"
+      android:padding="5dp"
+      android:baselineAligned="false">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center">
+
+      <Button
+          android:id="@+id/start_recording_button"
+          android:layout_width="match_parent"
+          android:layout_height="match_parent"
+          android:textStyle="bold"
+          android:text="@string/start_recording_button_text"
+          android:textColor="@android:color/holo_green_light"
+          android:textSize="18sp"/>
+
+      <Button
+          android:id="@+id/stop_recording_button"
+          android:layout_width="match_parent"
+          android:layout_height="match_parent"
+          android:visibility="invisible"
+          android:textStyle="bold"
+          android:text="@string/stop_recording_button_text"
+          android:textColor="@android:color/holo_red_dark"
+          android:textSize="18sp"/>
+
+    </FrameLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center">
+
+      <Button
+          android:id="@+id/playback_button"
+          android:layout_width="match_parent"
+          android:layout_height="match_parent"
+          android:text="@string/playback_button_text"
+          android:textSize="18sp"
+          android:textStyle="bold"
+          android:enabled="false"/>
+
+    </FrameLayout>
+
+  </LinearLayout>
+
+  <TextView
+      android:id="@+id/recording_playback_path"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:textSize="12sp"
+      android:padding="10dp"
+      android:layout_below="@id/buttons_panel"/>
+
+  <Button
+      android:id="@+id/close_playback_button"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:visibility="invisible"
+      android:drawableStart="@android:drawable/ic_menu_close_clear_cancel"
+      android:background="@android:color/transparent"
+      android:padding="10dp"
+      android:layout_alignParentEnd="true"/>
+
+
+</RelativeLayout>

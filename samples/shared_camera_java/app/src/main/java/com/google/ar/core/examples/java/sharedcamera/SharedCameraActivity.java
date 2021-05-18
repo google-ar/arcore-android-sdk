@@ -106,8 +106,8 @@ public class SharedCameraActivity extends AppCompatActivity
   // Whether the app is currently in AR mode. Initial value determines initial state.
   private boolean arMode = false;
 
-  // Whether the surface texture has been attached to the GL context.
-  boolean isGlAttached;
+  // Whether the app has just entered non-AR mode.
+  private final AtomicBoolean isFirstFrameWithoutArcore = new AtomicBoolean(true);
 
   // GL Surface used to draw camera preview image.
   private GLSurfaceView surfaceView;
@@ -476,6 +476,7 @@ public class SharedCameraActivity extends AppCompatActivity
     if (arcoreActive) {
       // Pause ARCore.
       sharedSession.pause();
+      isFirstFrameWithoutArcore.set(true);
       arcoreActive = false;
       updateSnackbarMessage();
     }
@@ -504,7 +505,6 @@ public class SharedCameraActivity extends AppCompatActivity
 
   private void createCameraPreviewSession() {
     try {
-      // Note that isGlAttached will be set to true in AR mode in onDrawFrame().
       sharedSession.setCameraTextureName(backgroundRenderer.getTextureId());
       sharedCamera.getSurfaceTexture().setOnFrameAvailableListener(this);
 
@@ -835,10 +835,15 @@ public class SharedCameraActivity extends AppCompatActivity
   public void onDrawFrameCamera2() {
     SurfaceTexture texture = sharedCamera.getSurfaceTexture();
 
-    // Ensure the surface is attached to the GL context.
-    if (!isGlAttached) {
+    // ARCore may attach the SurfaceTexture to a different texture from the camera texture, so we
+    // need to manually reattach it to our desired texture.
+    if (isFirstFrameWithoutArcore.getAndSet(false)) {
+      try {
+        texture.detachFromGLContext();
+      } catch (RuntimeException e) {
+        // Ignore if fails, it may not be attached yet.
+      }
       texture.attachToGLContext(backgroundRenderer.getTextureId());
-      isGlAttached = true;
     }
 
     // Update the surface.
@@ -874,10 +879,6 @@ public class SharedCameraActivity extends AppCompatActivity
     // Perform ARCore per-frame update.
     Frame frame = sharedSession.update();
     Camera camera = frame.getCamera();
-
-    // ARCore attached the surface to GL context using the texture ID we provided
-    // in createCameraPreviewSession() via sharedSession.setCameraTextureName(…).
-    isGlAttached = true;
 
     // Handle screen tap.
     handleTap(frame, camera);

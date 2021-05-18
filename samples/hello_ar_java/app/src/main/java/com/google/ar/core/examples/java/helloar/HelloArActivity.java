@@ -37,6 +37,7 @@ import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
 import com.google.ar.core.Config;
 import com.google.ar.core.Config.InstantPlacementMode;
+import com.google.ar.core.DepthPoint;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.InstantPlacementPoint;
@@ -606,13 +607,15 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         // If any plane, Oriented Point, or Instant Placement Point was hit, create an anchor.
         Trackable trackable = hit.getTrackable();
         // If a plane was hit, check that it was hit inside the plane polygon.
+        // DepthPoints are only returned if Config.DepthMode is set to AUTOMATIC.
         if ((trackable instanceof Plane
                 && ((Plane) trackable).isPoseInPolygon(hit.getHitPose())
                 && (PlaneRenderer.calculateDistanceToPlane(hit.getHitPose(), camera.getPose()) > 0))
             || (trackable instanceof Point
                 && ((Point) trackable).getOrientationMode()
                     == OrientationMode.ESTIMATED_SURFACE_NORMAL)
-            || (trackable instanceof InstantPlacementPoint)) {
+            || (trackable instanceof InstantPlacementPoint)
+            || (trackable instanceof DepthPoint)) {
           // Cap the number of objects created. This avoids overloading both the
           // rendering system and ARCore.
           if (anchors.size() >= 20) {

@@ -156,6 +156,9 @@
 /// <a href="https://developers.google.com/ar/discover/supported-devices">ARCore
 /// supported device</a>.
 
+/// @defgroup ArDepthPoint ArDepthPoint
+/// Hit Depth API
+
 /// @defgroup ArFrame ArFrame
 /// Per-frame state.
 
@@ -231,6 +234,12 @@
 /// @defgroup ArRecordingConfig ArRecordingConfig
 /// Session recording management.
 
+/// @defgroup ArTrack ArTrack
+/// External data recording.
+
+/// @defgroup ArTrackData ArTrackData
+/// External data track, used by Recording and Playback API.
+
 /// @defgroup ArSession ArSession
 /// Session management.
 
@@ -288,6 +297,15 @@ typedef struct ArCameraConfigFilter_ ArCameraConfigFilter;
 /// - Create with: @c ::ArRecordingConfig_create
 /// - Release with: @c ::ArRecordingConfig_destroy
 typedef struct ArRecordingConfig_ ArRecordingConfig;
+
+/// @ingroup ArTrack
+/// A track recording configuration struct of type data.
+///
+/// (@ref ownership "value type").
+///
+/// - Create with: @c ::ArTrack_create
+/// - Release with: @c ::ArTrack_destroy
+typedef struct ArTrack_ ArTrack;
 
 /// @ingroup ArSession
 /// The ARCore session (@ref ownership "value type").
@@ -387,6 +405,14 @@ typedef struct ArTrackable_ ArTrackable;
 /// - Release with: @c ::ArTrackableList_destroy
 typedef struct ArTrackableList_ ArTrackableList;
 
+/// @ingroup ArTrackData
+/// Data that has been recorded to an external track.
+typedef struct ArTrackData_ ArTrackData;
+
+/// @ingroup ArTrackData
+/// A list of @c ::ArTrackData
+typedef struct ArTrackDataList_ ArTrackDataList;
+
 // Planes.
 
 /// @ingroup ArPlane
@@ -404,6 +430,16 @@ typedef struct ArPlane_ ArPlane;
 /// - Trackable type: @c #AR_TRACKABLE_POINT
 /// - Release with: @c ::ArTrackable_release
 typedef struct ArPoint_ ArPoint;
+
+// Depth Points.
+
+/// @ingroup ArDepthPoint
+/// A point measurement taken from a depth image
+/// (@ref ownership "reference type, long-lived").
+///
+/// - Trackable type: @c #AR_TRACKABLE_DEPTH_POINT
+/// - Release with: @c ::ArTrackable_release
+typedef struct ArDepthPoint_ ArDepthPoint;
 
 // Instant Placement points.
 
@@ -594,6 +630,11 @@ AR_DEFINE_ENUM(ArTrackableType){
 
     /// Trackable type for faces.
     AR_TRACKABLE_FACE = 0x41520105,
+
+    /// On supported devices, trackable type for depth image based hit results
+    /// returned by @c ::ArFrame_hitTest when @c ::ArConfig_setDepthMode has been
+    /// set to @c #AR_DEPTH_MODE_AUTOMATIC.
+    AR_TRACKABLE_DEPTH_POINT = 0x41520111,
 
     /// Trackable type for results retrieved from
     /// @c ::ArFrame_hitTestInstantPlacement. This trackable type is only
@@ -1054,14 +1095,37 @@ AR_DEFINE_ENUM(ArDepthMode){
     AR_DEPTH_MODE_DISABLED = 0,
     /// On supported devices the best possible depth is estimated based on
     /// hardware and software sources. Available sources of automatic depth are:
-    ///  - Depth from motion
-    ///  - Active depth cameras
+    ///  - Depth from motion, using the main RGB camera
+    ///  - Hardware depth sensor, such as a time-of-flight sensor (or ToF sensor)
     ///
     /// Provides depth estimation for every pixel in the image, and works best for
     /// static scenes. For a list of supported devices, see:
     /// https://developers.google.com/ar/discover/supported-devices
     /// Adds significant computational load.
+    ///
+    /// With this mode enabled, @c ::ArFrame_hitTest also returns
+    /// @c ::ArDepthPoint in the output @c ::ArHitResultList, which are
+    /// sampled from the generated depth image for the current frame if available.
     AR_DEPTH_MODE_AUTOMATIC = 1,
+    /// @ingroup ArFrame
+    /// On <a
+    /// href="https://developers.google.com/ar/discover/supported-devices">ARCore
+    /// supported devices</a> that also support the Depth API, provides a "raw",
+    /// mostly unfiltered, depth image
+    /// (@c ::ArFrame_acquireRawDepthImage) and depth confidence image
+    /// (@c ::ArFrame_acquireRawDepthConfidenceImage).
+    ///
+    ///
+    ///
+    /// The raw depth image is sparse and does not provide valid depth for all
+    /// pixels. Pixels without a valid depth estimate have a pixel value of 0.
+    ///
+    /// Raw depth data is also available when @c #AR_DEPTH_MODE_AUTOMATIC is
+    /// selected.
+    ///
+    /// Raw depth is intended to be used in cases that involve understanding of
+    /// the geometry in the environment.
+    AR_DEPTH_MODE_RAW_DEPTH_ONLY = 3,
 };
 
 /// @ingroup ArPlane
@@ -1123,8 +1187,7 @@ AR_DEFINE_ENUM(ArInstantPlacementPointTrackingMethod){
     ///
     /// ARCore doesn't limit the number of Instant Placement points with
     /// @c #AR_INSTANT_PLACEMENT_POINT_TRACKING_METHOD_FULL_TRACKING that are
-    /// being
-    /// tracked concurently.
+    /// being tracked concurrently.
     AR_INSTANT_PLACEMENT_POINT_TRACKING_METHOD_FULL_TRACKING = 2};
 
 /// @ingroup ArAnchor
@@ -1297,17 +1360,15 @@ void ArCoreApk_checkAvailability(void *env,
 /// @param[in] user_requested_install if set, override the previous installation
 ///     failure message and always show the installation interface.
 /// @param[out] out_install_status A pointer to an @c ::ArInstallStatus to
-/// receive
-///     the resulting install status, if successful. Value is only valid when
-///     the return value is @c #AR_SUCCESS.
+///     receive the resulting install status, if successful. Value is only valid
+///     when the return value is @c #AR_SUCCESS.
 /// @return @c #AR_SUCCESS, or any of:
 /// - @c #AR_ERROR_FATAL if an error occurs while checking for or requesting
-///     installation
+///   installation
 /// - @c #AR_UNAVAILABLE_DEVICE_NOT_COMPATIBLE if ARCore is not supported
-///     on this device.
+///   on this device.
 /// - @c #AR_UNAVAILABLE_USER_DECLINED_INSTALLATION if the user previously
-/// declined
-///     installation.
+///   declined installation.
 ArStatus ArCoreApk_requestInstall(void *env,
                                   void *application_activity,
                                   int32_t user_requested_install,
@@ -1335,17 +1396,15 @@ ArStatus ArCoreApk_requestInstall(void *env,
 /// @param[in] message_type controls the text of the of message displayed
 ///     before showing the install prompt, or disables display of this message.
 /// @param[out] out_install_status A pointer to an @c ::ArInstallStatus to
-/// receive
-///     the resulting install status, if successful. Value is only valid when
-///     the return value is @c #AR_SUCCESS.
+///     receive the resulting install status, if successful. Value is only valid
+///     when the return value is @c #AR_SUCCESS.
 /// @return @c #AR_SUCCESS, or any of:
 /// - @c #AR_ERROR_FATAL if an error occurs while checking for or requesting
-///     installation
+///   installation
 /// - @c #AR_UNAVAILABLE_DEVICE_NOT_COMPATIBLE if ARCore is not supported
-///     on this device.
+///   on this device.
 /// - @c #AR_UNAVAILABLE_USER_DECLINED_INSTALLATION if the user previously
-/// declined
-///     installation.
+///   declined installation.
 ArStatus ArCoreApk_requestInstallCustom(void *env,
                                         void *application_activity,
                                         int32_t user_requested_install,
@@ -1606,6 +1665,9 @@ void ArConfig_getDepthMode(const ArSession *session,
 /// - With depth enabled through this call, calls to
 ///   @c ::ArFrame_acquireDepthImage can be made to acquire the latest computed
 ///   depth image.
+/// - With depth enabled through this call, calling @c ::ArFrame_hitTest
+///   generates an @c ::ArHitResultList that also includes @c ::ArDepthPoint
+///   values that are sampled from the latest computed depth image.
 void ArConfig_setDepthMode(const ArSession *session,
                            ArConfig *config,
                            ArDepthMode mode);
@@ -1633,8 +1695,7 @@ void ArConfig_getInstantPlacementMode(
 ///
 /// @param[in]   session      The ARCore session
 /// @param[out]  out_list     A pointer to an @c ::ArCameraConfigList* to
-/// receive
-///     the address of the newly allocated @c ::ArCameraConfigList.
+///     receive the address of the newly allocated @c ::ArCameraConfigList.
 void ArCameraConfigList_create(const ArSession *session,
                                ArCameraConfigList **out_list);
 
@@ -1663,8 +1724,7 @@ void ArCameraConfigList_getItem(const ArSession *session,
 ///
 /// @param[in]   session            The ARCore session
 /// @param[out]  out_camera_config  Pointer to an @c ::ArCameraConfig* to
-/// receive
-///     the address of the newly allocated @c ::ArCameraConfig.
+///     receive the address of the newly allocated @c ::ArCameraConfig.
 void ArCameraConfig_create(const ArSession *session,
                            ArCameraConfig **out_camera_config);
 
@@ -1832,8 +1892,7 @@ void ArCameraConfig_getStereoCameraUsage(
 ///
 /// @param[in]   session     The ARCore session
 /// @param[out]  out_filter  A pointer to an @c ::ArCameraConfigFilter* to
-/// receive
-///     the address of the newly allocated @c ::ArCameraConfigFilter
+///     receive the address of the newly allocated @c ::ArCameraConfigFilter
 void ArCameraConfigFilter_create(const ArSession *session,
                                  ArCameraConfigFilter **out_filter);
 
@@ -1924,8 +1983,8 @@ void ArCameraConfigFilter_getStereoCameraUsage(
 ///
 /// @param[in] session     The ARCore session
 /// @param[in, out] filter The filter object to change
-/// @param[in] facing_direction_filter A valid @c
-/// ::ArCameraConfigFacingDirection enum value
+/// @param[in] facing_direction_filter A valid
+/// @c ::ArCameraConfigFacingDirection enum value
 void ArCameraConfigFilter_setFacingDirection(
     const ArSession *session,
     ArCameraConfigFilter *filter,
@@ -1937,7 +1996,7 @@ void ArCameraConfigFilter_setFacingDirection(
 /// @param[in]  session         The ARCore session
 /// @param[in]  filter          The filter object to query
 /// @param[out] out_facing_direction_filter To be filled in with the desired
-/// camera facing direction allowed
+///     camera facing direction allowed
 void ArCameraConfigFilter_getFacingDirection(
     const ArSession *session,
     ArCameraConfigFilter *filter,
@@ -2026,6 +2085,70 @@ void ArRecordingConfig_setRecordingRotation(const ArSession *session,
                                             ArRecordingConfig *config,
                                             int32_t recording_rotation);
 
+/// @ingroup ArRecordingConfig
+/// Configures and adds a track.
+///
+/// @param[in] session               The ARCore session
+/// @param[in, out] config           The @c ::ArRecordingConfig object to change
+/// @param[in] track                 The @c ::ArTrack being added to the
+/// recording config
+void ArRecordingConfig_addTrack(const ArSession *session,
+                                ArRecordingConfig *config,
+                                const ArTrack *track);
+
+/// @ingroup ArTrack
+/// Initializes an @c ::ArTrack.
+///
+/// @param[in] session                   The ARCore session
+/// @param[out] out_track                Pointer to an @c ::ArTrack to receive
+///     the address of the newly allocated @c ::ArTrack
+void ArTrack_create(const ArSession *session, ArTrack **out_track);
+
+/// @ingroup ArTrack
+/// Sets the  Track Id.
+///
+/// @param[in] session               The ARCore session
+/// @param[in, out] track            The track object to change
+/// @param[in] track_id_uuid_16      The track ID as UUID as a byte array of 16
+/// bytes in size
+void ArTrack_setId(const ArSession *session,
+                   ArTrack *track,
+                   const uint8_t *track_id_uuid_16);
+
+/// @ingroup ArTrack
+/// Sets the Track Metadata.
+///
+/// @param[in] session                    The ARCore session
+/// @param[in, out] track                 The external track object to change
+/// @param[in] track_metadata_buffer      bytes describing arbitrary data about
+///     the track.
+/// @param[in] track_metadata_buffer_size size of the @p track_metadata_buffer
+void ArTrack_setMetadata(const ArSession *session,
+                         ArTrack *track,
+                         const uint8_t *track_metadata_buffer,
+                         size_t track_metadata_buffer_size);
+
+/// @ingroup ArTrack
+/// Sets the MIME type for the Data Track. Default value is
+/// "application/text".
+///
+/// @param[in] session               The ARCore session
+/// @param[in, out] track            The track object to change
+/// @param[in] mime_type             The string representing the MIME type label
+/// as a null-terminated string in UTF-8 format. This will be the MIME type set
+/// on the additional stream created for this @c ::ArTrack, another convenient
+/// means of identification, particularly for applications that do not support
+/// UUID as a means of identification.
+void ArTrack_setMimeType(const ArSession *session,
+                         ArTrack *track,
+                         const char *mime_type);
+
+/// @ingroup ArTrack
+/// Releases memory used by the provided data track config object.
+///
+/// @param[in] track The track config object to release
+void ArTrack_destroy(ArTrack *track);
+
 // === ArSession functions ===
 
 /// @ingroup ArSession
@@ -2094,8 +2217,8 @@ ArStatus ArSession_configure(ArSession *session, const ArConfig *config);
 /// Gets the current config. More specifically, fills the given @c ::ArConfig
 /// object with the copy of the configuration most recently set by
 /// @c ::ArSession_configure. Note: if the session was not explicitly
-/// configured, a default configuration is returned (same as @c
-/// ::ArConfig_create).
+/// configured, a default configuration is returned (same as
+/// @c ::ArConfig_create).
 void ArSession_getConfig(ArSession *session, ArConfig *out_config);
 
 /// @ingroup ArSession
@@ -2108,10 +2231,9 @@ void ArSession_getConfig(ArSession *session, ArConfig *out_config);
 /// Note that if the camera configuration has been changed by
 /// @c ::ArSession_setCameraConfig since the last call to @c ::ArSession_resume,
 /// all images previously acquired using @c ::ArFrame_acquireCameraImage must be
-/// released by calling @c ::ArImage_release before calling @c
-/// ::ArSession_resume.  If there are open images, @c ::ArSession_resume will
-/// return
-/// @c #AR_ERROR_ILLEGAL_STATE and the session will not resume.
+/// released by calling @c ::ArImage_release before calling
+/// @c ::ArSession_resume.  If there are open images, @c ::ArSession_resume will
+/// return @c #AR_ERROR_ILLEGAL_STATE and the session will not resume.
 ///
 /// @return @c #AR_SUCCESS or any of:
 /// - @c #AR_ERROR_FATAL
@@ -2143,8 +2265,8 @@ ArStatus ArSession_pause(ArSession *session);
 /// must use a @c samplerExternalOES sampler.
 ///
 /// The texture contents are not guaranteed to remain valid after another call
-/// to @c ::ArSession_setCameraTextureName or @c
-/// ::ArSession_setCameraTextureNames, and additionally are not guaranteed to
+/// to @c ::ArSession_setCameraTextureName or
+/// @c ::ArSession_setCameraTextureNames, and additionally are not guaranteed to
 /// remain valid after a call to
 /// @c ::ArSession_pause or @c ::ArSession_destroy.
 ///
@@ -2156,7 +2278,7 @@ ArStatus ArSession_pause(ArSession *session);
 ///
 /// @param[in] session The ARCore session
 /// @param[in] number_of_textures The number of textures being passed. This
-/// must always be at least 1.
+///     must always be at least 1.
 /// @param[in] texture_ids Pointer to the array of textures names (IDs)
 void ArSession_setCameraTextureNames(ArSession *session,
                                      int32_t number_of_textures,
@@ -2169,10 +2291,9 @@ void ArSession_setCameraTextureNames(ArSession *session,
 /// sampler.
 ///
 /// The texture contents are not guaranteed to remain valid after another call
-/// to @c ::ArSession_setCameraTextureName or @c
-/// ::ArSession_setCameraTextureNames, and additionally are not guaranteed to
-/// remain valid after a call to
-/// @c ::ArSession_pause or @c ::ArSession_destroy.
+/// to @c ::ArSession_setCameraTextureName or
+/// @c ::ArSession_setCameraTextureNames, and additionally are not guaranteed to
+/// remain valid after a call to @c ::ArSession_pause or @c ::ArSession_destroy.
 void ArSession_setCameraTextureName(ArSession *session, uint32_t texture_id);
 
 /// @ingroup ArSession
@@ -2463,8 +2584,8 @@ void ArSession_getSupportedCameraConfigs(const ArSession *session,
 /// @c ::ArSession_getSupportedCameraConfigsWithFilter.
 ///
 /// The camera config will be applied once the session is resumed.
-/// All previously acquired frame images must be released with @c
-/// ::ArImage_release before calling @c resume(). Failure to do so will cause
+/// All previously acquired frame images must be released with
+/// @c ::ArImage_release before calling @c resume(). Failure to do so will cause
 /// @c resume() to return
 /// @c #AR_ERROR_ILLEGAL_STATE error.
 ///
@@ -2560,20 +2681,27 @@ void ArSession_getSupportedCameraConfigsWithFilter(
     ArCameraConfigList *list);
 
 /// @ingroup ArSession
-/// Sets a MP4 dataset file to playback instead of using the live camera feed
+/// Sets a MP4 dataset file to play back instead of using the live camera feed
 /// and IMU sensor data.
 ///
 /// Restrictions:
+/// - Can only be called while the session is paused. Playback of the MP4
+///   dataset file will start once the session is resumed.
+/// - The MP4 dataset file must use the same camera facing direction as is
+///   configured in the session.
 /// - Due to the way session data is processed, ARCore APIs may sometimes
 ///   produce different results during playback than during recording and
 ///   produce different results during subsequent playback sessions.
 ///   For example, the number of detected planes and other trackables, the
 ///   precise timing of their detection and their pose over time may be
-//    different in subsequent playback sessions.
-/// - Can only be called while the session is paused. Playback of the MP4
-///   dataset file will start once the session is resumed.
-/// - The MP4 dataset file must use the same camera facing direction as is
-///   configured in the session.
+///   different in subsequent playback sessions.
+/// - Once playback has started (due to the first call to ::ArSession_resume),
+///   pausing the session (by calling @c ::ArSession_pause) will suspend
+///   processing of all camera image frames and any other recorded sensor data
+///   in the dataset. Camera image frames and sensor frame data that is
+///   discarded in this way will not be reprocessed when the session is again
+///   resumed (by calling @c ::ArSession_resume). AR tracking for the session
+///   will generally suffer due to the gap in processed data.
 ///
 /// When an MP4 dataset file is set:
 /// - All existing trackables (@c ::ArAnchor and @c ::ArTrackable) immediately
@@ -2589,7 +2717,7 @@ void ArSession_getSupportedCameraConfigsWithFilter(
 ///
 /// @param[in] session               The ARCore session
 /// @param[in] mp4_dataset_file_path A string file path to a MP4 dataset file
-/// or @c NULL to use the live camera feed.
+///     or @c NULL to use the live camera feed.
 ///
 /// @return @c #AR_SUCCESS or any of:
 /// - @c #AR_ERROR_SESSION_NOT_PAUSED if called when session is not paused.
@@ -2666,6 +2794,42 @@ ArStatus ArSession_stopRecording(ArSession *session);
 void ArSession_getRecordingStatus(ArSession *session,
                                   ArRecordingStatus *out_recording_status);
 
+/// @ingroup ArFrame
+/// Writes a data sample in the specified track. The samples recorded using
+/// this API will be muxed into the recorded MP4 dataset in a corresponding
+/// additional MP4 stream.
+///
+/// For smooth playback of the MP4 on video players and for future compatibility
+/// of the MP4 datasets with ARCore's playback of tracks it is
+/// recommended that the samples are recorded at a frequency no higher
+/// than 90kHz.
+///
+/// Additionally, if the samples are recorded at a frequency lower than 1Hz,
+/// empty padding samples will be automatically recorded at approximately
+/// one second intervals to fill in the gaps.
+///
+/// Recording samples introduces additional CPU and/or I/O overhead and
+/// may affect app performance.
+
+///
+/// @param[in] session                     The ARCore session
+/// @param[in] frame                       The current @c ::ArFrame
+/// @param[in] track_id_uuid_16            The external track ID as UUID as a
+/// byte array of 16 bytes in size
+/// @param[in] payload                     The byte array payload to record
+/// @param[in] payload_size                Size in bytes of the payload
+///
+/// @return #AR_SUCCESS or any of:
+/// - #AR_ERROR_ILLEGAL_STATE
+/// - #AR_ERROR_INVALID_ARGUMENT
+/// - #AR_ERROR_RECORDING_FAILED
+/// - #AR_ERROR_DEADLINE_EXCEEDED
+ArStatus ArFrame_recordTrackData(ArSession *session,
+                                 const ArFrame *frame,
+                                 const uint8_t *track_id_uuid_16,
+                                 const void *payload,
+                                 size_t payload_size);
+
 /// @ingroup ArSession
 /// Checks whether the provided @c ::ArDepthMode is supported on this device
 /// with the selected camera configuration. The current list of supported
@@ -2676,7 +2840,7 @@ void ArSession_getRecordingStatus(ArSession *session,
 /// @param[in] session The ARCore session.
 /// @param[in] depth_mode The desired depth mode to check.
 /// @param[out] out_is_supported Non zero if the depth mode is supported on this
-/// device.
+///     device.
 void ArSession_isDepthModeSupported(const ArSession *session,
                                     ArDepthMode depth_mode,
                                     int32_t *out_is_supported);
@@ -2757,7 +2921,7 @@ void ArPose_getMatrix(const ArSession *session,
 /// @param[in]    session  The ARCore session
 /// @param[in]    camera   The session's camera (retrieved from any frame).
 /// @param[inout] out_pose An already-allocated @c ::ArPose object into which
-/// the pose will be stored.
+///     the pose will be stored.
 void ArCamera_getPose(const ArSession *session,
                       const ArCamera *camera,
                       ArPose *out_pose);
@@ -2785,7 +2949,7 @@ void ArCamera_getPose(const ArSession *session,
 /// @param[in]    session  The ARCore session
 /// @param[in]    camera   The session's camera (retrieved from any frame).
 /// @param[inout] out_pose An already-allocated @c ::ArPose object into which
-/// the pose will be stored.
+///     the pose will be stored.
 void ArCamera_getDisplayOrientedPose(const ArSession *session,
                                      const ArCamera *camera,
                                      ArPose *out_pose);
@@ -2943,7 +3107,7 @@ void ArFrame_destroy(ArFrame *frame);
 /// @ingroup ArFrame
 /// Checks if the display rotation or viewport geometry changed since the
 /// previous call to @c ::ArSession_update. The application should re-query
-/// @c ::ArCamera_getProjectionMatrix and ::ArFrame_transformCoordinates2d
+/// @c ::ArCamera_getProjectionMatrix and @c ::ArFrame_transformCoordinates2d
 /// whenever this emits non-zero.
 void ArFrame_getDisplayGeometryChanged(const ArSession *session,
                                        const ArFrame *frame,
@@ -2979,7 +3143,7 @@ void ArFrame_getTimestamp(const ArSession *session,
 /// @param[in]    session  The ARCore session
 /// @param[in]    frame    The current frame.
 /// @param[inout] out_pose An already-allocated @c ::ArPose object into which
-/// the pose will be stored.
+///     the pose will be stored.
 void ArFrame_getAndroidSensorPose(const ArSession *session,
                                   const ArFrame *frame,
                                   ArPose *out_pose);
@@ -3082,6 +3246,11 @@ void ArFrame_transformCoordinates2d(const ArSession *session,
 /// @c #AR_TRACKING_STATE_TRACKING. Hit testing against tracked faces is not
 /// currently supported.
 ///
+/// Note: In ARCore 1.24.0 or later on supported devices, if the
+/// @c ::ArDepthMode is enabled by calling @c ::ArConfig_setDepthMode the
+/// @p hit_result_list includes @c ::ArDepthPoint values that are sampled from
+/// the latest computed depth image.
+///
 /// @param[in]    session         The ARCore session.
 /// @param[in]    frame           The current frame.
 /// @param[in]    pixel_x         Logical X position within the view, as from an
@@ -3161,8 +3330,7 @@ void ArFrame_hitTestRay(const ArSession *session,
 /// @param[in]    session            The ARCore session.
 /// @param[in]    frame              The current frame.
 /// @param[inout] out_light_estimate The @c ::ArLightEstimate to fill. This
-/// object
-///    must have been previously created with @c ::ArLightEstimate_create.
+///   object must have been previously created with @c ::ArLightEstimate_create.
 void ArFrame_getLightEstimate(const ArSession *session,
                               const ArFrame *frame,
                               ArLightEstimate *out_light_estimate);
@@ -3215,8 +3383,8 @@ ArStatus ArFrame_acquireImageMetadata(const ArSession *session,
 
 /// @ingroup ArFrame
 /// Returns the CPU image for the current frame.
-/// Caller is responsible for later releasing the image with @c
-/// ::ArImage_release. Not supported on all devices (see
+/// Caller is responsible for later releasing the image with
+/// @c ::ArImage_release. Not supported on all devices (see
 /// https://developers.google.com/ar/discover/supported-devices). Return values:
 /// @return @c #AR_SUCCESS or any of:
 /// - @c #AR_ERROR_INVALID_ARGUMENT - one more input arguments are invalid.
@@ -3260,35 +3428,145 @@ void ArFrame_getUpdatedTrackables(const ArSession *session,
                                   ArTrackableList *out_trackable_list);
 
 /// @ingroup ArFrame
+/// Gets the set of data recorded to the given track available during playback
+/// on this @c ::ArFrame. If frames are skipped during playback, which can
+/// happen when the device is under load, played back track data will be
+/// attached to a later frame in order.
+///
+/// Note, currently playback continues internally while the session is paused.
+/// Track data from frames that were processed while the session was
+/// paused will be discarded.
+///
+/// @param[in]    session            The ARCore session
+/// @param[in]    frame              The current frame
+/// @param[in]    track_id_uuid_16   The track ID as UUID as a byte
+/// array of 16 bytes in size
+/// @param[inout] out_track_data_list The list to fill. This list must have
+/// already been allocated with @c ::ArTrackDataList_create. If previously
+/// used, the list will first be cleared
+void ArFrame_getUpdatedTrackData(const ArSession *session,
+                                 const ArFrame *frame,
+                                 const uint8_t *track_id_uuid_16,
+                                 ArTrackDataList *out_track_data_list);
+
+// === ArTrackData functions ===
+
+/// @ingroup ArTrackData
+/// Retrieves the timestamp in nanoseconds of the frame the given
+/// @c ::ArTrackData was recorded on. This timestamp is equal to the result of
+/// @c ::ArFrame_getTimestamp on the frame during which the track data was
+/// written.
+///
+/// @param[in]    session            The ARCore session
+/// @param[in]    track_data         The @c ::ArTrackData to pull the timestamp
+/// from
+/// @param[inout] out_timestamp_ns   The @c int64_t timestamp value to be set
+void ArTrackData_getFrameTimestamp(const ArSession *session,
+                                   const ArTrackData *track_data,
+                                   int64_t *out_timestamp_ns);
+
+/// @ingroup ArTrackData
+/// Retrieves the @c ::ArTrackData byte data that was recorded by
+/// @c ::ArFrame_recordTrackData.
+///
+/// The pointer returned by this function is valid until
+/// @c ::ArTrackData_release is called.
+///
+/// @param[in]    session            The ARCore session
+/// @param[in]    track_data         The @c ::ArTrackData to pull the data from
+/// @param[inout] out_data           The pointer to the @c ::ArTrackDataList
+/// byte data being populated. Will point to an empty list if no data present
+/// @param[inout] out_size           The number of bytes that were populated in
+/// @p out_data, 0 if list is empty
+void ArTrackData_getData(const ArSession *session,
+                         const ArTrackData *track_data,
+                         const uint8_t **out_data,
+                         int32_t *out_size);
+
+/// @ingroup ArTrackData
+/// Releases a reference to a @c ::ArTrackData. Acquire a @c ::ArTrackData with
+/// @c ::ArTrackDataList_acquireItem.
+///
+/// This function may safely be called with @c NULL - it will do nothing.
+///
+/// @param[inout] track_data      The @c ::ArTrackData being released
+void ArTrackData_release(ArTrackData *track_data);
+
+// === ArTrackDataList functions ===
+
+/// @ingroup ArTrackData
+/// Creates an @c ::ArTrackDataList object.
+///
+/// @param[in]    session             The ARCore session
+/// @param[inout] out_track_data_list The pointer to the list to be initialized
+void ArTrackDataList_create(const ArSession *session,
+                            ArTrackDataList **out_track_data_list);
+
+/// @ingroup ArTrackData
+/// Releases the memory used by the @c ::ArTrackData list object
+///
+/// @param[inout] track_data_list The pointer to the @c ::ArTrackDataList
+/// memory being released
+void ArTrackDataList_destroy(ArTrackDataList *track_data_list);
+
+/// @ingroup ArTrackData
+/// Retrieves the number of @c ::ArTrackData elements in the list.
+///
+/// @param[in]    session             The ARCore session.
+/// @param[in]    track_data_list     The list being checked for size
+/// @param[inout] out_size            The size of the list, 0 if
+/// @p track_data_list is empty
+void ArTrackDataList_getSize(const ArSession *session,
+                             const ArTrackDataList *track_data_list,
+                             int32_t *out_size);
+
+/// @ingroup ArTrackData
+/// Acquires a reference to an indexed entry in the list.  This call must
+/// eventually be matched with a call to @c ::ArTrackData_release.
+///
+/// @param[in]    session             The ARCore session
+/// @param[in]    track_data_list     The list being queried
+/// @param[in]    index               The index of the list
+/// @param[inout] out_track_data      The pointer to the @c ::ArTrackData
+/// acquired at the given index in the list
+void ArTrackDataList_acquireItem(const ArSession *session,
+                                 const ArTrackDataList *track_data_list,
+                                 int32_t index,
+                                 ArTrackData **out_track_data);
+
+/// @ingroup ArFrame
 /// Attempts to acquire a depth image that corresponds to the current frame.
 ///
-/// The depth image has a single 16-bit plane at index 0. Each pixel contains
-/// the distance in millimeters to the camera plane. Currently, the 3 highest
-/// order bits are always set to 000. The remaining low order 13 bits in the
-/// depth image express values from 0 millimeters to 8191 millimeters,
-/// approximately 8 meters.
+/// The depth image has a single 16-bit plane at index 0, stored in
+/// little-endian format. Each pixel contains the distance in millimeters to the
+/// camera plane. Currently, the three most significant bits are always set to
+/// 000. The remaining thirteen bits express values from 0 to 8191, representing
+/// depth in millimeters. To extract distance from a depth map, see <a
+/// href="https://developers.google.com/ar/develop/java/depth/developer-guide#extract-distance">the
+/// Depth API developer guide</a>.
 ///
-/// The image plane is stored in big-endian format. The actual resolution of the
-/// depth image depends on the device and its display aspect ratio, with sizes
-/// typically around 160x120 pixels, with higher resolutions up to 640x480 on
-/// some devices. These sizes may change in the future.
+/// The actual size of the depth image depends on the device and its display
+/// aspect ratio. The size of the depth image is typically around 160x120
+/// pixels, with higher resolutions up to 640x480 on some devices. These sizes
+/// may change in the future. The outputs of
+/// @c ::ArFrame_acquireDepthImage, @c ::ArFrame_acquireRawDepthImage and
+/// @c ::ArFrame_acquireRawDepthConfidenceImage will all have the exact same
+/// size.
 ///
 /// Optimal depth accuracy is achieved between 500 millimeters (50 centimeters)
 /// and 5000 millimeters (5 meters) from the camera. Error increases
 /// quadratically as distance from the camera increases.
 ///
-/// Depth is estimated using data from previous frames and the current frame. As
-/// the user moves their device through the environment 3D depth data is
-/// collected and cached, improving the quality of subsequent  depth images and
-/// reducing the error introduced by camera distance.
+/// Depth is estimated using data from the world-facing cameras, user motion,
+/// and hardware depth sensors such as a time-of-flight sensor (or ToF sensor)
+/// if available. As the user moves their device through the environment, 3D
+/// depth data is collected and cached which improves the quality of subsequent
+/// depth images and reducing the error introduced by camera distance.
 ///
-/// If an up to date depth image isn't ready for the current frame, the most
-/// recent depth image available from an earlier frame is returned instead.
-/// This is only expected to occur on compute-constrained devices. An up to
-/// date depth image should typically become available again within a few
-/// frames. Compare @c ::ArImage_getTimestamp depth image timestamp with the
-/// @c ::ArFrame_getTimestamp frame timestamp to determine which camera frame
-/// the depth image corresponds to.
+/// If an up-to-date depth image isn't ready for the current frame, the most
+/// recent depth image available from an earlier frame will be returned instead.
+/// This is expected only to occur on compute-constrained devices. An up-to-date
+/// depth image should typically become available again within a few frames.
 ///
 /// The image must be released with @c ::ArImage_release once it is no
 /// longer needed.
@@ -3296,8 +3574,8 @@ void ArFrame_getUpdatedTrackables(const ArSession *session,
 /// @param[in]  session                The ARCore session.
 /// @param[in]  frame                  The current frame.
 /// @param[out] out_depth_image        On successful return, this is filled out
-/// with a pointer to an @c ::ArImage. On error return, this is filled out with
-/// @c nullptr.
+///     with a pointer to an @c ::ArImage. On error return, this is filled out
+///     with @c nullptr.
 /// @return @c #AR_SUCCESS or any of:
 /// - @c #AR_ERROR_INVALID_ARGUMENT if the session, frame, or depth image
 ///   arguments are invalid.
@@ -3317,6 +3595,139 @@ void ArFrame_getUpdatedTrackables(const ArSession *session,
 ArStatus ArFrame_acquireDepthImage(const ArSession *session,
                                    const ArFrame *frame,
                                    ArImage **out_depth_image);
+
+/// @ingroup ArFrame
+/// Attempts to acquire a "raw", mostly unfiltered, depth image that corresponds
+/// to the current frame.
+///
+/// The raw depth image is sparse and does not provide valid depth for all
+/// pixels. Pixels without a valid depth estimate have a pixel value of 0 and a
+/// corresponding confidence value of 0 (see
+/// @c ::ArFrame_acquireRawDepthConfidenceImage).
+///
+/// The depth image has a single 16-bit plane at index 0, stored in
+/// little-endian format. Each pixel contains the distance in millimeters to the
+/// camera plane. Currently, the three most significant bits are always set to
+/// 000. The remaining thirteen bits express values from 0 to 8191, representing
+/// depth in millimeters. To extract distance from a depth map, see <a
+/// href="https://developers.google.com/ar/develop/java/depth/developer-guide#extract-distance">the
+/// Depth API developer guide</a>.
+///
+///
+/// The actual size of the depth image depends on the device and its display
+/// aspect ratio. The size of the depth image is typically around 160x120
+/// pixels, with higher resolutions up to 640x480 on some devices. These sizes
+/// may change in the future. The outputs of
+/// @c ::ArFrame_acquireDepthImage, @c ::ArFrame_acquireRawDepthImage and
+/// @c ::ArFrame_acquireRawDepthConfidenceImage will all have the exact same
+/// size.
+///
+/// Optimal depth accuracy occurs between 500 millimeters (50 centimeters) and
+/// 5000 millimeters (5 meters) from the camera. Error increases quadratically
+/// as distance from the camera increases.
+///
+/// Depth is primarily estimated using data from the motion of world-facing
+/// cameras. As the user moves their device through the environment, 3D depth
+/// data is collected and cached, improving the quality of subsequent depth
+/// images and reducing the error introduced by camera distance. Depth accuracy
+/// and robustness improves if the device has a hardware depth sensor, such as a
+/// time-of-flight (ToF) camera.
+///
+/// Not every raw depth image contains a new depth estimate. Typically there is
+/// about 10 updates to the raw depth data per second. The depth images between
+/// those updates are a 3D reprojection which transforms each depth pixel into a
+/// 3D point in space and renders those 3D points into a new raw depth image
+/// based on the current camera pose. This effectively transforms raw depth
+/// image data from a previous frame to account for device movement since the
+/// depth data was calculated. For some applications it may be important to know
+/// whether the raw depth image contains new depth data or is a 3D reprojection
+/// (for example, to reduce the runtime cost of 3D reconstruction). To do that,
+/// compare the current raw depth image timestamp, obtained via @c
+/// ::ArImage_getTimestamp, with the previously recorded raw depth image
+/// timestamp. If they are different, the depth image contains new information.
+///
+/// The image must be released via @c ::ArImage_release once it is no longer
+/// needed.
+///
+/// @param[in]  session                The ARCore session.
+/// @param[in]  frame                  The current frame.
+/// @param[out] out_depth_image        On successful return, this is filled out
+///   with a pointer to an @c ::ArImage. On error return, this is filled out
+///   filled out with @c nullptr.
+/// @return @c #AR_SUCCESS or any of:
+/// - @c #AR_ERROR_INVALID_ARGUMENT if the session, frame, or depth image
+///   arguments are invalid.
+/// - @c #AR_ERROR_NOT_YET_AVAILABLE if the number of observed camera frames is
+///   not yet sufficient for depth estimation; or depth estimation was not
+///   possible due to poor lighting, camera occlusion, or insufficient motion
+///   observed.
+/// - @c #AR_ERROR_NOT_TRACKING The session is not in the
+///   @c #AR_TRACKING_STATE_TRACKING state, which is required to acquire depth
+///   images.
+/// - @c #AR_ERROR_ILLEGAL_STATE if a supported depth mode was not enabled in
+///   Session configuration.
+/// - @c #AR_ERROR_RESOURCE_EXHAUSTED if the caller app has exceeded maximum
+///   number of depth images that it can hold without releasing.
+/// - @c #AR_ERROR_DEADLINE_EXCEEDED if the provided @c ::ArFrame is not the
+///   current one.
+ArStatus ArFrame_acquireRawDepthImage(const ArSession *session,
+                                      const ArFrame *frame,
+                                      ArImage **out_depth_image);
+
+/// @ingroup ArFrame
+/// Attempts to acquire the confidence image corresponding to the raw depth
+/// image of the current frame.
+///
+/// The image must be released via @c ::ArImage_release once it is no longer
+/// needed.
+///
+/// Each pixel is an 8-bit unsigned integer representing the estimated
+/// confidence of the corresponding pixel in the raw depth image. The confidence
+/// value is between 0 and 255, inclusive, with 0 representing the lowest
+/// confidence and 255 representing the highest confidence in the measured depth
+/// value. Pixels without a valid depth estimate have a confidence value of 0
+/// and a corresponding depth value of 0 (see @c
+/// ::ArFrame_acquireRawDepthImage).
+///
+/// The scaling of confidence values is linear and continuous within this range.
+/// Expect to see confidence values represented across the full range of 0 to
+/// 255, with values increasing as better observations are made of each
+/// location.  If an application requires filtering out low-confidence pixels,
+/// removing depth pixels below a confidence threshold of half confidence (128)
+/// tends to work well.
+///
+/// The actual size of the depth image depends on the device and its display
+/// aspect ratio. The size of the depth image is typically around 160x120
+/// pixels, with higher resolutions up to 640x480 on some devices. These sizes
+/// may change in the future. The outputs of
+/// @c ::ArFrame_acquireDepthImage, @c ::ArFrame_acquireRawDepthImage and
+/// @c ::ArFrame_acquireRawDepthConfidenceImage will all have the exact same
+/// size.
+///
+/// @param[in]  session                The ARCore session.
+/// @param[in]  frame                  The current frame.
+/// @param[out] out_confidence_image   On successful return, this is filled out
+///   with a pointer to an @c ::ArImage. On error return, this is filled out
+///   filled out with @c nullptr.
+/// @return @c #AR_SUCCESS or any of:
+/// - @c #AR_ERROR_INVALID_ARGUMENT if the session, frame, or depth image
+///   arguments are invalid.
+/// - @c #AR_ERROR_NOT_YET_AVAILABLE if the number of observed camera frames is
+///   not yet sufficient for depth estimation; or depth estimation was not
+///   possible due to poor lighting, camera occlusion, or insufficient motion
+///   observed.
+/// - @c #AR_ERROR_NOT_TRACKING The session is not in the
+///   @c #AR_TRACKING_STATE_TRACKING state, which is required to acquire depth
+///   images.
+/// - @c #AR_ERROR_ILLEGAL_STATE if a supported depth mode was not enabled in
+///   Session configuration.
+/// - @c #AR_ERROR_RESOURCE_EXHAUSTED if the caller app has exceeded maximum
+///   number of depth images that it can hold without releasing.
+/// - @c #AR_ERROR_DEADLINE_EXCEEDED if the provided @c ::ArFrame is not the
+///   current one.
+ArStatus ArFrame_acquireRawDepthConfidenceImage(const ArSession *session,
+                                                const ArFrame *frame,
+                                                ArImage **out_confidence_image);
 
 /// @ingroup ArFrame
 /// Returns the OpenGL ES camera texture name (ID) associated with this frame.
@@ -3350,9 +3761,9 @@ void ArPointCloud_getNumberOfPoints(const ArSession *session,
 /// href="https://developer.android.com/reference/android/graphics/ImageFormat.html#DEPTH_POINT_CLOUD"
 /// >DEPTH_POINT_CLOUD</a>.
 ///
-/// The pointer returned by this function is valid until @c
-/// ::ArPointCloud_release is called. If the number of points is zero, then the
-/// value of
+/// The pointer returned by this function is valid until
+/// @c ::ArPointCloud_release is called. If the number of points is zero, then
+/// the value of
 /// @p *out_point_cloud_data is undefined.
 ///
 /// If your app needs to keep some Point Cloud data, for example to compare
@@ -3372,9 +3783,9 @@ void ArPointCloud_getData(const ArSession *session,
 /// across frames. That is, if a point from Point Cloud 1 has the same id as the
 /// point from Point Cloud 2, then it represents the same point in space.
 ///
-/// The pointer returned by this function is valid until @c
-/// ::ArPointCloud_release is called. If the number of points is zero, then the
-/// value of
+/// The pointer returned by this function is valid until
+/// @c ::ArPointCloud_release is called. If the number of points is zero, then
+/// the value of
 /// @p *out_point_ids is undefined.
 ///
 /// If your app needs to keep some Point Cloud data, for example to compare
@@ -3416,20 +3827,25 @@ AR_DEFINE_ENUM(ArImageFormat){
     AR_IMAGE_FORMAT_INVALID = 0,
 
     /// Produced by @c ::ArFrame_acquireCameraImage.
-    /// Int value equal to Android NDK @c AIMAGE_FORMAT_YUV_420_888
-    /// (https://developer.android.com/ndk/reference/group/media#group___media_1gga9c3dace30485a0f28163a882a5d65a19aea9797f9b5db5d26a2055a43d8491890).
-    /// and
-    /// https://developer.android.com/reference/android/graphics/ImageFormat.html#YUV_420_888
+    /// Integer value equal to Android NDK @c <a
+    /// href="https://developer.android.com/ndk/reference/group/media#group___media_1gga9c3dace30485a0f28163a882a5d65a19aea9797f9b5db5d26a2055a43d8491890">AIMAGE_FORMAT_YUV_420_888</a>
+    /// and @c <a
+    /// href="https://developer.android.com/reference/android/graphics/ImageFormat.html#YUV_420_888">YUV_420_888</a>.
     AR_IMAGE_FORMAT_YUV_420_888 = 0x23,
 
     /// Produced by @c ::ArFrame_acquireDepthImage.
-    /// Int value equal to
-    /// https://developer.android.com/reference/android/graphics/ImageFormat.html#DEPTH16
+    /// Integer value equal to <a
+    /// href="https://developer.android.com/reference/android/graphics/ImageFormat.html#DEPTH16">DEPTH16</a>.
     AR_IMAGE_FORMAT_DEPTH16 = 0x44363159,
 
+    /// Produced by @c ::ArFrame_acquireRawDepthConfidenceImage. Integer value
+    /// equal to @c <a
+    /// href="https://developer.android.com/reference/android/graphics/ImageFormat.html#Y8">Y8</a>.
+    AR_IMAGE_FORMAT_Y8 = 0x20203859,
+
     /// Produced by @c ::ArLightEstimate_acquireEnvironmentalHdrCubemap.
-    /// Int value equal to Android NDK @c AIMAGE_FORMAT_RGBA_FP16
-    /// (https://developer.android.com/ndk/reference/group/media#group___media_1gga9c3dace30485a0f28163a882a5d65a19aa0f5b9a07c9f3dc8a111c0098b18363a).
+    /// Integer value equal to Android NDK @c <a
+    /// href="https://developer.android.com/ndk/reference/group/media#group___media_1gga9c3dace30485a0f28163a882a5d65a19aa0f5b9a07c9f3dc8a111c0098b18363a">AIMAGE_FORMAT_RGBA_FP16</a>.
     AR_IMAGE_FORMAT_RGBA_FP16 = 0x16,
 };
 
@@ -3499,7 +3915,7 @@ void ArImage_getNumberOfPlanes(const ArSession *session,
 /// @param[in]    session                The ARCore session.
 /// @param[in]    image                  The @c ::ArImage of interest.
 /// @param[in]    plane_index            The index of the plane, between 0 and
-/// n-1, where n is number of planes for this image.
+///     n-1, where n is number of planes for this image.
 /// @param[inout] out_pixel_stride       The plane stride of the image in bytes.
 void ArImage_getPlanePixelStride(const ArSession *session,
                                  const ArImage *image,
@@ -3513,7 +3929,7 @@ void ArImage_getPlanePixelStride(const ArSession *session,
 /// @param[in]    session                The ARCore session.
 /// @param[in]    image                  The @c ::ArImage of interest.
 /// @param[in]    plane_index            The index of the plane, between 0 and
-/// n-1, where n is number of planes for this image.
+///     n-1, where n is number of planes for this image.
 /// @param[inout] out_row_stride         The row stride of the image in bytes.
 void ArImage_getPlaneRowStride(const ArSession *session,
                                const ArImage *image,
@@ -3529,7 +3945,7 @@ void ArImage_getPlaneRowStride(const ArSession *session,
 /// @param[in]    session                The ARCore session.
 /// @param[in]    image                  The @c ::ArImage of interest.
 /// @param[in]    plane_index            The index of the plane, between 0 and
-/// n-1, where n is number of planes for this image.
+///     n-1, where n is number of planes for this image.
 /// @param[inout] out_data               The data pointer to the image.
 /// @param[inout] out_data_length        The length of data in bytes.
 void ArImage_getPlaneData(const ArSession *session,
@@ -3728,14 +4144,13 @@ void ArAnchorList_acquireItem(const ArSession *session,
 /// @ingroup ArAnchor
 /// Retrieves the pose of the anchor in the world coordinate space. This pose
 /// produced by this call may change each time @c ::ArSession_update is called.
-/// This pose should only be used for rendering if @c
-/// ::ArAnchor_getTrackingState returns @c #AR_TRACKING_STATE_TRACKING.
+/// This pose should only be used for rendering if
+/// @c ::ArAnchor_getTrackingState returns @c #AR_TRACKING_STATE_TRACKING.
 ///
 /// @param[in]    session  The ARCore session.
 /// @param[in]    anchor   The anchor to retrieve the pose of.
 /// @param[inout] out_pose An already-allocated @c ::ArPose object into which
-/// the
-///     pose will be stored.
+///     the pose will be stored.
 void ArAnchor_getPose(const ArSession *session,
                       const ArAnchor *anchor,
                       ArPose *out_pose);
@@ -3912,7 +4327,7 @@ void ArPlane_getType(const ArSession *session,
 /// @param[in]    session  The ARCore session.
 /// @param[in]    plane    The plane for which to retrieve center pose.
 /// @param[inout] out_pose An already-allocated @c ::ArPose object into which
-/// the pose will be stored.
+///     the pose will be stored.
 void ArPlane_getCenterPose(const ArSession *session,
                            const ArPlane *plane,
                            ArPose *out_pose);
@@ -3985,7 +4400,7 @@ void ArPlane_isPoseInPolygon(const ArSession *session,
 /// @param[in]    session  The ARCore session.
 /// @param[in]    point    The point to retrieve the pose of.
 /// @param[inout] out_pose An already-allocated @c ::ArPose object into which
-/// the pose will be stored.
+///     the pose will be stored.
 void ArPoint_getPose(const ArSession *session,
                      const ArPoint *point,
                      ArPose *out_pose);
@@ -4010,9 +4425,9 @@ void ArPoint_getOrientationMode(const ArSession *session,
 /// Returns the pose of the @c ::ArInstantPlacementPoint.
 /// @param[in]    session  The ARCore session.
 /// @param[in]    instant_placement_point  The Instant Placement point to
-/// retrieve the pose of.
+///     retrieve the pose of.
 /// @param[inout] out_pose An @c ::ArPose object already-allocated via
-/// @c ::ArPose_create into which the pose will be stored.
+///     @c ::ArPose_create into which the pose will be stored.
 void ArInstantPlacementPoint_getPose(
     const ArSession *session,
     const ArInstantPlacementPoint *instant_placement_point,
@@ -4022,10 +4437,10 @@ void ArInstantPlacementPoint_getPose(
 /// Returns the tracking method of the @c ::ArInstantPlacementPoint.
 /// @param[in]    session  The ARCore session.
 /// @param[in]    instant_placement_point  The Instant Placement point to
-/// retrieve the tracking method of.
+///     retrieve the tracking method of.
 /// @param[inout] out_tracking_method An already-allocated
-/// @c ::ArInstantPlacementPointTrackingMethod object into which the tracking
-/// method will be stored.
+///     @c ::ArInstantPlacementPointTrackingMethod object into which the
+///     tracking  method will be stored.
 void ArInstantPlacementPoint_getTrackingMethod(
     const ArSession *session,
     const ArInstantPlacementPoint *instant_placement_point,
@@ -4123,8 +4538,8 @@ void ArAugmentedImage_getTrackingMethod(
 /// Returns a pointer to an array of 3D vertices in (x, y, z) packing. These
 /// vertices are relative to the center pose of the face with units in meters.
 ///
-/// The pointer returned by this function is valid until @c
-/// ::ArTrackable_release or the next @c ::ArSession_update is called. The
+/// The pointer returned by this function is valid until
+/// @c ::ArTrackable_release or the next @c ::ArSession_update is called. The
 /// application must copy the data if they wish to retain it for longer.
 ///
 /// If the face's tracking state is @c #AR_TRACKING_STATE_PAUSED, then the
@@ -4148,8 +4563,8 @@ void ArAugmentedFace_getMeshVertices(const ArSession *session,
 /// There is exactly one normal vector for each vertex. These normals are
 /// relative to the center pose of the face.
 ///
-/// The pointer returned by this function is valid until @c
-/// ::ArTrackable_release or the next @c ::ArSession_update is called. The
+/// The pointer returned by this function is valid until
+/// @c ::ArTrackable_release or the next @c ::ArSession_update is called. The
 /// application must copy the data if they wish to retain it for longer.
 ///
 /// If the face's tracking state is @c #AR_TRACKING_STATE_PAUSED, then the
@@ -4172,8 +4587,8 @@ void ArAugmentedFace_getMeshNormals(const ArSession *session,
 /// There is a pair of texture coordinates for each vertex. These values
 /// never change.
 ///
-/// The pointer returned by this function is valid until @c
-/// ::ArTrackable_release or the next @c ::ArSession_update is called. The
+/// The pointer returned by this function is valid until
+/// @c ::ArTrackable_release or the next @c ::ArSession_update is called. The
 /// application must copy the data if they wish to retain it for longer.
 ///
 /// If the face's tracking state is @c #AR_TRACKING_STATE_PAUSED, then the
@@ -4202,8 +4617,8 @@ void ArAugmentedFace_getMeshTextureCoordinates(
 /// face of each triangle is defined by the face where the vertices are in
 /// counter clockwise winding order. These values never change.
 ///
-/// The pointer returned by this function is valid until @c
-/// ::ArTrackable_release or the next @c ::ArSession_update is called. The
+/// The pointer returned by this function is valid until
+/// @c ::ArTrackable_release or the next @c ::ArSession_update is called. The
 /// application must copy the data if they wish to retain it for longer.
 ///
 /// If the face's tracking state is @c #AR_TRACKING_STATE_PAUSED, then the
@@ -4247,7 +4662,7 @@ void ArAugmentedFace_getRegionPose(const ArSession *session,
 /// @param[in]    session  The ARCore session.
 /// @param[in]    face     The face for which to retrieve center pose.
 /// @param[inout] out_pose An already-allocated @c ::ArPose object into which
-/// the pose will be stored.
+///     the pose will be stored.
 void ArAugmentedFace_getCenterPose(const ArSession *session,
                                    const ArAugmentedFace *face,
                                    ArPose *out_pose);
@@ -4411,8 +4826,7 @@ void ArHitResultList_getSize(const ArSession *session,
 /// @param[in]    hit_result_list   The list from which to copy an item.
 /// @param[in]    index             Index of the entry to copy.
 /// @param[inout] out_hit_result    An already-allocated @c ::ArHitResult object
-/// into
-///     which the result will be copied.
+///     into which the result will be copied.
 void ArHitResultList_getItem(const ArSession *session,
                              const ArHitResultList *hit_result_list,
                              int32_t index,
@@ -4467,7 +4881,7 @@ void ArHitResult_getDistance(const ArSession *session,
 /// @param[in]    session    The ARCore session.
 /// @param[in]    hit_result The hit result to retrieve the pose of.
 /// @param[inout] out_pose   An already-allocated @c ::ArPose object into which
-/// the pose will be stored.
+///     the pose will be stored.
 void ArHitResult_getHitPose(const ArSession *session,
                             const ArHitResult *hit_result,
                             ArPose *out_pose);
@@ -4586,8 +5000,7 @@ void ArImageMetadata_getAllKeys(const ArSession *session,
 /// @param[in]  tag                 The desired @c uint32_t metadata tag to be
 ///     retrieved from the provided @c ::ArImageMetadata struct.
 /// @param[out] out_metadata_entry  The @c ::ArImageMetadata_const_entry struct
-/// to
-///     which the metadata tag data should be written to, updated only when
+///     to which the metadata tag data should be written to, updated only when
 ///     function returns @c #AR_SUCCESS.
 ///
 /// @return @c #AR_SUCCESS or any of:

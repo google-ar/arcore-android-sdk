@@ -248,20 +248,17 @@ void HelloArApplication::OnDrawFrame(bool depthColorVisualizationEnabled,
     ArPlane_acquireSubsumedBy(ar_session_, ar_plane, &subsume_plane);
     if (subsume_plane != nullptr) {
       ArTrackable_release(ArAsTrackable(subsume_plane));
+      ArTrackable_release(ar_trackable);
       continue;
     }
 
     if (ArTrackingState::AR_TRACKING_STATE_TRACKING != out_tracking_state) {
+      ArTrackable_release(ar_trackable);
       continue;
     }
 
-    ArTrackingState plane_tracking_state;
-    ArTrackable_getTrackingState(ar_session_, ArAsTrackable(ar_plane),
-                                 &plane_tracking_state);
-    if (plane_tracking_state == AR_TRACKING_STATE_TRACKING) {
-      plane_renderer_.Draw(projection_mat, view_mat, *ar_session_, *ar_plane);
-      ArTrackable_release(ar_trackable);
-    }
+    plane_renderer_.Draw(projection_mat, view_mat, *ar_session_, *ar_plane);
+    ArTrackable_release(ar_trackable);
   }
 
   ArTrackableList_destroy(plane_list);
@@ -409,6 +406,10 @@ void HelloArApplication::OnTouched(float x, float y) {
         }
       } else if (AR_TRACKABLE_INSTANT_PLACEMENT_POINT == ar_trackable_type) {
         ar_hit_result = ar_hit;
+      } else if (AR_TRACKABLE_DEPTH_POINT == ar_trackable_type) {
+        // ArDepthPoints are only returned if ArConfig_setDepthMode() is called
+        // with AR_DEPTH_MODE_AUTOMATIC.
+        ar_hit_result = ar_hit;
       }
     }
 
@@ -471,6 +472,11 @@ void HelloArApplication::UpdateAnchorColor(ColoredAnchor* colored_anchor) {
 
   if (ar_trackable_type == AR_TRACKABLE_PLANE) {
     SetColor(139.0f, 195.0f, 74.0f, 255.0f, color);
+    return;
+  }
+
+  if (ar_trackable_type == AR_TRACKABLE_DEPTH_POINT) {
+    SetColor(199.0f, 8.0f, 65.0f, 255.0f, color);
     return;
   }
 

@@ -65,6 +65,5 @@
     </activity>
     <!-- Indicates whether "Google Play Services for AR" (ARCore) is "required" or "optional". -->
     <meta-data android:name="com.google.ar.core" android:value="required" />
-    <meta-data android:name="com.google.ar.core.session_settings" android:value="cloud_anchor_non_time_based,true"/>
   </application>
 </manifest>
