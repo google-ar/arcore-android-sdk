@@ -178,7 +178,7 @@ public class HelloRecordingPlaybackActivity extends AppCompatActivity
     super.onCreate(savedInstanceState);
     loadInternalStateFromIntentExtras();
 
-    setContentView(R.layout.activity_main);
+    setContentView(R.layout.activity_recording_playback_main);
     surfaceView = findViewById(R.id.surfaceview);
     displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
 

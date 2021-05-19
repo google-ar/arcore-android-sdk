@@ -23,7 +23,7 @@ android {
         versionCode getGitCommitCount()
         versionName setVersionName()
 
-        buildConfigField "String", 'GIT_REPOSITORY', "\"" + getGitRepository() + "\""
+        buildConfigField "String", 'GIT_REPOSITORY', "\"" + getGitOriginRemote() + "\""
     }
 
     signingConfigs {
@@ -98,6 +98,10 @@ dependencies {
     implementation project(':samples:augmented_image_java:app')
     implementation project(':samples:augmented_image_c:app')
     implementation project(':samples:augmented_faces_java:app')
+
+    implementation project(':samples:recording_playback_java:app')
+    implementation project(':samples:raw_depth_java:app')
+
     implementation "androidx.core:core-ktx:1.5.0"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }
@@ -118,10 +122,4 @@ static def getGitOriginRemote() {
 
     def found = values.find { it.startsWith("origin") && it.endsWith("(push)") }
     return found.replace("origin", "").replace("(push)", "").replace(".git", "").trim()
-}
-
-
-static def getGitRepository() {
-    def token = getGitOriginRemote().split("/")
-    return token[4]
 }

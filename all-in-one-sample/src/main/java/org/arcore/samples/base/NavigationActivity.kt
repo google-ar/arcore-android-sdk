@@ -17,6 +17,8 @@ import com.google.ar.core.examples.java.augmentedimage.AugmentedImageActivity
 import com.google.ar.core.examples.java.cloudanchor.CloudAnchorActivity
 import com.google.ar.core.examples.java.computervision.ComputerVisionActivity
 import com.google.ar.core.examples.java.helloar.HelloArActivity
+import com.google.ar.core.examples.java.hellorecordingplayback.HelloRecordingPlaybackActivity
+import com.google.ar.core.examples.java.rawdepth.RawDepthActivity
 import com.google.ar.core.examples.java.sharedcamera.SharedCameraActivity
 import info.hannes.github.AppUpdateHelper
 import info.hannes.logcat.LogcatActivity
@@ -68,6 +70,10 @@ abstract class NavigationActivity : AppCompatActivity(), NavigationView.OnNaviga
             openActivity(com.google.ar.core.examples.java.augmentedfaces.AugmentedFacesActivity::class.java)
         } else if (id == R.id.nav_augmented_image_c) {
             openActivity(com.google.ar.core.examples.c.augmentedimage.AugmentedImageActivity::class.java)
+        } else if (id == R.id.nav_recording_playback_java) {
+            openActivity(HelloRecordingPlaybackActivity::class.java)
+        } else if (id == R.id.nav_raw_depth_java) {
+            openActivity(RawDepthActivity::class.java)
         }
         val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
         drawer.closeDrawer(GravityCompat.START)

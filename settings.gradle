@@ -12,3 +12,6 @@ include ':samples:cloud_anchor_java:app'
 include ':samples:augmented_image_java:app'
 include ':samples:augmented_image_c:app'
 include ':samples:augmented_faces_java:app'
+
+include ':samples:recording_playback_java:app'
+include ':samples:raw_depth_java:app'

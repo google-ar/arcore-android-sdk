@@ -41,5 +41,18 @@
             android:icon="@drawable/ic_camera_callibration"
             android:title="shared_camera_java" />
     </group>
+    <group
+        android:id="@+id/grpNew"
+        android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/nav_recording_playback_java"
+            android:icon="@drawable/ic_camera_callibration"
+            android:title="Recording Playback" />
+        <item
+            android:id="@+id/nav_raw_depth_java"
+            android:icon="@drawable/ic_camera_callibration"
+            android:title="Raw depth" />
+    </group>
 
 </menu>

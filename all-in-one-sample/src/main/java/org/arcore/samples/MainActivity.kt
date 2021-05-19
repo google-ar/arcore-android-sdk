@@ -14,11 +14,11 @@ class MainActivity : NavigationActivity() {
                 .add(R.id.contentInfo, SystemInfoFragment())
                 .commit()
 
-        AppUpdateHelper.checkForNewVersion(
-                this,
-                BuildConfig.GIT_REPOSITORY,
-                BuildConfig.VERSION_NAME,
-                { msg -> Toast.makeText(this, msg, Toast.LENGTH_LONG).show() }
-        )
+//        AppUpdateHelper.checkForNewVersion(
+//                this,
+//                BuildConfig.GIT_REPOSITORY,
+//                BuildConfig.VERSION_NAME,
+//                { msg -> Toast.makeText(this, msg, Toast.LENGTH_LONG).show() }
+//        )
     }
 }
