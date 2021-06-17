@@ -23,7 +23,7 @@
        - Support ARCore (`android.hardware.camera.ar`)
        - Support the Raw Depth API (`com.google.ar.core.depth`)
        The current list of supported devices is available from:
-       - https://developers.google.com/ar/discover/supported-devices
+       - https://developers.google.com/ar/devices
   -->
   <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
   <uses-feature android:name="com.google.ar.core.depth" android:required="true"/>

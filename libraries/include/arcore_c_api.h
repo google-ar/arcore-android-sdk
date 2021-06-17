@@ -153,7 +153,7 @@
 /// @defgroup ArCoreApk ArCoreApk
 /// Functions for installing and updating "Google Play Services for AR" (ARCore)
 /// and determining whether the current device is an
-/// <a href="https://developers.google.com/ar/discover/supported-devices">ARCore
+/// <a href="https://developers.google.com/ar/devices">ARCore
 /// supported device</a>.
 
 /// @defgroup ArDepthPoint ArDepthPoint
@@ -1100,7 +1100,7 @@ AR_DEFINE_ENUM(ArDepthMode){
     ///
     /// Provides depth estimation for every pixel in the image, and works best for
     /// static scenes. For a list of supported devices, see:
-    /// https://developers.google.com/ar/discover/supported-devices
+    /// https://developers.google.com/ar/devices
     /// Adds significant computational load.
     ///
     /// With this mode enabled, @c ::ArFrame_hitTest also returns
@@ -1109,7 +1109,7 @@ AR_DEFINE_ENUM(ArDepthMode){
     AR_DEPTH_MODE_AUTOMATIC = 1,
     /// @ingroup ArFrame
     /// On <a
-    /// href="https://developers.google.com/ar/discover/supported-devices">ARCore
+    /// href="https://developers.google.com/ar/devices">ARCore
     /// supported devices</a> that also support the Depth API, provides a "raw",
     /// mostly unfiltered, depth image
     /// (@c ::ArFrame_acquireRawDepthImage) and depth confidence image
@@ -1432,25 +1432,21 @@ ArStatus ArCoreApk_requestInstallCustom(void *env,
 ///     the address of the newly allocated session.
 /// @return @c #AR_SUCCESS or any of:
 /// - @c #AR_ERROR_FATAL if an internal error occurred while creating the
-/// session.
-///   `adb logcat` may contain useful information.
+///   session. `adb logcat` may contain useful information.
 /// - @c #AR_ERROR_CAMERA_PERMISSION_NOT_GRANTED if your app does not have the
 ///   [CAMERA](https://developer.android.com/reference/android/Manifest.permission.html#CAMERA)
 ///   permission.
 /// - @c #AR_UNAVAILABLE_ARCORE_NOT_INSTALLED if the ARCore APK is not present.
 ///   This can be prevented by the installation check described above.
 /// - @c #AR_UNAVAILABLE_DEVICE_NOT_COMPATIBLE if the device is not compatible
-/// with
-///   ARCore.  If encountered after completing the installation check, this
+///   with ARCore.  If encountered after completing the installation check, this
 ///   usually indicates a user has side-loaded ARCore onto an incompatible
 ///   device.
 /// - @c #AR_UNAVAILABLE_APK_TOO_OLD if the installed ARCore APK is too old for
-/// the
-///   ARCore SDK with which this application was built. This can be prevented by
-///   the installation check described above.
+///   the ARCore SDK with which this application was built. This can be
+///   prevented by the installation check described above.
 /// - @c #AR_UNAVAILABLE_SDK_TOO_OLD if the ARCore SDK that this app was built
-/// with
-///   is too old and no longer supported by the installed ARCore APK.
+///   with is too old and no longer supported by the installed ARCore APK.
 ArStatus ArSession_create(void *env,
                           void *context,
                           ArSession **out_session_pointer);
@@ -1478,8 +1474,7 @@ ArStatus ArSession_create(void *env,
 ///     the address of the newly allocated session.
 /// @return @c #AR_SUCCESS or any of:
 /// - @c #AR_ERROR_FATAL if an internal error occurred while creating the
-/// session.
-///   `adb logcat` may contain useful information.
+///   session. `adb logcat` may contain useful information.
 /// - @c #AR_ERROR_CAMERA_PERMISSION_NOT_GRANTED if your app does not have the
 ///   [CAMERA](https://developer.android.com/reference/android/Manifest.permission.html#CAMERA)
 ///   permission.
@@ -1488,17 +1483,14 @@ ArStatus ArSession_create(void *env,
 /// - @c #AR_UNAVAILABLE_ARCORE_NOT_INSTALLED if the ARCore APK is not present.
 ///   This can be prevented by the installation check described above.
 /// - @c #AR_UNAVAILABLE_DEVICE_NOT_COMPATIBLE if the device is not compatible
-/// with
-///   ARCore.  If encountered after completing the installation check, this
+///   with ARCore.  If encountered after completing the installation check, this
 ///   usually indicates a user has side-loaded ARCore onto an incompatible
 ///   device.
 /// - @c #AR_UNAVAILABLE_APK_TOO_OLD if the installed ARCore APK is too old for
-/// the
-///   ARCore SDK with which this application was built. This can be prevented by
-///   the installation check described above.
+///   the ARCore SDK with which this application was built. This can be
+///   prevented by the installation check described above.
 /// - @c #AR_UNAVAILABLE_SDK_TOO_OLD if the ARCore SDK that this app was built
-/// with
-///   is too old and no longer supported by the installed ARCore APK.
+///   with is too old and no longer supported by the installed ARCore APK.
 ArStatus ArSession_createWithFeatures(void *env,
                                       void *context,
                                       const ArSessionFeature *features,
@@ -1617,7 +1609,7 @@ void ArConfig_setAugmentedFaceMode(const ArSession *session,
 /// devices, the default desired focus mode is currently @c
 /// #AR_FOCUS_MODE_FIXED, although this default might change in the future. See
 /// the <a
-/// href="https://developers.google.com/ar/discover/supported-devices">ARCore
+/// href="https://developers.google.com/ar/devices">ARCore
 /// supported devices</a> page for a list of devices on which ARCore does not
 /// support changing the desired focus mode.
 ///
@@ -1643,7 +1635,7 @@ void ArConfig_setFocusMode(const ArSession *session,
 /// Stores the currently configured desired focus mode into @p *focus_mode.
 /// Note: The desired focus mode may be different from the actual focus
 /// mode. See the
-/// <a href="https://developers.google.com/ar/discover/supported-devices">ARCore
+/// <a href="https://developers.google.com/ar/devices">ARCore
 /// supported devices page</a> for a list of affected devices.
 void ArConfig_getFocusMode(const ArSession *session,
                            ArConfig *config,
@@ -1799,7 +1791,7 @@ AR_DEFINE_ENUM(ArCameraConfigTargetFps){
     /// Increases power consumption and may increase app memory usage.
     ///
     /// See the ARCore supported devices
-    /// (https://developers.google.com/ar/discover/supported-devices)
+    /// (https://developers.google.com/ar/devices)
     /// page for a list of devices that currently support 60fps.
     ///
     /// Used as a camera filter, via @c ::ArCameraConfigFilter_setTargetFps.
@@ -1815,7 +1807,7 @@ AR_DEFINE_ENUM(ArCameraConfigDepthSensorUsage){
     /// that will be used by ARCore.
     ///
     /// See the ARCore supported devices
-    /// (https://developers.google.com/ar/discover/supported-devices)
+    /// (https://developers.google.com/ar/devices)
     /// page for a list of devices that currently have supported depth sensors.
     ///
     /// When returned by @c ::ArCameraConfig_getDepthSensorUsage, indicates
@@ -1851,7 +1843,7 @@ AR_DEFINE_ENUM(ArCameraConfigStereoCameraUsage){
     /// devices.
     ///
     /// See the ARCore supported devices
-    /// (https://developers.google.com/ar/discover/supported-devices)
+    /// (https://developers.google.com/ar/devices)
     /// page for a list of devices that currently have supported stereo camera
     /// capability.
     ///
@@ -2208,7 +2200,7 @@ ArStatus ArSession_checkSupported(const ArSession *session,
 /// @return @c #AR_SUCCESS or any of:
 /// - @c #AR_ERROR_FATAL
 /// - @c #AR_ERROR_UNSUPPORTED_CONFIGURATION if the requested session config is
-/// not supported.
+///   not supported.
 ///   See above restrictions.
 /// - @c #AR_ERROR_INTERNET_PERMISSION_NOT_GRANTED
 ArStatus ArSession_configure(ArSession *session, const ArConfig *config);
@@ -2643,12 +2635,12 @@ void ArSession_getCameraConfig(const ArSession *session,
 /// configs with lower GPU texture resolutions than the device's default GPU
 /// texture resolution. These additional resolutions are only returned when the
 /// filter is not a @c nullptr. See the ARCore supported devices
-/// (https://developers.google.com/ar/discover/supported-devices) page for
+/// (https://developers.google.com/ar/devices) page for
 /// an up to date list of supported devices.
 ///
 /// Beginning with ARCore SDK 1.21.0, some devices will return additional camera
 /// configs for supported stereo cameras. See the ARCore supported devices
-/// (https://developers.google.com/ar/discover/supported-devices) page for
+/// (https://developers.google.com/ar/devices) page for
 /// available camera configs by device.
 ///
 /// Beginning with ARCore SDK 1.23.0, the list of returned camera configs will
@@ -2722,7 +2714,7 @@ void ArSession_getSupportedCameraConfigsWithFilter(
 /// @return @c #AR_SUCCESS or any of:
 /// - @c #AR_ERROR_SESSION_NOT_PAUSED if called when session is not paused.
 /// - @c #AR_ERROR_SESSION_UNSUPPORTED if playback is incompatible with selected
-/// features.
+///   features.
 /// - @c #AR_ERROR_PLAYBACK_FAILED if an error occurred with the MP4 dataset
 ///   file such as not being able to open the file or the file is unable to be
 ///   decoded.
@@ -2820,10 +2812,13 @@ void ArSession_getRecordingStatus(ArSession *session,
 /// @param[in] payload_size                Size in bytes of the payload
 ///
 /// @return #AR_SUCCESS or any of:
-/// - #AR_ERROR_ILLEGAL_STATE
-/// - #AR_ERROR_INVALID_ARGUMENT
-/// - #AR_ERROR_RECORDING_FAILED
-/// - #AR_ERROR_DEADLINE_EXCEEDED
+/// - #AR_ERROR_ILLEGAL_STATE when either @c ::ArSession_getRecordingStatus is
+/// not currently @c ::AR_RECORDING_OK or the system is currently under excess
+/// load for images to be produced. The system should not be under such excess
+/// load for more than a few frames and an app should try to record the data
+/// again during the next frame.
+/// - #AR_ERROR_INVALID_ARGUMENT when any argument is invalid, e.g. null
+/// - #AR_ERROR_DEADLINE_EXCEEDED when the frame is not the current frame
 ArStatus ArFrame_recordTrackData(ArSession *session,
                                  const ArFrame *frame,
                                  const uint8_t *track_id_uuid_16,
@@ -2834,7 +2829,7 @@ ArStatus ArFrame_recordTrackData(ArSession *session,
 /// Checks whether the provided @c ::ArDepthMode is supported on this device
 /// with the selected camera configuration. The current list of supported
 /// devices is documented on the <a
-/// href="https://developers.google.com/ar/discover/supported-devices">ARCore
+/// href="https://developers.google.com/ar/devices">ARCore
 /// supported devices</a> page.
 ///
 /// @param[in] session The ARCore session.
@@ -3352,7 +3347,7 @@ void ArFrame_getLightEstimate(const ArSession *session,
 /// - @c #AR_ERROR_DEADLINE_EXCEEDED if @p frame is not the latest frame from
 ///   by @c ::ArSession_update.
 /// - @c #AR_ERROR_RESOURCE_EXHAUSTED if too many Point Clouds are currently
-/// held.
+///   held.
 ArStatus ArFrame_acquirePointCloud(const ArSession *session,
                                    const ArFrame *frame,
                                    ArPointCloud **out_point_cloud);
@@ -3385,7 +3380,7 @@ ArStatus ArFrame_acquireImageMetadata(const ArSession *session,
 /// Returns the CPU image for the current frame.
 /// Caller is responsible for later releasing the image with
 /// @c ::ArImage_release. Not supported on all devices (see
-/// https://developers.google.com/ar/discover/supported-devices). Return values:
+/// https://developers.google.com/ar/devices). Return values:
 /// @return @c #AR_SUCCESS or any of:
 /// - @c #AR_ERROR_INVALID_ARGUMENT - one more input arguments are invalid.
 /// - @c #AR_ERROR_DEADLINE_EXCEEDED - the input frame is not the current frame.
