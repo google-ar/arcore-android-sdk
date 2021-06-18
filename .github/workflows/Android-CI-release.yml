@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: "adopt"
-          java-version: 8
+          java-version: 11
       - name: Install Android SDK
         uses: malinskiy/action-android/install-sdk@release/0.1.2
       - name: Decrypt keystore
