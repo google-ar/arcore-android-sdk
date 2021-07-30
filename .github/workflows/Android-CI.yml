@@ -52,6 +52,10 @@ jobs:
           java-version: ${{ matrix.java_version }}
       - name: Install Android SDK
         uses: malinskiy/action-android/install-sdk@release/0.1.2
+      - name: Decrypt keystore
+        run: ./signing/decrypt.sh
+        env:
+          CRYPT_PASS: ${{ secrets.CRYPT_PASS }}
       - name: Debug keystore
         run: keytool -genkey -v -keystore all-in-one-sample/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "C=US, O=Android, CN=Android Debug"
       - name: Build project
@@ -102,6 +106,10 @@ jobs:
           java-version: 11
       - name: Install Android SDK
         uses: malinskiy/action-android/install-sdk@release/0.1.2
+      - name: Decrypt keystore
+        run: ./signing/decrypt.sh
+        env:
+          CRYPT_PASS: ${{ secrets.CRYPT_PASS }}
       - name: Code checks
         run: ./gradlew check
       - name: Archive Lint report
@@ -110,3 +118,5 @@ jobs:
         with:
           name: LiveEdgeDetection-Lint-report
           path: app/build/reports/lint-results.html
+      - name: cleanup keystore
+        run: ./signing/cleanup.sh
