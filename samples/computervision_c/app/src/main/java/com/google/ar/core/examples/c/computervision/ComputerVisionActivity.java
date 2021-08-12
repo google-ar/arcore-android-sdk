@@ -22,6 +22,7 @@ import android.hardware.display.DisplayManager;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -34,6 +35,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.android.material.snackbar.Snackbar;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -43,6 +45,7 @@ import javax.microedition.khronos.opengles.GL10;
  */
 public class ComputerVisionActivity extends AppCompatActivity
     implements GLSurfaceView.Renderer, DisplayManager.DisplayListener {
+  private static final String TAG = ComputerVisionActivity.class.getSimpleName();
 
   // Opaque native pointer to the native application instance.
   private long nativeApplication;
@@ -60,6 +63,7 @@ public class ComputerVisionActivity extends AppCompatActivity
 
   private Switch focusModeSwitch;
   private GestureDetector gestureDetector;
+  private Snackbar snackbar;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -111,8 +115,14 @@ public class ComputerVisionActivity extends AppCompatActivity
       return;
     }
 
-    JniInterface.onResume(nativeApplication, getApplicationContext(), this);
-    surfaceView.onResume();
+    try {
+      JniInterface.onResume(nativeApplication, getApplicationContext(), this);
+      surfaceView.onResume();
+    } catch (Exception e) {
+      Log.e(TAG, "Exception resuming session", e);
+      displayInSnackbar(e.getMessage());
+      return;
+    }
 
     // Update the radio buttons with the resolution info.
     String lowResLabel = JniInterface.getCameraConfigLabel(nativeApplication, true);
@@ -327,5 +337,13 @@ public class ComputerVisionActivity extends AppCompatActivity
   private void showCameraConfigMenu(boolean show) {
     RadioGroup radioGroup = (RadioGroup) findViewById(R.id.radio_camera_configs);
     radioGroup.setVisibility(show ? View.VISIBLE : View.INVISIBLE);
+  }
+
+  /** Display the message in the snackbar. */
+  private void displayInSnackbar(String message) {
+    snackbar =
+        Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_INDEFINITE);
+
+    snackbar.show();
   }
 }

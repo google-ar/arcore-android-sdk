@@ -19,6 +19,7 @@ package com.google.ar.core.examples.java.hellorecordingplayback;
 import android.Manifest.permission;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
@@ -596,7 +597,7 @@ public class HelloRecordingPlaybackActivity extends AppCompatActivity
     }
     if (playbackDatasetPath != null) {
       try {
-        session.setPlaybackDataset(playbackDatasetPath);
+        session.setPlaybackDatasetUri(Uri.fromFile(new File(playbackDatasetPath)));
       } catch (PlaybackFailedException e) {
         String errorMsg = "Failed to set playback MP4 dataset. " + e;
         Log.e(TAG, errorMsg, e);
@@ -684,7 +685,7 @@ public class HelloRecordingPlaybackActivity extends AppCompatActivity
 
       session.startRecording(
           new RecordingConfig(session)
-              .setMp4DatasetFilePath(lastRecordingDatasetPath)
+              .setMp4DatasetUri(Uri.fromFile(new File(lastRecordingDatasetPath)))
               .setAutoStopOnPause(false)
               .addTrack(anchorTrack));
     } catch (RecordingFailedException e) {

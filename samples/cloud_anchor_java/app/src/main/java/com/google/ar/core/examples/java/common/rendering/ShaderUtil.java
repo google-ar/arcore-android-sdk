@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /** Shader helper functions. */
-public class ShaderUtil {
+public final class ShaderUtil {
   /**
    * Converts a raw text file, saved as a resource, into an OpenGL ES shader.
    *
@@ -125,4 +125,6 @@ public class ShaderUtil {
       return sb.toString();
     }
   }
+
+  private ShaderUtil() {}
 }

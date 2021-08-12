@@ -72,8 +72,8 @@ void ComputerVisionApplication::OnPause() {
   }
 }
 
-void ComputerVisionApplication::OnResume(void* env, void* context,
-                                         void* activity) {
+void ComputerVisionApplication::OnResume(JNIEnv* env, jobject context,
+                                         jobject activity) {
   LOGI("OnResume()");
 
   if (ar_session_ == nullptr) {
@@ -87,8 +87,10 @@ void ComputerVisionApplication::OnResume(void* env, void* context,
     // This method can and will fail in user-facing situations.  Your
     // application must handle these cases at least somewhat gracefully.  See
     // ComputerVision Java sample code for reasonable behavior.
-    CHECK(ArCoreApk_requestInstall(env, activity, user_requested_install,
-                                   &install_status) == AR_SUCCESS);
+    CHECKANDTHROW(
+        ArCoreApk_requestInstall(env, activity, user_requested_install,
+                                 &install_status) == AR_SUCCESS,
+        env, "Please install Google Play Services for AR (ARCore).");
 
     switch (install_status) {
       case AR_INSTALL_STATUS_INSTALLED:
@@ -102,7 +104,8 @@ void ComputerVisionApplication::OnResume(void* env, void* context,
     // This method can and will fail in user-facing situations.  Your
     // application must handle these cases at least somewhat gracefully.  See
     // ComputerVision Java sample code for reasonable behavior.
-    CHECK(ArSession_create(env, context, &ar_session_) == AR_SUCCESS);
+    CHECKANDTHROW(ArSession_create(env, context, &ar_session_) == AR_SUCCESS,
+                  env, "Failed to create AR session.");
     CHECK(ar_session_);
 
     ArConfig_create(ar_session_, &ar_config_);
@@ -121,7 +124,7 @@ void ComputerVisionApplication::OnResume(void* env, void* context,
   }
 
   const ArStatus status = ArSession_resume(ar_session_);
-  CHECK(status == AR_SUCCESS);
+  CHECKANDTHROW(status == AR_SUCCESS, env, "Failed to resume AR session.");
 }
 
 void ComputerVisionApplication::OnSurfaceCreated() {

@@ -837,6 +837,10 @@ AR_DEFINE_ENUM(ArTrackingFailureReason){
     AR_TRACKING_FAILURE_REASON_BAD_STATE = 1,
     /// Motion tracking lost due to poor lighting conditions. Ask the user to
     /// move to a more brightly lit area.
+    /// On Android 12 (API level 31) or later, the user may have <a
+    /// href="https://developer.android.com/about/versions/12/behavior-changes-all#mic-camera-toggles">
+    /// disabled camera access</a>, causing ARCore to receive a blank camera
+    /// feed.
     AR_TRACKING_FAILURE_REASON_INSUFFICIENT_LIGHT = 2,
     /// Motion tracking lost due to excessive motion. Ask the user to move the
     /// device more slowly.
@@ -2012,6 +2016,9 @@ void ArRecordingConfig_destroy(ArRecordingConfig *config);
 /// @ingroup ArRecordingConfig
 /// Gets the file path to save an MP4 dataset file for the recording.
 ///
+/// This will be null if @c ::ArRecordingConfig_setMp4DatasetUri was used to set
+/// the output.
+///
 /// @param[in]  session                   The ARCore session
 /// @param[in]  config                    The config object to query
 /// @param[out] out_mp4_dataset_file_path Pointer to an @c char* to receive
@@ -2029,6 +2036,35 @@ void ArRecordingConfig_getMp4DatasetFilePath(const ArSession *session,
 void ArRecordingConfig_setMp4DatasetFilePath(const ArSession *session,
                                              ArRecordingConfig *config,
                                              const char *mp4_dataset_file_path);
+
+/// @ingroup ArRecordingConfig
+/// Gets the uri that the MP4 dataset will be recorded to.
+///
+/// This will be null if @c ::ArRecordingConfig_setMp4DatasetFilePath was used
+/// to set the output.
+///
+/// @param[in]  session             The ARCore session
+/// @param[in]  config              The config object to query
+/// @param[out] out_mp4_dataset_uri Pointer to a @c char* to receive
+///     the address of the newly allocated uri.
+void ArRecordingConfig_getMp4DatasetUri(const ArSession *session,
+                                        const ArRecordingConfig *config,
+                                        char **out_mp4_dataset_uri);
+
+/// @ingroup ArRecordingConfig
+/// Sets the file path to save an MP4 dataset file for the recording.
+///
+/// The uri must be able to be opened as a file descriptor for reading and
+/// writing that supports @c lseek or @c #AR_ERROR_INVALID_ARGUMENT will be
+/// returned when @c ::ArSession_startRecording is called.
+///
+/// @param[in] session         The ARCore session
+/// @param[in, out] config     The config object to change
+/// @param[in] mp4_dataset_uri The percent encoded, null terminated, uri to
+///     write data to.
+void ArRecordingConfig_setMp4DatasetUri(const ArSession *session,
+                                        ArRecordingConfig *config,
+                                        const char *mp4_dataset_uri);
 
 /// @ingroup ArRecordingConfig
 /// Gets the setting that indicates whether the recording should stop
@@ -2720,6 +2756,30 @@ void ArSession_getSupportedCameraConfigsWithFilter(
 ///   decoded.
 ArStatus ArSession_setPlaybackDataset(ArSession *session,
                                       const char *mp4_dataset_file_path);
+
+/// Sets a MP4 dataset file to play back instead of using the live camera feed
+/// and IMU sensor data.
+///
+/// This overrides the last path set by @c ::ArSession_setPlaybackDataset.
+//
+/// The uri must point to a resource that supports @c lseek.
+//
+/// See @c ::ArSession_setPlaybackDataset for more restrictions and details.
+///
+/// @param[in] session         The ARCore session
+/// @param[in] mp4_dataset_uri The percent encoded, null terminated uri for the
+/// dataset
+///
+/// @return @c #AR_SUCCESS or any of:
+/// - @c #AR_ERROR_INVALID_ARGUMENT if the file descriptor is not seekable.
+/// - @c #AR_ERROR_SESSION_NOT_PAUSED if called when session is not paused.
+/// - @c #AR_ERROR_SESSION_UNSUPPORTED if playback is incompatible with selected
+///   features.
+/// - @c #AR_ERROR_PLAYBACK_FAILED if an error occurred with the MP4 dataset
+///   such as not being able to open the resource or the resource is unable to
+///   be decoded.
+ArStatus ArSession_setPlaybackDatasetUri(ArSession *session,
+                                         const char *mp4_dataset_uri);
 
 /// @ingroup ArRecordingConfig
 /// Describe the current playback status.

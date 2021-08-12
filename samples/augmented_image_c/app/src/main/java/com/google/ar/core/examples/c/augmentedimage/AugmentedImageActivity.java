@@ -21,6 +21,7 @@ import android.net.Uri;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -28,6 +29,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestManager;
+import com.google.android.material.snackbar.Snackbar;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -48,6 +50,7 @@ public class AugmentedImageActivity extends AppCompatActivity
   private GLSurfaceView surfaceView;
   private ImageView fitToScanView;
   private RequestManager glideRequestManager;
+  private Snackbar snackbar;
 
   private boolean viewportChanged = false;
   private int viewportWidth;
@@ -90,8 +93,14 @@ public class AugmentedImageActivity extends AppCompatActivity
       return;
     }
 
-    JniInterface.onResume(nativeApplication, getApplicationContext(), this);
-    surfaceView.onResume();
+    try {
+      JniInterface.onResume(nativeApplication, getApplicationContext(), this);
+      surfaceView.onResume();
+    } catch (Exception e) {
+      Log.e(TAG, "Exception resuming session", e);
+      displayInSnackbar(e.getMessage());
+      return;
+    }
 
     fitToScanView.setVisibility(View.VISIBLE);
 
@@ -202,5 +211,12 @@ public class AugmentedImageActivity extends AppCompatActivity
             fitToScanView.setVisibility(View.GONE);
           }
         });
+  }
+
+  /** Display the message in the snackbar. */
+  private void displayInSnackbar(String message) {
+    snackbar =
+        Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_INDEFINITE);
+    snackbar.show();
   }
 }

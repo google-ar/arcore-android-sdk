@@ -60,8 +60,8 @@ void AugmentedImageApplication::OnPause() {
   }
 }
 
-void AugmentedImageApplication::OnResume(void* env, void* context,
-                                         void* activity) {
+void AugmentedImageApplication::OnResume(JNIEnv* env, jobject context,
+                                         jobject activity) {
   LOGI("OnResume()");
 
   if (ar_session_ == nullptr) {
@@ -75,8 +75,10 @@ void AugmentedImageApplication::OnResume(void* env, void* context,
     // This method can and will fail in user-facing situations.  Your
     // application must handle these cases at least somewhat gracefully.  See
     // HelloAR Java sample code for reasonable behavior.
-    CHECK(ArCoreApk_requestInstall(env, activity, user_requested_install,
-                                   &install_status) == AR_SUCCESS);
+    CHECKANDTHROW(
+        ArCoreApk_requestInstall(env, activity, user_requested_install,
+                                 &install_status) == AR_SUCCESS,
+        env, "Please install Google Play Services for AR (ARCore).");
 
     switch (install_status) {
       case AR_INSTALL_STATUS_INSTALLED:
@@ -90,8 +92,8 @@ void AugmentedImageApplication::OnResume(void* env, void* context,
     // This method can and will fail in user-facing situations.  Your
     // application must handle these cases at least somewhat gracefully.  See
     // HelloAR Java sample code for reasonable behavior.
-    CHECK(ArSession_create(env, context, &ar_session_) == AR_SUCCESS);
-    CHECK(ar_session_);
+    CHECKANDTHROW(ArSession_create(env, context, &ar_session_) == AR_SUCCESS,
+                  env, "Failed to create AR session.");
 
     ArConfig* ar_config = nullptr;
     ArConfig_create(ar_session_, &ar_config);
@@ -103,20 +105,20 @@ void AugmentedImageApplication::OnResume(void* env, void* context,
                                        ar_augmented_image_database);
 
     ArConfig_setFocusMode(ar_session_, ar_config, AR_FOCUS_MODE_AUTO);
-    CHECK(ArSession_configure(ar_session_, ar_config) == AR_SUCCESS);
+    CHECKANDTHROW(ArSession_configure(ar_session_, ar_config) == AR_SUCCESS,
+                  env, "Failed to configure AR session");
 
     ArAugmentedImageDatabase_destroy(ar_augmented_image_database);
     ArConfig_destroy(ar_config);
 
     ArFrame_create(ar_session_, &ar_frame_);
-    CHECK(ar_frame_);
 
     ArSession_setDisplayGeometry(ar_session_, display_rotation_, width_,
                                  height_);
   }
 
   const ArStatus status = ArSession_resume(ar_session_);
-  CHECK(status == AR_SUCCESS);
+  CHECKANDTHROW(status == AR_SUCCESS, env, "Failed to resume AR session.");
 }
 
 ArAugmentedImageDatabase*

@@ -95,6 +95,12 @@ static void CallJavaHideFitToScanImage(jobject activity) {
                             activity);
 }
 
+void ThrowJavaException(JNIEnv* env, const char* msg) {
+  LOGE("Throw Java exception: %s", msg);
+  jclass c = env->FindClass("java/lang/RuntimeException");
+  env->ThrowNew(c, msg);
+}
+
 // Convenience function used in CreateProgram below.
 static GLuint LoadShader(GLenum shader_type, const char* shader_source) {
   GLuint shader = glCreateShader(shader_type);
