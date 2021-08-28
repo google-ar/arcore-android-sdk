@@ -1,0 +1,69 @@
+{
+  "project_info": {
+    "project_number": "739264165746",
+    "firebase_url": "https://arcore-3e6ab.firebaseio.com",
+    "project_id": "arcore-3e6ab",
+    "storage_bucket": "arcore-3e6ab.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1234:android:1234",
+        "android_client_info": {
+          "package_name": "info.arcore.samples"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1234-1234.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "1234"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1234-1234.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1234:android:1234",
+        "android_client_info": {
+          "package_name": "info.arcore.samples.debug"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1234-1234.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "1234"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1234-1234.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
