@@ -1,18 +1,23 @@
 package org.arcore.samples
 
 import android.os.Bundle
-import android.widget.Toast
-import info.hannes.github.AppUpdateHelper
 import org.arcore.samples.base.NavigationActivity
+import org.arcore.samples.databinding.ActivityMainBinding
 
 class MainActivity : NavigationActivity() {
+
+    private lateinit var binding: ActivityMainBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        val view = binding.root
+        setContentView(view)
+
         supportFragmentManager
-                .beginTransaction()
-                .add(R.id.contentInfo, SystemInfoFragment())
-                .commit()
+            .beginTransaction()
+            .add(R.id.contentInfo, SystemInfoFragment())
+            .commit()
 
 //        AppUpdateHelper.checkForNewVersion(
 //                this,
