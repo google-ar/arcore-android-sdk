@@ -1,6 +1,5 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
 
 def setVersionName = { ->
     if (project.hasProperty("androidVersionName")) {
@@ -24,6 +23,10 @@ android {
         versionName setVersionName()
 
         buildConfigField "String", 'GIT_REPOSITORY', "\"" + getGitOriginRemote() + "\""
+    }
+
+    buildFeatures {
+        viewBinding true
     }
 
     signingConfigs {
