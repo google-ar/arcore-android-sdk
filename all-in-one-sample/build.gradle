@@ -103,6 +103,7 @@ dependencies {
     implementation project(':samples:augmented_image_c:app')
     implementation project(':samples:augmented_faces_java:app')
 
+    implementation project(':samples:persistent_cloud_anchor_java:app')
     implementation project(':samples:recording_playback_java:app')
     implementation project(':samples:raw_depth_java:app')
 

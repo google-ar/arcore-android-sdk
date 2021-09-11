@@ -31,11 +31,11 @@
         <item
             android:id="@+id/nav_hello_ar_java"
             android:icon="@drawable/ic_image_filter_black_white"
-            android:title="hello_ar_java" />
+            android:title="Hello AR Jva" />
         <item
             android:id="@+id/nav_hello_ar_c"
             android:icon="@drawable/ic_palette"
-            android:title="Chello_ar_c" />
+            android:title="Hello AR C" />
         <item
             android:id="@+id/nav_shared_camera_java"
             android:icon="@drawable/ic_camera_callibration"
@@ -44,6 +44,11 @@
     <group
         android:id="@+id/grpNew"
         android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/nav_persistant_cloud_java"
+            android:icon="@drawable/ic_camera_callibration"
+            android:title="Persistant Cloud Java" />
 
         <item
             android:id="@+id/nav_recording_playback_java"
