@@ -2,13 +2,14 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 def setVersionName = { ->
+    def version = getTag()
     if (project.hasProperty("androidVersionName")) {
         println("Replacing versionName with supplied build parameter: " +
                 "$androidVersionName")
-        return androidVersionName
-    } else {
-        return getTag()
+        version = androidVersionName
     }
+    println("version=$version")
+    return version
 }
 
 android {

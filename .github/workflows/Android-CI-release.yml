@@ -24,7 +24,6 @@ jobs:
       - name: Decrypt keystore
         run: ./signing/decrypt.sh
         env:
-          TAG_VERSION: ${{ github.ref }}
           CRYPT_PASS: ${{ secrets.CRYPT_PASS }}
       - name: Build project
         run: ./gradlew clean assembleRelease
