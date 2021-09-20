@@ -8,7 +8,6 @@ then
    if [[ -z "$CRYPT_PASS" ]]
    then
       echo "\$CRYPT_PASS Still empty"
-      exit 1
    fi
 else
    echo "\$CRYPT_PASS available"
