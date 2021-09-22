@@ -284,9 +284,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     try {
       configureSession();
       // To record a live camera session for later playback, call
-      // `session.startRecording(recorderConfig)` at anytime. To playback a previously recorded AR
+      // `session.startRecording(recordingConfig)` at anytime. To playback a previously recorded AR
       // session instead of using the live camera feed, call
-      // `session.setPlaybackDataset(playbackDatasetPath)` before calling `session.resume()`. To
+      // `session.setPlaybackDatasetUri(Uri)` before calling `session.resume()`. To
       // learn more about recording and playback, see:
       // https://developers.google.com/ar/develop/java/recording-and-playback
       session.resume();

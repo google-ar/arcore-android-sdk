@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Copyright 2021 Google LLC
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<resources>
+  <string translatable="false" name="app_name">HelloAR Kotlin</string>
+  <string translatable="false" name="depth_use_explanation">When Depth is enabled on supported devices, virtual objects adapt to the environment by blending in with the real world.</string>
+  <string translatable="false" name="button_text_enable_depth">Enable</string>
+  <string translatable="false" name="button_text_disable_depth">Disable</string>
+  <string translatable="false" name="options_title_with_depth">Your device supports depth</string>
+  <string translatable="false" name="options_title_without_depth">Your device does not support depth</string>
+  <string translatable="false" name="done">Done</string>
+  <string-array translatable="false" name="depth_options_array">
+    <item>Enable depth</item>
+    <item>Show depth map</item>
+  </string-array>
+  <string translatable="false" name="options_title_instant_placement">Instant Placement options</string>
+  <string-array translatable="false" name="instant_placement_options_array">
+    <item>Enable Instant Placement</item>
+  </string-array>
+
+  <string translatable="false" name="searching_planes">Searching for surfaces...</string>
+  <string translatable="false" name="waiting_taps">Tap on a surface to place an object.</string>
+
+</resources>

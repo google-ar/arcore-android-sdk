@@ -2023,9 +2023,13 @@ void ArRecordingConfig_destroy(ArRecordingConfig *config);
 /// @param[in]  config                    The config object to query
 /// @param[out] out_mp4_dataset_file_path Pointer to an @c char* to receive
 ///     the address of the newly allocated file path.
+/// @deprecated Deprecated in release 1.26.0. Use
+/// @c ::ArRecordingConfig_getMp4DatasetUri instead.
 void ArRecordingConfig_getMp4DatasetFilePath(const ArSession *session,
                                              const ArRecordingConfig *config,
-                                             char **out_mp4_dataset_file_path);
+                                             char **out_mp4_dataset_file_path)
+    AR_DEPRECATED(
+        "Deprecated in release 1.26.0. Please see function documentation");
 
 /// @ingroup ArRecordingConfig
 /// Sets the file path to save an MP4 dataset file for the recording.
@@ -2033,12 +2037,16 @@ void ArRecordingConfig_getMp4DatasetFilePath(const ArSession *session,
 /// @param[in] session               The ARCore session
 /// @param[in, out] config           The config object to change
 /// @param[in] mp4_dataset_file_path A string representing the file path
+/// @deprecated Deprecated in release 1.26.0. Use
+/// @c ::ArRecordingConfig_setMp4DatasetUri instead.
 void ArRecordingConfig_setMp4DatasetFilePath(const ArSession *session,
                                              ArRecordingConfig *config,
-                                             const char *mp4_dataset_file_path);
+                                             const char *mp4_dataset_file_path)
+    AR_DEPRECATED(
+        "Deprecated in release 1.26.0. Please see function documentation");
 
 /// @ingroup ArRecordingConfig
-/// Gets the uri that the MP4 dataset will be recorded to.
+/// Gets the URI that the MP4 dataset will be recorded to.
 ///
 /// This will be null if @c ::ArRecordingConfig_setMp4DatasetFilePath was used
 /// to set the output.
@@ -2046,7 +2054,7 @@ void ArRecordingConfig_setMp4DatasetFilePath(const ArSession *session,
 /// @param[in]  session             The ARCore session
 /// @param[in]  config              The config object to query
 /// @param[out] out_mp4_dataset_uri Pointer to a @c char* to receive
-///     the address of the newly allocated uri.
+///     the address of the newly allocated URI.
 void ArRecordingConfig_getMp4DatasetUri(const ArSession *session,
                                         const ArRecordingConfig *config,
                                         char **out_mp4_dataset_uri);
@@ -2054,13 +2062,13 @@ void ArRecordingConfig_getMp4DatasetUri(const ArSession *session,
 /// @ingroup ArRecordingConfig
 /// Sets the file path to save an MP4 dataset file for the recording.
 ///
-/// The uri must be able to be opened as a file descriptor for reading and
+/// The URI must be able to be opened as a file descriptor for reading and
 /// writing that supports @c lseek or @c #AR_ERROR_INVALID_ARGUMENT will be
 /// returned when @c ::ArSession_startRecording is called.
 ///
 /// @param[in] session         The ARCore session
 /// @param[in, out] config     The config object to change
-/// @param[in] mp4_dataset_uri The percent encoded, null terminated, uri to
+/// @param[in] mp4_dataset_uri The percent encoded, null terminated, URI to
 ///     write data to.
 void ArRecordingConfig_setMp4DatasetUri(const ArSession *session,
                                         ArRecordingConfig *config,
@@ -2754,20 +2762,25 @@ void ArSession_getSupportedCameraConfigsWithFilter(
 /// - @c #AR_ERROR_PLAYBACK_FAILED if an error occurred with the MP4 dataset
 ///   file such as not being able to open the file or the file is unable to be
 ///   decoded.
+/// @deprecated Deprecated in release 1.26.0. Use
+/// @c ::ArRecordingConfig_setMp4DatasetUri instead.
 ArStatus ArSession_setPlaybackDataset(ArSession *session,
-                                      const char *mp4_dataset_file_path);
+                                      const char *mp4_dataset_file_path)
+    AR_DEPRECATED(
+        "Deprecated in release 1.26.0. Please see function documentation");
 
+/// @ingroup ArSession
 /// Sets a MP4 dataset file to play back instead of using the live camera feed
 /// and IMU sensor data.
 ///
 /// This overrides the last path set by @c ::ArSession_setPlaybackDataset.
 //
-/// The uri must point to a resource that supports @c lseek.
+/// The URI must point to a resource that supports @c lseek.
 //
 /// See @c ::ArSession_setPlaybackDataset for more restrictions and details.
 ///
 /// @param[in] session         The ARCore session
-/// @param[in] mp4_dataset_uri The percent encoded, null terminated uri for the
+/// @param[in] mp4_dataset_uri The percent encoded, null terminated URI for the
 /// dataset
 ///
 /// @return @c #AR_SUCCESS or any of:
