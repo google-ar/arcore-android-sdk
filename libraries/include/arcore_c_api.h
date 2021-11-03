@@ -3610,7 +3610,7 @@ void ArTrackDataList_acquireItem(const ArSession *session,
 /// camera plane. Currently, the three most significant bits are always set to
 /// 000. The remaining thirteen bits express values from 0 to 8191, representing
 /// depth in millimeters. To extract distance from a depth map, see <a
-/// href="https://developers.google.com/ar/develop/java/depth/developer-guide#extract-distance">the
+/// href="https://developers.google.com/ar/develop/c/depth/developer-guide#extract-distance">the
 /// Depth API developer guide</a>.
 ///
 /// The actual size of the depth image depends on the device and its display
@@ -3678,7 +3678,7 @@ ArStatus ArFrame_acquireDepthImage(const ArSession *session,
 /// camera plane. Currently, the three most significant bits are always set to
 /// 000. The remaining thirteen bits express values from 0 to 8191, representing
 /// depth in millimeters. To extract distance from a depth map, see <a
-/// href="https://developers.google.com/ar/develop/java/depth/developer-guide#extract-distance">the
+/// href="https://developers.google.com/ar/develop/c/depth/developer-guide#extract-distance">the
 /// Depth API developer guide</a>.
 ///
 ///
@@ -4024,7 +4024,7 @@ void ArImage_getPlaneData(const ArSession *session,
 
 /// @ingroup ArImage
 /// Releases an instance of @c ::ArImage returned by
-/// ::ArFrame_acquireCameraImage.
+/// @c ::ArFrame_acquireCameraImage.
 void ArImage_release(ArImage *image);
 
 // === ArLightEstimate functions ===
