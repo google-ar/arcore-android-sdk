@@ -156,7 +156,10 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   // Virtual object (ARCore pawn)
   private Mesh virtualObjectMesh;
   private Shader virtualObjectShader;
-  private final ArrayList<Anchor> anchors = new ArrayList<>();
+  private Texture virtualObjectAlbedoTexture;
+  private Texture virtualObjectAlbedoInstantPlacementTexture;
+
+  private final List<WrappedAnchor> wrappedAnchors = new ArrayList<>();
 
   // Environmental HDR
   private Texture dfgTexture;
@@ -394,10 +397,16 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
               render, Mesh.PrimitiveMode.POINTS, /*indexBuffer=*/ null, pointCloudVertexBuffers);
 
       // Virtual object to render (ARCore pawn)
-      Texture virtualObjectAlbedoTexture =
+      virtualObjectAlbedoTexture =
           Texture.createFromAsset(
               render,
               "models/pawn_albedo.png",
+              Texture.WrapMode.CLAMP_TO_EDGE,
+              Texture.ColorFormat.SRGB);
+      virtualObjectAlbedoInstantPlacementTexture =
+          Texture.createFromAsset(
+              render,
+              "models/pawn_albedo_instant_placement.png",
               Texture.WrapMode.CLAMP_TO_EDGE,
               Texture.ColorFormat.SRGB);
       Texture virtualObjectPbrTexture =
@@ -406,6 +415,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
               "models/pawn_roughness_metallic_ao.png",
               Texture.WrapMode.CLAMP_TO_EDGE,
               Texture.ColorFormat.LINEAR);
+
       virtualObjectMesh = Mesh.createFromAsset(render, "models/pawn.obj");
       virtualObjectShader =
           Shader.createFromAssets(
@@ -510,7 +520,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         message = TrackingStateHelper.getTrackingFailureReasonString(camera);
       }
     } else if (hasTrackingPlane()) {
-      if (anchors.isEmpty()) {
+      if (wrappedAnchors.isEmpty()) {
         message = WAITING_FOR_TAP_MESSAGE;
       }
     } else {
@@ -569,7 +579,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     // Visualize anchors created by touch.
     render.clear(virtualSceneFramebuffer, 0f, 0f, 0f, 0f);
-    for (Anchor anchor : anchors) {
+    for (WrappedAnchor wrappedAnchor : wrappedAnchors) {
+      Anchor anchor = wrappedAnchor.getAnchor();
+      Trackable trackable = wrappedAnchor.getTrackable();
       if (anchor.getTrackingState() != TrackingState.TRACKING) {
         continue;
       }
@@ -585,6 +597,16 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       // Update shader properties and draw
       virtualObjectShader.setMat4("u_ModelView", modelViewMatrix);
       virtualObjectShader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
+
+      if (trackable instanceof InstantPlacementPoint
+          && ((InstantPlacementPoint) trackable).getTrackingMethod()
+              == InstantPlacementPoint.TrackingMethod.SCREENSPACE_WITH_APPROXIMATE_DISTANCE) {
+        virtualObjectShader.setTexture(
+            "u_AlbedoTexture", virtualObjectAlbedoInstantPlacementTexture);
+      } else {
+        virtualObjectShader.setTexture("u_AlbedoTexture", virtualObjectAlbedoTexture);
+      }
+
       render.draw(virtualObjectMesh, virtualObjectShader, virtualSceneFramebuffer);
     }
 
@@ -618,15 +640,15 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
             || (trackable instanceof DepthPoint)) {
           // Cap the number of objects created. This avoids overloading both the
           // rendering system and ARCore.
-          if (anchors.size() >= 20) {
-            anchors.get(0).detach();
-            anchors.remove(0);
+          if (wrappedAnchors.size() >= 20) {
+            wrappedAnchors.get(0).getAnchor().detach();
+            wrappedAnchors.remove(0);
           }
 
           // Adding an Anchor tells ARCore that it should track this position in
           // space. This anchor is created on the Plane to place the 3D model
           // in the correct position relative both to the world and to the plane.
-          anchors.add(hit.createAnchor());
+          wrappedAnchors.add(new WrappedAnchor(hit.createAnchor(), trackable));
           // For devices that support the Depth API, shows a dialog to suggest enabling
           // depth-based occlusion. This dialog needs to be spawned on the UI thread.
           this.runOnUiThread(this::showOcclusionDialogIfNeeded);
@@ -817,5 +839,27 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       config.setInstantPlacementMode(InstantPlacementMode.DISABLED);
     }
     session.configure(config);
+  }
+}
+
+/**
+ * Associates an Anchor with the trackable it was attached to. This is used to be able to check
+ * whether or not an Anchor originally was attached to an {@link InstantPlacementPoint}.
+ */
+class WrappedAnchor {
+  private Anchor anchor;
+  private Trackable trackable;
+
+  public WrappedAnchor(Anchor anchor, Trackable trackable) {
+    this.anchor = anchor;
+    this.trackable = trackable;
+  }
+
+  public Anchor getAnchor() {
+    return anchor;
+  }
+
+  public Trackable getTrackable() {
+    return trackable;
   }
 }

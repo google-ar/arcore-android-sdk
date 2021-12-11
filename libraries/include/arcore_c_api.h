@@ -1237,7 +1237,8 @@ AR_DEFINE_ENUM(ArInstantPlacementMode){
     ///    Specifically, a hit test against a vertical surface, such as a wall,
     ///    will not result in a pose that's in any way aligned to the plane of the
     ///    wall, other than +Y being up, against gravity.
-    ///  - The @c ::ArInstantPlacementPoint's tracking method may never become
+    ///  - The @c ::ArInstantPlacementPoint's tracking method may
+    ///    never become
     ///    @c #AR_INSTANT_PLACEMENT_POINT_TRACKING_METHOD_FULL_TRACKING or may
     ///    take a long time to reach this state. The tracking method remains
     ///    @c
@@ -1275,9 +1276,31 @@ AR_DEFINE_ENUM(ArCameraConfigFacingDirection){
     /// Camera looks out the back of the device (away from the user).
     AR_CAMERA_CONFIG_FACING_DIRECTION_BACK = 0,
     /// Camera looks out the front of the device (towards the user).
-    // To create a session using the front-facing (selfie) camera, use
-    // @c ::ArSession_setCameraConfig to set a front-facing (selfie) camera
-    // config retrieved from @c ::ArSession_getSupportedCameraConfigsWithFilter.
+    /// To create a session using the front-facing (selfie) camera, use
+    /// @c ::ArSession_setCameraConfig to set a front-facing (selfie) camera
+    /// config retrieved from @c
+    /// ::ArSession_getSupportedCameraConfigsWithFilter.
+    ///
+    /// When the front camera is selected,
+    /// ARCore's behavior changes in the following ways:
+    ///
+    /// - The display will be mirrored. Specifically,
+    ///   @c ::ArCamera_getProjectionMatrix will include a horizontal flip in
+    ///   the generated projection matrix and APIs that reason about things in
+    ///   screen space, such as @c ::ArFrame_transformCoordinates2d, will mirror
+    ///   screen coordinates. Open GL apps should consider using @c glFrontFace
+    ///   to render mirrored assets without changing their winding direction.
+    /// - @c ::ArCamera_getTrackingState will always output
+    ///   @c #AR_TRACKING_STATE_PAUSED.
+    /// - @c ::ArFrame_hitTest will always output an empty list.
+    /// - @c ::ArCamera_getDisplayOrientedPose will always output an identity
+    ///   pose.
+    /// - @c ::ArSession_acquireNewAnchor will always return
+    ///   @c #AR_ERROR_NOT_TRACKING.
+    /// - Planes will never be detected.
+    /// - @c ::ArSession_configure will fail if the supplied configuration
+    ///   requests Cloud Anchors, Augmented Images, or Environmental HDR
+    ///   Lighting Estimation mode.
     AR_CAMERA_CONFIG_FACING_DIRECTION_FRONT = 1};
 
 #ifdef __cplusplus
@@ -3243,13 +3266,13 @@ void ArFrame_transformDisplayUvCoords(const ArSession *session,
 /// Transforms a list of 2D coordinates from one 2D coordinate system to another
 /// 2D coordinate system.
 ///
-/// For Android view coordinates (#AR_COORDINATES_2D_VIEW,
+/// For Android view coordinates (@c #AR_COORDINATES_2D_VIEW,
 /// @c #AR_COORDINATES_2D_VIEW_NORMALIZED), the view information is taken from
 /// the most recent call to @c ::ArSession_setDisplayGeometry.
 ///
 /// Must be called on the most recently obtained @c ::ArFrame object. If this
 /// function is called on an older frame, a log message will be printed and
-/// out_vertices_2d will remain unchanged.
+/// @p out_vertices_2d will remain unchanged.
 ///
 /// Some examples of useful conversions:
 ///  - To transform from [0,1] range to screen-quad coordinates for rendering:
@@ -3261,14 +3284,14 @@ void ArFrame_transformDisplayUvCoords(const ArSession *session,
 ///  - To transform a point found by a computer vision algorithm in a cpu image
 ///    into a point on the screen that can be used to place an Android View
 ///    (e.g. Button) at that location:
-///    @c #AR_COORDINATES_2D_IMAGE_PIXELS -> #AR_COORDINATES_2D_VIEW
+///    @c #AR_COORDINATES_2D_IMAGE_PIXELS -> @c #AR_COORDINATES_2D_VIEW
 ///  - To transform a point found by a computer vision algorithm in a CPU image
 ///    into a point to be rendered using GL in clip-space ([-1,1] range):
 ///    @c #AR_COORDINATES_2D_IMAGE_PIXELS ->
 ///    @c #AR_COORDINATES_2D_OPENGL_NORMALIZED_DEVICE_COORDINATES
 ///
-/// If inputCoordinates is same as outputCoordinates, the input vertices will be
-/// copied to the output vertices unmodified.
+/// If @p inputCoordinates is same as @p outputCoordinates, the input vertices
+/// will be copied to the output vertices unmodified.
 ///
 /// @param[in]  session         The ARCore session.
 /// @param[in]  frame           The current frame.
