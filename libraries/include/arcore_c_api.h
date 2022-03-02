@@ -2421,7 +2421,7 @@ ArStatus ArSession_update(ArSession *session, ArFrame *out_frame);
 /// @return @c #AR_SUCCESS or any of:
 /// - @c #AR_ERROR_NOT_TRACKING
 /// - @c #AR_ERROR_SESSION_PAUSED
-/// - @c #AR_CLOUD_ANCHOR_STATE_ERROR_RESOURCE_EXHAUSTED
+/// - @c #AR_ERROR_RESOURCE_EXHAUSTED
 ArStatus ArSession_acquireNewAnchor(ArSession *session,
                                     const ArPose *pose,
                                     ArAnchor **out_anchor);
