@@ -55,12 +55,14 @@ class BackgroundRenderer {
 
   GLuint camera_texture_id_;
   GLuint depth_texture_id_;
+  GLuint depth_color_palette_id_;
 
   GLuint camera_position_attrib_;
   GLuint camera_tex_coord_attrib_;
   GLuint camera_texture_uniform_;
 
   GLuint depth_texture_uniform_;
+  GLuint depth_color_palette_uniform_;
   GLuint depth_position_attrib_;
   GLuint depth_tex_coord_attrib_;
 

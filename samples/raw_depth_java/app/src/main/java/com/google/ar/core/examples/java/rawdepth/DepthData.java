@@ -52,7 +52,7 @@ final class DepthData {
 
   public static DepthData create(Session session, Frame frame) {
     try (Image cameraImage = frame.acquireCameraImage();
-        Image depthImage = frame.acquireRawDepthImage();
+        Image depthImage = frame.acquireRawDepthImage16Bits();
         Image confidenceImage = frame.acquireRawDepthConfidenceImage()) {
       // Depth images vary in size depending on device, and can be large on devices with a depth
       // camera. To ensure smooth framerate, we cap the number of points each frame.

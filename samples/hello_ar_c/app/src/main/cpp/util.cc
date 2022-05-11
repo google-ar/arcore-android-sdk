@@ -177,7 +177,7 @@ bool LoadTextFileFromAssetManager(const char* file_name,
   return true;
 }
 
-bool LoadPngFromAssetManager(int target, const std::string& path) {
+bool LoadPngFromAssetManager(int target, const char* path) {
   JNIEnv* env = GetJniEnv();
 
   // Put all the JNI values in a structure that is statically initialized on the
@@ -214,7 +214,7 @@ bool LoadPngFromAssetManager(int target, const std::string& path) {
     return false;
   }
 
-  jstring j_path = env->NewStringUTF(path.c_str());
+  jstring j_path = env->NewStringUTF(path);
 
   jobject image_obj = env->CallStaticObjectMethod(
       jniIds.helper_class, jniIds.load_image_method, j_path);

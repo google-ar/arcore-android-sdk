@@ -303,7 +303,7 @@ class HelloArRenderer(val activity: HelloArActivity) :
         activity.depthSettings.depthColorVisualizationEnabled()
     if (camera.trackingState == TrackingState.TRACKING && shouldGetDepthImage) {
       try {
-        val depthImage = frame.acquireDepthImage()
+        val depthImage = frame.acquireDepthImage16Bits()
         backgroundRenderer.updateCameraDepthTexture(depthImage)
         depthImage.close()
       } catch (e: NotYetAvailableException) {

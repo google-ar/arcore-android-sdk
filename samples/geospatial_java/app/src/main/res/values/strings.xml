@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Copyright 2022 Google LLC
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<resources>
+  <string translatable="false" name="app_name">Geospatial Java</string>
+  <string translatable="false" name="button_text_set_anchor">SET ANCHOR</string>
+  <string translatable="false" name="button_text_clear_anchors">CLEAR ALL ANCHORS</string>
+  <string translatable="false" name="status_unsupported">This device is not supported.</string>
+  <string translatable="false" name="status_pretracking">Localizing your device to set anchor.</string>
+  <string translatable="false" name="status_earth_state_error">There was an error state error, check that you have a valid authentication for the ARCore API.</string>
+  <string translatable="false" name="status_localize_hint">Point your camera at buildings, stores, and signs near you.</string>
+  <string translatable="false" name="status_localize_timeout">Localization not possible.\nClose and open the app to restart session.</string>
+  <string translatable="false" name="status_localize_complete">Localization complete.</string>
+  <plurals name="status_anchors_set">
+    <item quantity="one">%d Anchor set</item>
+    <item quantity="other">%d Anchors set</item>
+  </plurals>
+    <plurals name="status_anchors_cleared">
+    <item quantity="one">%d Anchor cleared</item>
+    <item quantity="other">%d Anchors cleared</item>
+  </plurals>
+  <string translatable="false" name="geospatial_pose_not_tracking">GEOSPATIAL POSE: Not tracking</string>
+  <string translatable="false" name="geospatial_pose">LAT/LNG: %.6f˚, %.6f˚\n\t\t\tACCURACY: %.2fm\nALTITUDE: %.2fm\n\t\t\tACCURACY: %.2fm\nHEADING: %.1f˚\n\t\t\tACCURACY: %.1f˚</string>
+
+  <!-- Strings used in privacy notice dialog messages. [CHAR_LIMIT=NONE] -->
+  <string  name="share_experience_title">AR in the real world</string>
+  <!-- Privacy notice message. [CHAR_LIMIT=NONE] -->
+  <string name="share_experience_message">To power this session, Google will process visual data from your camera.</string>
+  <!-- Privacy notice accept. [CHAR_LIMIT=NONE] -->
+  <string name="agree_to_share">Get started</string>
+  <!-- Privacy notice learn more. [CHAR_LIMIT=NONE] -->
+  <string name="learn_more">Learn more</string>
+  <!-- Geospatial privacy website. [CHAR_LIMIT=NONE] -->
+  <string translatable="false" name="learn_more_url">https://developers.google.com/ar/data-privacy</string>
+</resources>

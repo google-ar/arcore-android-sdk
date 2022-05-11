@@ -21,6 +21,8 @@
 
 #include <type_traits>
 
+#include "util.h"
+
 namespace hello_ar {
 namespace {
 // Positions of the quad vertices in clip space (X, Y).
@@ -35,11 +37,14 @@ constexpr char kDepthVisualizerVertexShaderFilename[] =
     "shaders/background_show_depth_color_visualization.vert";
 constexpr char kDepthVisualizerFragmentShaderFilename[] =
     "shaders/background_show_depth_color_visualization.frag";
+constexpr char kDepthColorPaletteImageFilename[] =
+    "models/depth_color_palette.png";
 
 }  // namespace
 
 void BackgroundRenderer::InitializeGlContent(AAssetManager* asset_manager,
                                              int depth_texture_id) {
+  // Defines the default background, which is the color camera image.
   glGenTextures(1, &camera_texture_id_);
   glBindTexture(GL_TEXTURE_EXTERNAL_OES, camera_texture_id_);
   glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -56,6 +61,19 @@ void BackgroundRenderer::InitializeGlContent(AAssetManager* asset_manager,
   camera_position_attrib_ = glGetAttribLocation(camera_program_, "a_Position");
   camera_tex_coord_attrib_ = glGetAttribLocation(camera_program_, "a_TexCoord");
 
+  // Defines the color palette to use when rendering depth.
+  glGenTextures(1, &depth_color_palette_id_);
+  glBindTexture(GL_TEXTURE_2D, depth_color_palette_id_);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  if (!util::LoadPngFromAssetManager(GL_TEXTURE_2D,
+                                     kDepthColorPaletteImageFilename)) {
+    LOGE("Could not load png texture for depth color palette.");
+  }
+
+  // Defines the depth visualization background, which shows the current depth.
   depth_program_ = util::CreateProgram(kDepthVisualizerVertexShaderFilename,
                                        kDepthVisualizerFragmentShaderFilename,
                                        asset_manager);
@@ -65,6 +83,8 @@ void BackgroundRenderer::InitializeGlContent(AAssetManager* asset_manager,
 
   depth_texture_uniform_ =
       glGetUniformLocation(depth_program_, "u_DepthTexture");
+  depth_color_palette_uniform_ =
+      glGetUniformLocation(depth_program_, "u_ColorMap");
   depth_position_attrib_ = glGetAttribLocation(depth_program_, "a_Position");
   depth_tex_coord_attrib_ = glGetAttribLocation(depth_program_, "a_TexCoord");
 
@@ -97,18 +117,21 @@ void BackgroundRenderer::Draw(const ArSession* session, const ArFrame* frame,
     return;
   }
 
-  if (depth_texture_id_ == -1 || camera_texture_id_ == -1) {
+  if (depth_texture_id_ == -1 || depth_color_palette_id_ == -1 ||
+      camera_texture_id_ == -1) {
     return;
   }
 
   glDepthMask(GL_FALSE);
 
   if (debug_show_depth_map) {
-    glActiveTexture(GL_TEXTURE1);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, depth_texture_id_);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, depth_color_palette_id_);
     glUseProgram(depth_program_);
     glUniform1i(depth_texture_uniform_, 0);
-    glUniform1i(camera_texture_uniform_, 1);
+    glUniform1i(depth_color_palette_uniform_, 1);
 
     // Set the vertex positions and texture coordinates.
     glVertexAttribPointer(depth_position_attrib_, 2, GL_FLOAT, false, 0,
@@ -118,6 +141,7 @@ void BackgroundRenderer::Draw(const ArSession* session, const ArFrame* frame,
     glEnableVertexAttribArray(depth_position_attrib_);
     glEnableVertexAttribArray(depth_tex_coord_attrib_);
   } else {
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_EXTERNAL_OES, camera_texture_id_);
     glUseProgram(camera_program_);
     glUniform1i(camera_texture_uniform_, 0);

@@ -132,7 +132,7 @@ bool LoadTextFileFromAssetManager(const char* file_name,
 // @param target, openGL texture target to load the image into.
 // @param path, path to the file, relative to the assets folder.
 // @return true if png is loaded correctly, otherwise false.
-bool LoadPngFromAssetManager(int target, const std::string& path);
+bool LoadPngFromAssetManager(int target, const char* path);
 
 // Load obj file from assets folder from the app.
 //

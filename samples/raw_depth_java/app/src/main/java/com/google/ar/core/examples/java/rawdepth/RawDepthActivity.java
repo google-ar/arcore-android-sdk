@@ -289,9 +289,9 @@ public class RawDepthActivity extends AppCompatActivity implements GLSurfaceView
         }
 
         // Check if the frame contains new depth data or a 3D reprojection of the previous data. See
-        // documentation of acquireRawDepthImage for more details.
+        // documentation of acquireRawDepthImage16Bits for more details.
         boolean containsNewDepthData;
-        try (Image depthImage = frame.acquireRawDepthImage()) {
+        try (Image depthImage = frame.acquireRawDepthImage16Bits()) {
           containsNewDepthData = depthTimestamp == depthImage.getTimestamp();
           depthTimestamp = depthImage.getTimestamp();
         } catch (NotYetAvailableException e) {

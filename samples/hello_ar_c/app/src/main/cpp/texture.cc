@@ -39,14 +39,15 @@ void Texture::CreateOnGlThread() {
 void Texture::UpdateWithDepthImageOnGlThread(const ArSession& session,
                                              const ArFrame& frame) {
   ArImage* depth_image = nullptr;
-  if (ArFrame_acquireDepthImage(&session, &frame, &depth_image) != AR_SUCCESS) {
+  if (ArFrame_acquireDepthImage16Bits(&session, &frame, &depth_image) !=
+      AR_SUCCESS) {
     // No depth image received for this frame.
     return;
   }
   // Checks that the format is as expected.
   ArImageFormat image_format;
   ArImage_getFormat(&session, depth_image, &image_format);
-  if (image_format != AR_IMAGE_FORMAT_DEPTH16) {
+  if (image_format != AR_IMAGE_FORMAT_D_16) {
     LOGE("Unexpected image format 0x%x", image_format);
     ArImage_release(depth_image);
     abort();

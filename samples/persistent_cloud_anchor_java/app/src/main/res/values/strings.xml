@@ -81,6 +81,6 @@
   <string name="agree_to_share">Start now</string>
   <!-- Privacy notice learn more. [CHAR_LIMIT=NONE] -->
   <string name="learn_more">Learn more</string>
-  <!-- Cloud anchor privacy website. [CHAR_LIMIT=NONE] -->
-  <string name="cloud_anchor_website">https://developers.google.com/ar/cloud-anchors-privacy</string>
+  <!-- Privacy learn more URL. [CHAR_LIMIT=NONE] -->
+  <string name="learn_more_url">https://developers.google.com/ar/data-privacy</string>
 </resources>

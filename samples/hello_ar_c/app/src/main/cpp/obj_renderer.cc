@@ -42,7 +42,7 @@ void ObjRenderer::InitializeGlContent(AAssetManager* asset_manager,
                   GL_LINEAR_MIPMAP_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  if (!util::LoadPngFromAssetManager(GL_TEXTURE_2D, png_file_name)) {
+  if (!util::LoadPngFromAssetManager(GL_TEXTURE_2D, png_file_name.c_str())) {
     LOGE("Could not load png texture for planes.");
   }
   glGenerateMipmap(GL_TEXTURE_2D);

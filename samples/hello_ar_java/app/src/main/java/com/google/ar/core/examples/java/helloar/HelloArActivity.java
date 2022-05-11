@@ -496,7 +496,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     if (camera.getTrackingState() == TrackingState.TRACKING
         && (depthSettings.useDepthForOcclusion()
             || depthSettings.depthColorVisualizationEnabled())) {
-      try (Image depthImage = frame.acquireDepthImage()) {
+      try (Image depthImage = frame.acquireDepthImage16Bits()) {
         backgroundRenderer.updateCameraDepthTexture(depthImage);
       } catch (NotYetAvailableException e) {
         // This normally means that depth data is not available yet. This is normal so we will not

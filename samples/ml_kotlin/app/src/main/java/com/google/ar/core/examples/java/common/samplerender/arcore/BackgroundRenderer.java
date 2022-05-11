@@ -68,6 +68,7 @@ public class BackgroundRenderer {
   private Shader occlusionShader;
   private final Texture cameraDepthTexture;
   private final Texture cameraColorTexture;
+  private Texture depthColorPaletteTexture;
 
   private boolean useDepthVisualization;
   private boolean useOcclusion;
@@ -123,6 +124,12 @@ public class BackgroundRenderer {
       this.useDepthVisualization = useDepthVisualization;
     }
     if (useDepthVisualization) {
+     depthColorPaletteTexture =
+        Texture.createFromAsset(
+            render,
+            "models/depth_color_palette.png",
+            Texture.WrapMode.CLAMP_TO_EDGE,
+            Texture.ColorFormat.LINEAR);
       backgroundShader =
           Shader.createFromAssets(
                   render,
@@ -130,6 +137,7 @@ public class BackgroundRenderer {
                   "shaders/background_show_depth_color_visualization.frag",
                   /*defines=*/ null)
               .setTexture("u_CameraDepthTexture", cameraDepthTexture)
+              .setTexture("u_ColorMap", depthColorPaletteTexture)
               .setDepthTest(false)
               .setDepthWrite(false);
     } else {

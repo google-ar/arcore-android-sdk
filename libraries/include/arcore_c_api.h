@@ -159,6 +159,56 @@
 /// @defgroup ArDepthPoint ArDepthPoint
 /// Hit Depth API
 
+/// @defgroup ArEarth ArEarth
+/// A @c ::ArTrackable implementation representing the Earth. Provides
+/// localization ability in geospatial coordinates.
+///
+/// To access @c ::ArEarth, configure the session with an appropriate @c
+/// ::ArGeospatialMode and use @c ::ArSession_acquireEarth.
+///
+/// Not all devices support @c #AR_GEOSPATIAL_MODE_ENABLED, use
+/// @c ::ArSession_isGeospatialModeSupported to check if the current device and
+/// selected camera support enabling this mode.
+///
+/// @c ::ArEarth should only be used when its @c ::ArTrackingState is @c
+/// #AR_TRACKING_STATE_TRACKING, and otherwise should not be used. Use @c
+/// ::ArTrackable_getTrackingState to obtain the current @c ::ArTrackingState.
+/// If the @c ::ArTrackingState does not become @c #AR_TRACKING_STATE_TRACKING,
+/// then @c ::ArEarth_getEarthState may contain more information as @c
+/// ::ArEarthState.
+///
+/// Use @c ::ArEarth_getCameraGeospatialPose to obtain the Earth-relative
+/// virtual camera pose for the latest frame.
+///
+/// Use @c ::ArEarth_acquireNewAnchor to attach anchors to Earth. Calling @c
+/// ::ArTrackable_acquireNewAnchor with an @c ::ArEarth instance will
+/// fail to create a new anchor and will return the @c
+/// #AR_ERROR_INVALID_ARGUMENT error code.
+///
+/// @c ::ArEarth does not support hit testing. Because @c ::ArEarth
+/// is a type of @c ::ArTrackable, the singleton @c ::ArEarth instance may also
+/// be returned by @c ::ArSession_getAllTrackables when enabled.
+
+/// @defgroup ArGeospatialPose ArGeospatialPose
+/// Describes a specific location, elevation, and compass heading relative to
+/// Earth (@ref ownership "value type"). It is comprised of:
+///
+/// - Latitude and longitude are specified in degrees, with positive values
+///   being north of the equator and east of the prime meridian as defined by
+///   the <a href="https://en.wikipedia.org/wiki/World_Geodetic_System">WGS84
+///   specification</a>.
+/// - Altitude is specified in meters above the WGS84 ellipsoid, which is
+///   roughly equivalent to meters above sea level.
+/// - Heading is defined in degrees clockwise from north. See @c
+///   ::ArGeospatialPose_getHeading for more information.
+/// - Accuracy of the latitude, longitude, altitude, and heading are available
+///   as numeric confidence intervals where a large value (large interval) means
+///   low confidence and small value (small interval) means high confidence.
+///
+/// An @c ::ArGeospatialPose can be retrieved from @c
+/// ::ArEarth_getCameraGeospatialPose.
+///
+
 /// @defgroup ArFrame ArFrame
 /// Per-frame state.
 
@@ -469,6 +519,26 @@ typedef struct ArAugmentedImage_ ArAugmentedImage;
 /// - Release with: @c ::ArTrackable_release
 typedef struct ArAugmentedFace_ ArAugmentedFace;
 
+// Earth.
+
+/// @ingroup ArEarth
+/// The Earth trackable (@ref ownership "reference type, long-lived").
+///
+/// - Trackable type: @c #AR_TRACKABLE_EARTH
+/// - Acquire with: @c ::ArSession_acquireEarth
+/// - Release with: @c ::ArTrackable_release
+typedef struct ArEarth_ ArEarth;
+
+// Geospatial Pose.
+
+/// @ingroup ArGeospatialPose
+/// Describes a specific location, elevation, and compass heading relative to
+/// Earth (@ref ownership "value type").
+///
+/// - Create with: @c ::ArGeospatialPose_create
+/// - Release with: @c ::ArGeospatialPose_destroy
+typedef struct ArGeospatialPose_ ArGeospatialPose;
+
 // Augmented Images database
 
 /// @ingroup ArAugmentedImageDatabase
@@ -631,6 +701,9 @@ AR_DEFINE_ENUM(ArTrackableType){
     /// Trackable type for faces.
     AR_TRACKABLE_FACE = 0x41520105,
 
+    /// Trackable type for @c ::ArEarth.
+    AR_TRACKABLE_EARTH = 0x41520109,
+
     /// On supported devices, trackable type for depth image based hit results
     /// returned by @c ::ArFrame_hitTest when @c ::ArConfig_setDepthMode has been
     /// set to @c #AR_DEPTH_MODE_AUTOMATIC.
@@ -683,6 +756,9 @@ AR_DEFINE_ENUM(ArSessionFeature){
         "To create a session using the front-facing (selfie) camera, use "
         "@c ::ArSession_setCameraConfig with the desired config retrieved "
         "from @c ::ArSession_getSupportedCameraConfigsWithFilter.") = 1,
+
+    /// Specifies that the Session will use the Shareable Camera Injection API.
+
 };
 
 /// @ingroup shared_types
@@ -775,6 +851,37 @@ AR_DEFINE_ENUM(ArStatus){
     /// the camera configuration was changed and there is at least one
     /// unreleased image.
     AR_ERROR_ILLEGAL_STATE = -20,
+
+    /// The Android precise location permission (@c ACCESS_FINE_LOCATION) is
+    /// required, but has not been granted prior to calling @c
+    /// ::ArSession_configure when @c ::ArGeospatialMode is set to @c
+    /// #AR_GEOSPATIAL_MODE_ENABLED.
+    ///
+    /// See <a
+    /// href="https://developer.android.com/training/location/permissions#request-location-access-runtime">Android
+    /// documentation on Request location access at runtime</a> for more
+    /// information on how to request the @c ACCESS_FINE_LOCATION permission.
+    AR_ERROR_FINE_LOCATION_PERMISSION_NOT_GRANTED = -21,
+
+    /// The <a
+    /// href="https://developers.google.com/android/guides/setup#declare-dependencies">Fused
+    /// Location Provider for Android library</a> is required, but wasn't found in
+    /// the client app's binary prior to calling @c ::ArSession_configure when @c
+    /// ::ArGeospatialMode is set to @c #AR_GEOSPATIAL_MODE_ENABLED.
+    ///
+    /// <p>Ensure that your app <a
+    /// href="https://developers.google.com/ar/develop/c/geospatial/developer-guide#include-required-libraries">includes
+    /// the Fused Location Provider of Android library</a>, and that your app's <a
+    /// href="https://developers.google.com/ar/develop/c/geospatial/developer-guide#include-required-proguard-rules">ProGuard
+    /// rules are correctly set up for the Geospatial API</a>.
+    ///
+    /// <p>When building your app, check the resulting binary with the <a
+    /// href="https://developer.android.com/studio/debug/apk-analyzer">APK
+    /// Analyzer</a>, and ensure that the built application binary includes the @c
+    /// com.google.android.gms.location package, and that its contents are not
+    /// renamed or minified.
+
+    AR_ERROR_GOOGLE_PLAY_SERVICES_LOCATION_LIBRARY_NOT_LINKED = -22,
 
     /// When recording failed.
     AR_ERROR_RECORDING_FAILED = -23,
@@ -1095,7 +1202,9 @@ AR_DEFINE_ENUM(ArFocusMode){/// Focus is fixed.
 /// the selected camera support a particular depth mode.
 AR_DEFINE_ENUM(ArDepthMode){
     /// No depth information will be provided. Calling
-    /// @c ::ArFrame_acquireDepthImage will return @c #AR_ERROR_ILLEGAL_STATE.
+    /// @c ::ArFrame_acquireDepthImage16Bits or
+    /// @c ::ArFrame_acquireRawDepthImage16Bits will return
+    /// @c #AR_ERROR_ILLEGAL_STATE.
     AR_DEPTH_MODE_DISABLED = 0,
     /// On supported devices the best possible depth is estimated based on
     /// hardware and software sources. Available sources of automatic depth are:
@@ -1116,10 +1225,8 @@ AR_DEFINE_ENUM(ArDepthMode){
     /// href="https://developers.google.com/ar/devices">ARCore
     /// supported devices</a> that also support the Depth API, provides a "raw",
     /// mostly unfiltered, depth image
-    /// (@c ::ArFrame_acquireRawDepthImage) and depth confidence image
+    /// (@c ::ArFrame_acquireRawDepthImage16Bits) and depth confidence image
     /// (@c ::ArFrame_acquireRawDepthConfidenceImage).
-    ///
-    ///
     ///
     /// The raw depth image is sparse and does not provide valid depth for all
     /// pixels. Pixels without a valid depth estimate have a pixel value of 0.
@@ -1204,6 +1311,69 @@ AR_DEFINE_ENUM(ArCloudAnchorMode){
     /// @c ::ArSession_configure will require the application to have the Android
     /// INTERNET permission.
     AR_CLOUD_ANCHOR_MODE_ENABLED = 1,
+};
+
+/// @ingroup ArConfig
+/// Describes the desired behavior of ARCore Geospatial API features and
+/// capabilities. Not all devices support all modes. Use @c
+/// ::ArSession_isGeospatialModeSupported to find whether the current device
+/// supports a particular Geospatial mode. The default value is @c
+/// #AR_GEOSPATIAL_MODE_DISABLED.
+///
+/// Use @c ::ArConfig_setGeospatialMode to set the desired mode.
+AR_DEFINE_ENUM(ArGeospatialMode){
+    /// The Geospatial API is disabled. When a configuration with @c
+    /// #AR_GEOSPATIAL_MODE_DISABLED becomes active on the @c ::ArSession, current
+    /// @c ::ArEarth and @c ::ArAnchor objects created from @c
+    /// ::ArEarth_acquireNewAnchor will stop updating; have their @c
+    /// ::ArTrackingState set to @c #AR_TRACKING_STATE_STOPPED and should be
+    /// released; and @c ::ArSession_acquireEarth will return @c NULL. If
+    /// re-enabled, you will need to call @c ::ArSession_acquireEarth to acquire
+    /// @c ::ArEarth again.
+    AR_GEOSPATIAL_MODE_DISABLED = 0,
+
+    /// The Geospatial API is enabled. @c ::ArSession_acquireEarth will create
+    /// valid @c ::ArEarth objects when a configuration becomes active with this
+    /// mode through @c ::ArSession_configure.
+    ///
+    /// Using this mode requires your app do the following:
+    ///
+    /// - Add the <a
+    /// href="https://developer.android.com/training/basics/network-ops/connecting">ACCESS_INTERNET</a>
+    /// permission to the AndroidManifest; otherwise,
+    ///     @c ::ArSession_configure returns
+    ///     @c #AR_ERROR_INTERNET_PERMISSION_NOT_GRANTED.
+    /// - Include the Google Play Services Location Library as a dependency for
+    ///     your app. See <a
+    ///     href="https://developers.google.com/android/guides/setup#declare-dependencies">Declare
+    ///     dependencies for Google Play services</a> for instructions on how to
+    ///     include this library in your app. If this library is not linked, @c
+    ///     ::ArSession_configure returns
+    ///     @c #AR_ERROR_GOOGLE_PLAY_SERVICES_LOCATION_LIBRARY_NOT_LINKED.
+    /// - Request and be granted the <a
+    /// href="https://developer.android.com/training/location/permissions">Android
+    /// ACCESS_FINE_LOCATION permission</a>;
+    ///     otherwise, @c ::ArSession_configure returns
+    ///     @c #AR_ERROR_FINE_LOCATION_PERMISSION_NOT_GRANTED.
+    ///
+    /// Location is tracked only while @c ::ArSession is resumed. While
+    /// @c ::ArSession is paused, @c ::ArEarth's @c ::ArTrackingState will be
+    /// @c #AR_TRACKING_STATE_PAUSED.
+    ///
+    /// For more information, see documentation on <a
+    ///     href="https://developers.google.com/ar/develop/c/geospatial/developer-guide">the
+    ///     Geospatial API on Google Developers</a>.
+    ///
+    /// This mode is not compatible with the front-facing
+    /// (selfie) camera. If @c ::ArGeospatialMode is @c
+    /// #AR_GEOSPATIAL_MODE_ENABLED on a session using
+    /// @c #AR_CAMERA_CONFIG_FACING_DIRECTION_FRONT, @c ::ArSession_configure will
+    /// return @c #AR_ERROR_UNSUPPORTED_CONFIGURATION.
+    ///
+    /// Not all devices support @c #AR_GEOSPATIAL_MODE_ENABLED, use
+    /// @c ::ArSession_isGeospatialModeSupported to check if the current device
+    /// and selected camera support enabling this mode.
+    AR_GEOSPATIAL_MODE_ENABLED = 2,
 };
 
 /// @ingroup ArInstantPlacementPoint
@@ -1669,6 +1839,23 @@ void ArConfig_getFocusMode(const ArSession *session,
                            ArFocusMode *focus_mode);
 
 /// @ingroup ArConfig
+/// Sets the Geospatial mode. See @c ::ArGeospatialMode for available options.
+void ArConfig_setGeospatialMode(const ArSession *session,
+                                ArConfig *config,
+                                ArGeospatialMode geospatial_mode);
+
+/// @ingroup ArConfig
+/// Gets the current geospatial mode set on the configuration.
+///
+/// @param[in]   session             The ARCore session.
+/// @param[in]   config              The configuration object.
+/// @param[out]  out_geospatial_mode The current geospatial mode set on the
+///     config.
+void ArConfig_getGeospatialMode(const ArSession *session,
+                                const ArConfig *config,
+                                ArGeospatialMode *out_geospatial_mode);
+
+/// @ingroup ArConfig
 /// Gets the currently configured desired @c ::ArDepthMode.
 void ArConfig_getDepthMode(const ArSession *session,
                            const ArConfig *config,
@@ -1682,8 +1869,9 @@ void ArConfig_getDepthMode(const ArSession *session,
 ///   to determine whether the current device and the selected camera support a
 ///   particular depth mode.
 /// - With depth enabled through this call, calls to
-///   @c ::ArFrame_acquireDepthImage can be made to acquire the latest computed
-///   depth image.
+///   @c ::ArFrame_acquireDepthImage16Bits and
+///   @c ::ArFrame_acquireRawDepthImage16Bits can be made to acquire the latest
+///   computed depth image.
 /// - With depth enabled through this call, calling @c ::ArFrame_hitTest
 ///   generates an @c ::ArHitResultList that also includes @c ::ArDepthPoint
 ///   values that are sampled from the latest computed depth image.
@@ -2256,10 +2444,13 @@ ArStatus ArSession_checkSupported(const ArSession *session,
 ///
 /// - When using the (default) back-facing camera:
 ///   - @c #AR_AUGMENTED_FACE_MODE_MESH3D.
+///   - @c #AR_GEOSPATIAL_MODE_ENABLED on devices that do not support this
+///   Geospatial mode. See @c ::ArSession_isGeospatialModeSupported.
 /// - When using the front-facing (selfie) camera:
 ///   - Any config using @c ::ArConfig_setAugmentedImageDatabase.
 ///   - @c #AR_CLOUD_ANCHOR_MODE_ENABLED.
 ///   - @c #AR_LIGHT_ESTIMATION_MODE_ENVIRONMENTAL_HDR.
+///   - @c #AR_GEOSPATIAL_MODE_ENABLED.
 ///
 /// @param[in] session The ARCore session.
 /// @param[in] config The new configuration setting for the session.
@@ -2269,7 +2460,21 @@ ArStatus ArSession_checkSupported(const ArSession *session,
 /// - @c #AR_ERROR_UNSUPPORTED_CONFIGURATION if the requested session config is
 ///   not supported.
 ///   See above restrictions.
-/// - @c #AR_ERROR_INTERNET_PERMISSION_NOT_GRANTED
+/// - @c #AR_ERROR_INTERNET_PERMISSION_NOT_GRANTED if
+///   #AR_GEOSPATIAL_MODE_ENABLED or
+///   #AR_CLOUD_ANCHOR_MODE_ENABLED is set and the
+///   Android <a
+///   href="https://developer.android.com/training/basics/network-ops/connecting">
+///   INTERNET</a> permission has not been granted.
+/// - @c #AR_ERROR_FINE_LOCATION_PERMISSION_NOT_GRANTED if
+///   #AR_GEOSPATIAL_MODE_ENABLED is set and the @c ACCESS_FINE_LOCATION
+///   permission has not been granted.
+/// - @c #AR_ERROR_GOOGLE_PLAY_SERVICES_LOCATION_LIBRARY_NOT_LINKED if
+///   #AR_GEOSPATIAL_MODE_ENABLED is set and the <a
+///   href="https://developers.google.com/android/guides/setup#declare-dependencies">Fused
+///   Location Provider for Android library</a> could not be found. See @c
+///   #AR_ERROR_GOOGLE_PLAY_SERVICES_LOCATION_LIBRARY_NOT_LINKED for additional
+///   troubleshooting steps.
 ArStatus ArSession_configure(ArSession *session, const ArConfig *config);
 
 /// @ingroup ArSession
@@ -2740,6 +2945,24 @@ void ArSession_getSupportedCameraConfigsWithFilter(
     ArCameraConfigList *list);
 
 /// @ingroup ArSession
+/// Returns the @c ::ArEarth object for the session. This object is long-lived;
+/// it should be used for the entire duration of the ARCore session or until an
+/// @c ::ArConfig with @c #AR_GEOSPATIAL_MODE_DISABLED is applied on the @c
+/// ::ArSession.
+///
+/// @c ::ArEarth can only be acquired when an @c ::ArConfig with @c
+/// #AR_GEOSPATIAL_MODE_ENABLED is active on the @c ::ArSession. See @c
+/// ::ArConfig_setGeospatialMode to enable the Geospatial API.
+///
+/// @c ::ArEarth must be released by calling @c ::ArTrackable_release.
+///
+/// @param[in]    session   The ARCore session.
+/// @param[out]   out_earth Pointer to @c ::ArEarth to receive the earth object,
+///     or @c NULL if the session's config @c ::ArGeospatialMode is set to @c
+///     #AR_GEOSPATIAL_MODE_DISABLED.
+void ArSession_acquireEarth(const ArSession *session, ArEarth **out_earth);
+
+/// @ingroup ArSession
 /// Sets a MP4 dataset file to play back instead of using the live camera feed
 /// and IMU sensor data.
 ///
@@ -2935,6 +3158,21 @@ ArStatus ArFrame_recordTrackData(ArSession *session,
 void ArSession_isDepthModeSupported(const ArSession *session,
                                     ArDepthMode depth_mode,
                                     int32_t *out_is_supported);
+
+/// @ingroup ArSession
+/// Checks whether the provided @c ::ArGeospatialMode is supported on this
+/// device. The current list of supported devices is documented on the <a
+/// href="https://developers.google.com/ar/devices">ARCore supported devices</a>
+/// page. A device may be incompatible with a given @c ::ArGeospatialMode due to
+/// insufficient sensor capabilities.
+///
+/// @param[in] session           The ARCore session.
+/// @param[in] geospatial_mode   The desired geospatial mode to check.
+/// @param[out] out_is_supported Non-zero if the @c ::ArGeospatialMode is
+///     supported on this device.
+void ArSession_isGeospatialModeSupported(const ArSession *session,
+                                         ArGeospatialMode geospatial_mode,
+                                         int32_t *out_is_supported);
 
 // === ArPose functions ===
 
@@ -3683,9 +3921,88 @@ void ArTrackDataList_acquireItem(const ArSession *session,
 ///   number of depth images that it can hold without releasing.
 /// - @c #AR_ERROR_DEADLINE_EXCEEDED if the provided Frame is not the current
 ///   one.
+///
+/// @deprecated Deprecated in release 1.31.0. Please use
+/// @c ::ArFrame_acquireDepthImage16Bits instead, which expands the depth range
+/// from 8191mm to 65535mm. This deprecated version may be slower than
+/// @c ::ArFrame_acquireDepthImage16Bits due to the clearing of the top 3 bits
+/// per pixel.
 ArStatus ArFrame_acquireDepthImage(const ArSession *session,
                                    const ArFrame *frame,
-                                   ArImage **out_depth_image);
+                                   ArImage **out_depth_image)
+    AR_DEPRECATED(
+        "Deprecated in release 1.31.0. Please use "
+        "ArFrame_acquireDepthImage16Bits instead, which expands the depth "
+        "range from 8191mm to 65535mm. This deprecated version may "
+        "be slower than ArFrame_acquireDepthImage16Bits due to the clearing of "
+        "the top 3 bits per pixel.");
+
+/// @ingroup ArFrame
+/// Attempts to acquire a depth image that corresponds to the current frame.
+///
+/// The depth image has format <a
+/// href="https://developer.android.com/reference/android/hardware/HardwareBuffer#D_16">
+/// HardwareBuffer.D_16</a>, which is a single 16-bit plane at index 0,
+/// stored in little-endian format. Each pixel contains the distance in
+/// millimeters to the camera plane, with the representable depth range between
+/// 0 millimeters and 65535 millimeters, or about 65 meters.
+///
+/// To extract distance from a depth map, see <a
+/// href="https://developers.google.com/ar/develop/c/depth/developer-guide#extract-distance">the
+/// Depth API developer guide</a>.
+////
+/// The actual size of the depth image depends on the device and its display
+/// aspect ratio. The size of the depth image is typically around 160x120
+/// pixels, with higher resolutions up to 640x480 on some devices. These sizes
+/// may change in the future. The outputs of
+/// @c ::ArFrame_acquireDepthImage16Bits,
+/// @c ::ArFrame_acquireRawDepthImage16Bits and
+/// @c ::ArFrame_acquireRawDepthConfidenceImage will all have the exact same
+/// size.
+///
+/// Optimal depth accuracy is achieved between 500 millimeters (50 centimeters)
+/// and 15000 millimeters (15 meters) from the camera, with depth reliably
+/// observed up to 25000 millimeters (25 meters). Error increases quadratically
+/// as distance from the camera increases.
+///
+/// Depth is estimated using data from the world-facing cameras, user motion,
+/// and hardware depth sensors such as a time-of-flight sensor (or ToF sensor)
+/// if available. As the user moves their device through the environment, 3D
+/// depth data is collected and cached which improves the quality of subsequent
+/// depth images and reducing the error introduced by camera distance.
+///
+/// If an up-to-date depth image isn't ready for the current frame, the most
+/// recent depth image available from an earlier frame will be returned instead.
+/// This is expected only to occur on compute-constrained devices. An up-to-date
+/// depth image should typically become available again within a few frames.
+///
+/// The image must be released with @c ::ArImage_release once it is no
+/// longer needed.
+///
+/// @param[in]  session                The ARCore session.
+/// @param[in]  frame                  The current frame.
+/// @param[out] out_depth_image        On successful return, this is filled out
+///     with a pointer to an @c ::ArImage. On error return, this is filled out
+///     with @c nullptr.
+/// @return @c #AR_SUCCESS or any of:
+/// - @c #AR_ERROR_INVALID_ARGUMENT if the session, frame, or depth image
+///   arguments are invalid.
+/// - @c #AR_ERROR_NOT_YET_AVAILABLE if the number of observed camera frames is
+///   not yet sufficient for depth estimation; or depth estimation was not
+///   possible due to poor lighting, camera occlusion, or insufficient motion
+///   observed.
+/// - @c #AR_ERROR_NOT_TRACKING The session is not in the
+///   @c #AR_TRACKING_STATE_TRACKING state, which is required to acquire depth
+///   images.
+/// - @c #AR_ERROR_ILLEGAL_STATE if a supported depth mode was not enabled in
+///   Session configuration.
+/// - @c #AR_ERROR_RESOURCE_EXHAUSTED if the caller app has exceeded maximum
+///   number of depth images that it can hold without releasing.
+/// - @c #AR_ERROR_DEADLINE_EXCEEDED if the provided Frame is not the current
+///   one.
+ArStatus ArFrame_acquireDepthImage16Bits(const ArSession *session,
+                                         const ArFrame *frame,
+                                         ArImage **out_depth_image);
 
 /// @ingroup ArFrame
 /// Attempts to acquire a "raw", mostly unfiltered, depth image that corresponds
@@ -3703,7 +4020,6 @@ ArStatus ArFrame_acquireDepthImage(const ArSession *session,
 /// depth in millimeters. To extract distance from a depth map, see <a
 /// href="https://developers.google.com/ar/develop/c/depth/developer-guide#extract-distance">the
 /// Depth API developer guide</a>.
-///
 ///
 /// The actual size of the depth image depends on the device and its display
 /// aspect ratio. The size of the depth image is typically around 160x120
@@ -3761,9 +4077,103 @@ ArStatus ArFrame_acquireDepthImage(const ArSession *session,
 ///   number of depth images that it can hold without releasing.
 /// - @c #AR_ERROR_DEADLINE_EXCEEDED if the provided @c ::ArFrame is not the
 ///   current one.
+///
+/// @deprecated Deprecated in release 1.31.0. Please use
+/// @c ::ArFrame_acquireRawDepthImage16Bits instead, which expands the depth
+/// range from 8191mm to 65535mm. This deprecated version may be slower than
+/// @c ::ArFrame_acquireRawDepthImage16Bits due to the clearing of the top 3
+/// bits per pixel.
 ArStatus ArFrame_acquireRawDepthImage(const ArSession *session,
                                       const ArFrame *frame,
-                                      ArImage **out_depth_image);
+                                      ArImage **out_depth_image)
+    AR_DEPRECATED(
+        "Deprecated in release 1.31.0. Please use "
+        "ArFrame_acquireRawDepthImage16Bits instead, which expands the depth "
+        "range from 8191mm to 65535mm. This deprecated version may "
+        "be slower than ArFrame_acquireRawDepthImage16Bits due to the clearing "
+        "of the top 3 bits per pixel.");
+
+/// @ingroup ArFrame
+/// Attempts to acquire a "raw", mostly unfiltered, depth image that corresponds
+/// to the current frame.
+///
+/// The raw depth image is sparse and does not provide valid depth for all
+/// pixels. Pixels without a valid depth estimate have a pixel value of 0 and a
+/// corresponding confidence value of 0 (see
+/// @c ::ArFrame_acquireRawDepthConfidenceImage).
+///
+/// The depth image has format <a
+/// href="https://developer.android.com/reference/android/hardware/HardwareBuffer#D_16">
+/// HardwareBuffer.D_16</a>, which is a single 16-bit plane at index 0,
+/// stored in little-endian format. Each pixel contains the distance in
+/// millimeters to the camera plane, with the representable depth range between
+/// 0 millimeters and 65535 millimeters, or about 65 meters.
+///
+/// To extract distance from a depth map, see <a
+/// href="https://developers.google.com/ar/develop/c/depth/developer-guide#extract-distance">the
+/// Depth API developer guide</a>.
+///
+/// The actual size of the depth image depends on the device and its display
+/// aspect ratio. The size of the depth image is typically around 160x120
+/// pixels, with higher resolutions up to 640x480 on some devices. These sizes
+/// may change in the future. The outputs of
+/// @c ::ArFrame_acquireDepthImage16Bits,
+/// @c ::ArFrame_acquireRawDepthImage16Bits and
+/// @c ::ArFrame_acquireRawDepthConfidenceImage will all have the exact same
+/// size.
+///
+/// Optimal depth accuracy is achieved between 500 millimeters (50 centimeters)
+/// and 15000 millimeters (15 meters) from the camera, with depth reliably
+/// observed up to 25000 millimeters (25 meters). Error increases quadratically
+/// as distance from the camera increases.
+///
+/// Depth is primarily estimated using data from the motion of world-facing
+/// cameras. As the user moves their device through the environment, 3D depth
+/// data is collected and cached, improving the quality of subsequent depth
+/// images and reducing the error introduced by camera distance. Depth accuracy
+/// and robustness improves if the device has a hardware depth sensor, such as a
+/// time-of-flight (ToF) camera.
+///
+/// Not every raw depth image contains a new depth estimate. Typically there are
+/// about 10 updates to the raw depth data per second. The depth images between
+/// those updates are a 3D reprojection which transforms each depth pixel into a
+/// 3D point in space and renders those 3D points into a new raw depth image
+/// based on the current camera pose. This effectively transforms raw depth
+/// image data from a previous frame to account for device movement since the
+/// depth data was calculated. For some applications it may be important to know
+/// whether the raw depth image contains new depth data or is a 3D reprojection
+/// (for example, to reduce the runtime cost of 3D reconstruction). To do that,
+/// compare the current raw depth image timestamp, obtained via @c
+/// ::ArImage_getTimestamp, with the previously recorded raw depth image
+/// timestamp. If they are different, the depth image contains new information.
+///
+/// The image must be released via @c ::ArImage_release once it is no longer
+/// needed.
+///
+/// @param[in]  session                The ARCore session.
+/// @param[in]  frame                  The current frame.
+/// @param[out] out_depth_image        On successful return, this is filled out
+///   with a pointer to an @c ::ArImage. On error return, this is filled out
+///   filled out with @c nullptr.
+/// @return @c #AR_SUCCESS or any of:
+/// - @c #AR_ERROR_INVALID_ARGUMENT if the session, frame, or depth image
+///   arguments are invalid.
+/// - @c #AR_ERROR_NOT_YET_AVAILABLE if the number of observed camera frames is
+///   not yet sufficient for depth estimation; or depth estimation was not
+///   possible due to poor lighting, camera occlusion, or insufficient motion
+///   observed.
+/// - @c #AR_ERROR_NOT_TRACKING The session is not in the
+///   @c #AR_TRACKING_STATE_TRACKING state, which is required to acquire depth
+///   images.
+/// - @c #AR_ERROR_ILLEGAL_STATE if a supported depth mode was not enabled in
+///   Session configuration.
+/// - @c #AR_ERROR_RESOURCE_EXHAUSTED if the caller app has exceeded maximum
+///   number of depth images that it can hold without releasing.
+/// - @c #AR_ERROR_DEADLINE_EXCEEDED if the provided @c ::ArFrame is not the
+///   current one.
+ArStatus ArFrame_acquireRawDepthImage16Bits(const ArSession *session,
+                                            const ArFrame *frame,
+                                            ArImage **out_depth_image);
 
 /// @ingroup ArFrame
 /// Attempts to acquire the confidence image corresponding to the raw depth
@@ -3778,7 +4188,7 @@ ArStatus ArFrame_acquireRawDepthImage(const ArSession *session,
 /// confidence and 255 representing the highest confidence in the measured depth
 /// value. Pixels without a valid depth estimate have a confidence value of 0
 /// and a corresponding depth value of 0 (see @c
-/// ::ArFrame_acquireRawDepthImage).
+/// ::ArFrame_acquireRawDepthImage16Bits).
 ///
 /// The scaling of confidence values is linear and continuous within this range.
 /// Expect to see confidence values represented across the full range of 0 to
@@ -3791,7 +4201,8 @@ ArStatus ArFrame_acquireRawDepthImage(const ArSession *session,
 /// aspect ratio. The size of the depth image is typically around 160x120
 /// pixels, with higher resolutions up to 640x480 on some devices. These sizes
 /// may change in the future. The outputs of
-/// @c ::ArFrame_acquireDepthImage, @c ::ArFrame_acquireRawDepthImage and
+/// @c ::ArFrame_acquireDepthImage16Bits,
+/// @c ::ArFrame_acquireRawDepthImage16Bits and
 /// @c ::ArFrame_acquireRawDepthConfidenceImage will all have the exact same
 /// size.
 ///
@@ -3924,10 +4335,18 @@ AR_DEFINE_ENUM(ArImageFormat){
     /// href="https://developer.android.com/reference/android/graphics/ImageFormat.html#YUV_420_888">YUV_420_888</a>.
     AR_IMAGE_FORMAT_YUV_420_888 = 0x23,
 
-    /// Produced by @c ::ArFrame_acquireDepthImage.
+    /// Produced by @c ::ArFrame_acquireDepthImage and
+    /// @c ::ArFrame_acquireRawDepthImage.
     /// Integer value equal to <a
     /// href="https://developer.android.com/reference/android/graphics/ImageFormat.html#DEPTH16">DEPTH16</a>.
     AR_IMAGE_FORMAT_DEPTH16 = 0x44363159,
+
+    /// Produced by @c ::ArFrame_acquireDepthImage16Bits and
+    /// @c ::ArFrame_acquireRawDepthImage16Bits.
+    /// Depth range values in units of millimeters.
+    /// Integer value equal to <a
+    /// href="https://developer.android.com/reference/android/hardware/HardwareBuffer#D_16">D_16</a>.
+    AR_IMAGE_FORMAT_D_16 = 0x00000030,
 
     /// Produced by @c ::ArFrame_acquireRawDepthConfidenceImage. Integer value
     /// equal to @c <a
@@ -5010,6 +5429,296 @@ void ArString_release(char *str);
 /// @ingroup utility_functions
 /// Releases a byte array created using an ARCore API function.
 void ArByteArray_release(uint8_t *byte_array);
+
+/// @ingroup ArEarth
+/// Describes the current state of @c ::ArEarth. When @c
+/// ::ArTrackable_getTrackingState does not become @c
+/// #AR_TRACKING_STATE_TRACKING, @c ::ArEarthState may contain the cause of this
+/// failure.
+///
+/// Obtain using @c ::ArEarth_getEarthState.
+AR_DEFINE_ENUM(ArEarthState){
+    /// @c ::ArEarth is enabled, and has not encountered any problems. Check @c
+    /// ::ArTrackable_getTrackingState to determine if it can be used.
+    AR_EARTH_STATE_ENABLED = 0,
+
+    /// Earth localization has encountered an internal error. The app should not
+    /// attempt to recover from this error. Please see the Android logs for
+    /// additional information.
+    AR_EARTH_STATE_ERROR_INTERNAL = -1,
+
+    /// The given @c ::ArEarth is no longer valid and has @c ::ArTrackingState
+    /// @c #AR_TRACKING_STATE_STOPPED due to @c #AR_GEOSPATIAL_MODE_DISABLED
+    /// being set on the @c ::ArSession. The given @c ::ArEarth object should be
+    /// released by calling @c ::ArTrackable_release.
+    AR_EARTH_STATE_ERROR_GEOSPATIAL_MODE_DISABLED = -2,
+
+    /// The authorization provided by the application is not valid.
+    /// - The Google Cloud project may not have enabled the ARCore API.
+    /// - When using API key authentication, this will happen if the API key in
+    ///   the manifest is invalid or unauthorized. It may also fail if the API
+    ///   key is restricted to a set of apps not including the current one.
+    /// - When using keyless authentication, this may happen when no OAuth
+    ///   client has been created, or when the signing key and package name
+    ///   combination does not match the values used in the Google Cloud
+    ///   project.  It may also fail if Google Play Services isn't installed,
+    ///   is too old, or is malfunctioning for some reason (e.g. killed
+    ///   due to memory pressure).
+    AR_EARTH_STATE_ERROR_NOT_AUTHORIZED = -3,
+
+    /// The application has exhausted the quota allotted to the given
+    /// Google Cloud project. The developer should <a
+    /// href="https://cloud.google.com/docs/quota#requesting_higher_quota">request
+    /// additional quota</a> for the ARCore API for their project from the
+    /// Google Cloud Console.
+    AR_EARTH_STATE_ERROR_RESOURCE_EXHAUSTED = -4,
+
+    /// The APK is older than the supported version.
+    AR_EARTH_STATE_ERROR_APK_VERSION_TOO_OLD = -5,
+};
+
+/// @ingroup ArEarth
+/// Gets the current @c ::ArEarthState of the @c ::ArEarth. This state is
+/// guaranteed not to change until @c ::ArSession_update is called.
+///
+/// @param[in]    session   The ARCore session.
+/// @param[in]    earth     The earth object.
+/// @param[inout] out_state The current state of @c ::ArEarth.
+void ArEarth_getEarthState(const ArSession *session,
+                           const ArEarth *earth,
+                           ArEarthState *out_state);
+
+/// @ingroup ArEarth
+/// Returns the Earth-relative virtual camera pose for the latest frame.
+///
+/// The heading of the obtained @c ::ArGeospatialPose approximates the direction
+/// the user is facing, specifically:
+///
+/// - When the display is perpendicular to the ground, the back of the device
+/// points in the heading direction.
+/// - When the display is parallel to the ground and facing upward, heading is
+/// along the logical display's up direction, taking into account display
+/// rotation.
+/// - When the display is parallel to the ground and facing downward, heading is
+/// along the logical display's down direction.
+/// - In intermediate positions, the heading blends smoothly between the above
+/// behaviors.
+///
+/// Note: This pose is only valid when @c ::ArTrackable_getTrackingState is @c
+/// #AR_TRACKING_STATE_TRACKING. Otherwise, the resulting @c ::ArGeospatialPose
+/// will contain default values.
+///
+/// @param[in]    session                    The ARCore session.
+/// @param[in]    earth                      The @c ::ArEarth object.
+/// @param[out]   out_camera_geospatial_pose Pointer to a @c ::ArGeospatialPose
+///     to receive the geospatial pose.
+void ArEarth_getCameraGeospatialPose(
+    const ArSession *session,
+    const ArEarth *earth,
+    ArGeospatialPose *out_camera_geospatial_pose);
+
+/// @ingroup ArEarth
+/// Creates a new @c ::ArAnchor at the specified geodetic location and
+/// orientation relative to the Earth.
+///
+/// Latitude and longitude are defined by the
+/// <a href="https://en.wikipedia.org/wiki/World_Geodetic_System">WGS84
+/// specification</a>, and altitude values are defined as the elevation above
+/// the WGS84 ellipsoid in meters.
+///
+/// The rotation provided by @p eus_quaternion_4 is a rotation with respect to
+/// an east-up-south coordinate frame. An identity rotation will have the anchor
+/// oriented such that X+ points to the east, Y+ points up away from the center
+/// of the earth, and Z+ points to the south.
+///
+/// To create an anchor that has the +Z axis pointing in the same direction as
+/// heading obtained from @c ::ArGeospatialPose, use the following formula:
+///
+/// \code
+/// {qx, qy, qz, qw} = {0, sin((pi - heading * M_PI / 180.0) / 2), 0, cos((pi -
+/// heading * M_PI / 180.0) / 2)}}.
+/// \endcode
+///
+/// An anchor's @c ::ArTrackingState will be @c #AR_TRACKING_STATE_PAUSED while
+/// @c ::ArEarth is @c #AR_TRACKING_STATE_PAUSED. The tracking state will
+/// permanently become @c #AR_TRACKING_STATE_STOPPED if the @c ::ArSession
+/// configuration is set to @c #AR_GEOSPATIAL_MODE_DISABLED.
+///
+/// Creating anchors near the north pole or south pole is not supported. If the
+/// latitude is within 0.1 degrees of the north pole or south pole (90 degrees
+/// or -90 degrees), this function will return @c #AR_ERROR_INVALID_ARGUMENT and
+/// the anchor will fail to be created.
+///
+/// @param[in] session          The ARCore session.
+/// @param[in] earth            The @c ::ArEarth handle.
+/// @param[in] latitude         The latitude of the anchor relative to the WGS84
+///     ellipsoid.
+/// @param[in] longitude        The longitude of the anchor relative to the
+///     WGS84 ellipsoid.
+/// @param[in] altitude         The altitude of the anchor relative to the WGS84
+///     ellipsoid, in meters.
+/// @param[in] eus_quaternion_4 The rotation quaternion as {qx, qy, qx, qw}.
+/// @param[out] out_anchor      The newly-created @c ::ArAnchor. This will be
+///     set to  @c NULL if no anchor was created.
+/// @return @c #AR_SUCCESS or any of:
+/// - @c #AR_ERROR_ILLEGAL_STATE if @p earth is @c #AR_TRACKING_STATE_STOPPED
+///   due to @c #AR_GEOSPATIAL_MODE_DISABLED configured on the @c ::ArSession.
+///   Reacquire @c ::ArEarth if earth mode was reenabled.
+/// - @c #AR_ERROR_INVALID_ARGUMENT if @p latitude is outside the allowable
+///   range, or if either @p session, @p earth, @p eus_quaternion_4, or @p
+///   out_anchor is @c NULL.
+/// - @c #AR_ERROR_NOT_TRACKING when localisation is not available.
+ArStatus ArEarth_acquireNewAnchor(ArSession *session,
+                                  ArEarth *earth,
+                                  double latitude,
+                                  double longitude,
+                                  double altitude,
+                                  const float *eus_quaternion_4,
+                                  ArAnchor **out_anchor);
+
+// === ArGeospatialPose functions ===
+
+/// @ingroup ArGeospatialPose
+/// Allocates and initializes a new instance. This function may be used in cases
+/// where an instance of this type needs to be created to receive a pose.
+/// It must be destroyed with @c ::ArGeospatialPose_destroy after use.
+//
+/// @param[in] session an @c ::ArSession instance.
+/// @param[out] out_pose the new pose.
+void ArGeospatialPose_create(const ArSession *session,
+                             ArGeospatialPose **out_pose);
+
+/// @ingroup ArGeospatialPose
+/// Releases memory used by the given @p pose object.
+///
+/// @param[in] pose the pose to destroy.
+void ArGeospatialPose_destroy(ArGeospatialPose *pose);
+
+/// @ingroup ArGeospatialPose
+/// Gets the @c ::ArGeospatialPose's latitude and longitude in degrees, with
+/// positive values being north of the equator and east of the prime meridian,
+/// as defined by the <a
+/// href="https://en.wikipedia.org/wiki/World_Geodetic_System">WGS84
+/// specification</a>.
+///
+/// @param[in]    session                The ARCore session.
+/// @param[in]    geospatial_pose        The geospatial pose.
+/// @param[out]   out_latitude_degrees   The latitude of the pose in degrees.
+/// @param[out]   out_longitude_degrees  The longitude of the pose in degrees.
+void ArGeospatialPose_getLatitudeLongitude(
+    const ArSession *session,
+    const ArGeospatialPose *geospatial_pose,
+    double *out_latitude_degrees,
+    double *out_longitude_degrees);
+
+/// @ingroup ArGeospatialPose
+/// Gets the @c ::ArGeospatialPose's estimated horizontal accuracy in meters
+/// with respect to latitude and longitude.
+///
+/// We define horizontal accuracy as the radius of the 68th percentile
+/// confidence level around the estimated horizontal location. In other words,
+/// if you draw a circle centered at this @c ::ArGeospatialPose's latitude and
+/// longitude, and with a radius equal to the horizontal accuracy, then there is
+/// a 68% probability that the true location is inside the circle. Larger
+/// numbers indicate lower accuracy.
+///
+/// For example, if the latitude is 10, longitude is 10, and @p
+/// out_horizontal_accuracy_meters is 15, then there is a 68% probability that
+/// the true location is within 15 meters of the (10°, 10°) latitude/longitude
+/// coordinate.
+///
+/// @param[in]    session                        The ARCore session.
+/// @param[in]    geospatial_pose                The geospatial pose.
+/// @param[out]   out_horizontal_accuracy_meters The estimated horizontal
+///     accuracy of this @c ::ArGeospatialPose, radial, in meters.
+void ArGeospatialPose_getHorizontalAccuracy(
+    const ArSession *session,
+    const ArGeospatialPose *geospatial_pose,
+    double *out_horizontal_accuracy_meters);
+
+/// @ingroup ArGeospatialPose
+/// Gets the @c ::ArGeospatialPose's altitude in meters as elevation above the
+/// <a href="https://en.wikipedia.org/wiki/World_Geodetic_System">WGS84
+/// ellipsoid</a>.
+///
+/// @param[in]    session                The ARCore session.
+/// @param[in]    geospatial_pose        The Geospatial pose.
+/// @param[out]   out_altitude_meters    The altitude of the pose in meters
+///     above the WGS84 ellipsoid.
+void ArGeospatialPose_getAltitude(const ArSession *session,
+                                  const ArGeospatialPose *geospatial_pose,
+                                  double *out_altitude_meters);
+
+/// @ingroup ArGeospatialPose
+/// Gets the @c ::ArGeospatialPose's estimated altitude accuracy.
+///
+/// We define vertical accuracy as the radius of the 68th percentile confidence
+/// level around the estimated altitude. In other words, there is a 68%
+/// probability that the true altitude is within @p out_vertical_accuracy_meters
+/// of this @c ::ArGeospatialPose's altitude (above or below). Larger numbers
+/// indicate lower accuracy.
+///
+/// For example, if this @c ::ArGeospatialPose's
+/// altitude is 100 meters, and @p out_vertical_accuracy_meters is 20 meters,
+/// there is a 68% chance that the true altitude is within 20 meters of 100
+/// meters.
+///
+/// @param[in]    session                    The ARCore session.
+/// @param[in]    geospatial_pose            The Geospatial pose.
+/// @param[out] out_vertical_accuracy_meters The estimated vertical accuracy in
+///     meters.
+void ArGeospatialPose_getVerticalAccuracy(
+    const ArSession *session,
+    const ArGeospatialPose *geospatial_pose,
+    double *out_vertical_accuracy_meters);
+
+/// @ingroup ArGeospatialPose
+/// Gets the @c ::ArGeospatialPose's heading.
+///
+/// Heading is specified in degrees clockwise from true north and approximates
+/// the direction the device is facing. The value returned when facing north is
+/// 0°, when facing east is 90°, when facing south is +/-180°, and when facing
+/// west is -90°.
+///
+/// The heading approximation is based on the rotation of the device in its
+/// current orientation mode (i.e., portrait or landscape) and pitch. For
+/// example, when the device is held vertically or upright, the heading is based
+/// on the camera optical axis. If the device is held horizontally, looking
+/// downwards, the heading is based on the top of the device, with respect to
+/// the orientation mode.
+///
+/// Note: Heading is currently only supported in the device's default
+/// orientation mode, which is portrait mode for most supported devices.
+///
+/// @param[in]    session                The ARCore session.
+/// @param[in]    geospatial_pose        The Geospatial pose.
+/// @param[out]   out_heading_degrees    The heading component of this pose's
+///     orientation in [-180.0, 180.0] degree range.
+void ArGeospatialPose_getHeading(const ArSession *session,
+                                 const ArGeospatialPose *geospatial_pose,
+                                 double *out_heading_degrees);
+
+/// @ingroup ArGeospatialPose
+/// Gets the @c ::ArGeospatialPose's estimated heading accuracy.
+///
+/// We define heading accuracy as the estimated radius of the 68th percentile
+/// confidence level around @c ::ArGeospatialPose_getHeading. In other words,
+/// there is a 68% probability that the true heading is within @p
+/// out_heading_accuracy_degrees of this @c ::ArGeospatialPose's heading. Larger
+/// numbers indicate lower accuracy.
+///
+/// For example, if the estimated heading is 60°, and @p
+/// out_heading_accuracy_degrees is 10°, then there is a 68% probability of the
+/// true heading being between 50° and 70°.
+///
+/// @param[in]    session                      The ARCore session.
+/// @param[in]    geospatial_pose              The geospatial pose.
+/// @param[out]   out_heading_accuracy_degrees The accuracy of the heading
+///     confidence in degrees.
+void ArGeospatialPose_getHeadingAccuracy(
+    const ArSession *session,
+    const ArGeospatialPose *geospatial_pose,
+    double *out_heading_accuracy_degrees);
 
 /// @ingroup ArImageMetadata
 /// Defines a rational data type in @c ::ArImageMetadata_const_entry.

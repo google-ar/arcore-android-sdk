@@ -17,10 +17,12 @@
 precision mediump float;
 
 uniform sampler2D u_DepthTexture;
+uniform sampler2D u_ColorMap;
 
 varying vec2 v_TexCoord;
 
-const highp float kMaxDepth = 8000.0; // In millimeters.
+const float kMidDepthMeters = 8.0;
+const float kMaxDepthMeters = 30.0;
 
 float DepthGetMillimeters(in sampler2D depth_texture, in vec2 depth_uv) {
   // Depth is packed into the red and green components of its texture.
@@ -29,37 +31,39 @@ float DepthGetMillimeters(in sampler2D depth_texture, in vec2 depth_uv) {
   return dot(packedDepthAndVisibility.xy, vec2(255.0, 256.0 * 255.0));
 }
 
-// Returns a color corresponding to the depth passed in. Colors range from red
-// to green to blue, where red is closest and blue is farthest.
-//
-// Uses Turbo color mapping:
-// https://ai.googleblog.com/2019/08/turbo-improved-rainbow-colormap-for.html
+// Returns linear interpolation position of value between min and max bounds.
+// E.g. InverseLerp(1100, 1000, 2000) returns 0.1.
+float InverseLerp(float value, float min_bound, float max_bound) {
+  return clamp((value - min_bound) / (max_bound - min_bound), 0.0, 1.0);
+}
+
+// Returns a color corresponding to the depth passed in.
+// The input x is normalized in range 0 to 1.
 vec3 DepthGetColorVisualization(in float x) {
-  const vec4 kRedVec4 = vec4(0.55305649, 3.00913185, -5.46192616, -11.11819092);
-  const vec4 kGreenVec4 = vec4(0.16207513, 0.17712472, 15.24091500, -36.50657960);
-  const vec4 kBlueVec4 = vec4(-0.05195877, 5.18000081, -30.94853351, 81.96403246);
-  const vec2 kRedVec2 = vec2(27.81927491, -14.87899417);
-  const vec2 kGreenVec2 = vec2(25.95549545, -5.02738237);
-  const vec2 kBlueVec2 = vec2(-86.53476570, 30.23299484);
-  const float kInvalidDepthThreshold = 0.01;
-
-  // Adjusts color space via 6 degree poly interpolation to avoid pure red.
-  x = clamp(x * 0.9 + 0.03, 0.0, 1.0);
-  vec4 v4 = vec4(1.0, x, x * x, x * x * x);
-  vec2 v2 = v4.zw * v4.z;
-  vec3 polynomial_color = vec3(
-    dot(v4, kRedVec4) + dot(v2, kRedVec2),
-    dot(v4, kGreenVec4) + dot(v2, kGreenVec2),
-    dot(v4, kBlueVec4) + dot(v2, kBlueVec2)
-  );
-
-  return step(kInvalidDepthThreshold, x) * polynomial_color;
+  return texture2D(u_ColorMap, vec2(x, 0.5)).rgb;
 }
 
 void main() {
-  highp float normalized_depth =
-      clamp(DepthGetMillimeters(u_DepthTexture, v_TexCoord.xy) / kMaxDepth,
-            0.0, 1.0);
+  // Interpolating in units of meters is more stable, due to limited floating
+  // point precision on GPU.
+  float depth_mm = DepthGetMillimeters(u_DepthTexture, v_TexCoord.xy);
+  float depth_meters = depth_mm * 0.001;
+
+  // Selects the portion of the color palette to use.
+  float normalized_depth = 0.0;
+  if (depth_meters < kMidDepthMeters) {
+    // Short-range depth (0m to 8m) maps to first half of the color palette.
+    normalized_depth = InverseLerp(depth_meters, 0.0, kMidDepthMeters) * 0.5;
+  } else {
+    // Long-range depth (8m to 30m) maps to second half of the color palette.
+    normalized_depth =
+        InverseLerp(depth_meters, kMidDepthMeters, kMaxDepthMeters) * 0.5 + 0.5;
+  }
+
+  // Converts depth to color by with the selected value in the color map.
   vec4 depth_color = vec4(DepthGetColorVisualization(normalized_depth), 1.0);
+
+  // Invalid depth (pixels with value 0) mapped to black.
+  depth_color.rgb *= sign(depth_meters);
   gl_FragColor = depth_color;
 }
