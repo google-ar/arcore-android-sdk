@@ -3072,6 +3072,10 @@ void ArSession_getPlaybackStatus(ArSession *session,
 ///
 /// Recording introduces additional overhead and may affect app performance.
 ///
+/// Session recordings may contain sensitive information. See <a
+/// href="https://developers.google.com/ar/develop/recording-and-playback#what%E2%80%99s_in_a_recording">documentation
+/// on Recording and Playback</a> to learn which data is saved in a recording.
+///
 /// @param[in] session           The ARCore session
 /// @param[in] recording_config  The configuration defined for recording.
 ///
@@ -5565,9 +5569,8 @@ void ArEarth_getCameraGeospatialPose(
 ///   due to @c #AR_GEOSPATIAL_MODE_DISABLED configured on the @c ::ArSession.
 ///   Reacquire @c ::ArEarth if earth mode was reenabled.
 /// - @c #AR_ERROR_INVALID_ARGUMENT if @p latitude is outside the allowable
-///   range, or if either @p session, @p earth, @p eus_quaternion_4, or @p
-///   out_anchor is @c NULL.
-/// - @c #AR_ERROR_NOT_TRACKING when localisation is not available.
+///   range, or if either @p session, @p earth, or @p eus_quaternion_4 is @c
+///   NULL.
 ArStatus ArEarth_acquireNewAnchor(ArSession *session,
                                   ArEarth *earth,
                                   double latitude,

@@ -10,14 +10,14 @@ def arcore_libpath = "${buildDir}/arcore-native"
 configurations { natives }
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 32
     defaultConfig {
         applicationId "com.google.ar.core.examples.c.helloar"
 
         // "AR Optional" apps must declare minSdkVersion >= 14.
         // "AR Required" apps must declare minSdkVersion >= 24.
         minSdkVersion 24
-        targetSdkVersion 31
+        targetSdkVersion 32
         versionCode 1
         versionName '1.0'
 
@@ -53,8 +53,8 @@ android {
 
 dependencies {
     // ARCore (Google Play Services for AR) library.
-    implementation 'com.google.ar:core:1.31.0'
-    natives 'com.google.ar:core:1.31.0'
+    implementation 'com.google.ar:core:1.32.0'
+    natives 'com.google.ar:core:1.32.0'
 
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'com.google.android.material:material:1.1.0'
