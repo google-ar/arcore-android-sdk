@@ -21,6 +21,7 @@ import android.content.SharedPreferences;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -29,6 +30,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.DialogFragment;
 import com.google.ar.core.Anchor;
+import com.google.ar.core.Anchor.TerrainAnchorState;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
 import com.google.ar.core.Config;
@@ -53,6 +55,7 @@ import com.google.ar.core.examples.java.geospatial.PrivacyNoticeDialogFragment.N
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.FineLocationPermissionNotGrantedException;
 import com.google.ar.core.exceptions.GooglePlayServicesLocationLibraryNotLinkedException;
+import com.google.ar.core.exceptions.ResourceExhaustedException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
@@ -61,8 +64,10 @@ import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationExceptio
 import com.google.ar.core.exceptions.UnsupportedConfigurationException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -96,7 +101,8 @@ public class GeospatialActivity extends AppCompatActivity
   private static final double LOCALIZED_HEADING_ACCURACY_HYSTERESIS_DEGREES = 10;
 
   private static final int LOCALIZING_TIMEOUT_SECONDS = 180;
-  private static final int MAXIMUM_ANCHORS = 10;
+  private static final int MAXIMUM_ANCHORS = 5;
+  private static final long DURATION_FOR_NO_TERRAIN_ANCHOR_RESULT_MS = 10000;
 
   // Rendering. The Renderers are created here, and initialized when the GL surface is created.
   private GLSurfaceView surfaceView;
@@ -106,6 +112,8 @@ public class GeospatialActivity extends AppCompatActivity
 
   /** Timer to keep track of how much time has passed since localizing has started. */
   private long localizingStartTimestamp;
+  /** Deadline for showing resolving terrain anchors no result yet message. */
+  private long deadlineForMessageMillis;
 
   enum State {
     /** The Geospatial API has not yet been initialized. */
@@ -138,11 +146,14 @@ public class GeospatialActivity extends AppCompatActivity
   private final TrackingStateHelper trackingStateHelper = new TrackingStateHelper(this);
   private SampleRender render;
   private SharedPreferences sharedPreferences;
+  private final HashMap<Anchor, TerrainAnchorResolveListener> pendingTerrainAnchors =
+      new HashMap<>();
 
   private String lastStatusText;
   private TextView geospatialPoseTextView;
   private TextView statusTextView;
   private Button setAnchorButton;
+  private Button setTerrainAnchorButton;
   private Button clearAnchorsButton;
 
   private BackgroundRenderer backgroundRenderer;
@@ -151,7 +162,9 @@ public class GeospatialActivity extends AppCompatActivity
 
   // Virtual object (ARCore geospatial)
   private Mesh virtualObjectMesh;
-  private Shader virtualObjectShader;
+  private Shader geospatialAnchorVirtualObjectShader;
+  // Virtual object (ARCore geospatial terrain)
+  private Shader terrainAnchorVirtualObjectShader;
 
   private final List<Anchor> anchors = new ArrayList<>();
 
@@ -172,9 +185,11 @@ public class GeospatialActivity extends AppCompatActivity
     geospatialPoseTextView = findViewById(R.id.geospatial_pose_view);
     statusTextView = findViewById(R.id.status_text_view);
     setAnchorButton = findViewById(R.id.set_anchor_button);
+    setTerrainAnchorButton = findViewById(R.id.set_terrain_anchor_button);
     clearAnchorsButton = findViewById(R.id.clear_anchors_button);
 
     setAnchorButton.setOnClickListener(view -> handleSetAnchorButton());
+    setTerrainAnchorButton.setOnClickListener(view -> handleSetTerrainAnchorButton());
     clearAnchorsButton.setOnClickListener(view -> handleClearAnchorsButton());
 
     displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
@@ -245,6 +260,8 @@ public class GeospatialActivity extends AppCompatActivity
         }
 
         // Create the session.
+        // Plane finding mode is default on, which will help the dynamic alignment of terrain
+        // anchors on ground.
         session = new Session(/* context= */ this);
       } catch (UnavailableArcoreNotInstalledException
           | UnavailableUserDeclinedInstallationException e) {
@@ -372,13 +389,28 @@ public class GeospatialActivity extends AppCompatActivity
               Texture.ColorFormat.SRGB);
 
       virtualObjectMesh = Mesh.createFromAsset(render, "models/geospatial_marker.obj");
-      virtualObjectShader =
+      geospatialAnchorVirtualObjectShader =
           Shader.createFromAssets(
                   render,
                   "shaders/ar_unlit_object.vert",
                   "shaders/ar_unlit_object.frag",
                   /*defines=*/ null)
               .setTexture("u_Texture", virtualObjectTexture);
+
+      // Virtual object to render (Terrain Anchor marker)
+      Texture terrainAnchorVirtualObjectTexture =
+          Texture.createFromAsset(
+              render,
+              "models/spatial_marker_yellow.png",
+              Texture.WrapMode.CLAMP_TO_EDGE,
+              Texture.ColorFormat.SRGB);
+      terrainAnchorVirtualObjectShader =
+          Shader.createFromAssets(
+                  render,
+                  "shaders/ar_unlit_object.vert",
+                  "shaders/ar_unlit_object.frag",
+                  /*defines=*/ null)
+              .setTexture("u_Texture", terrainAnchorVirtualObjectTexture);
 
       backgroundRenderer.setUseDepthVisualization(render, false);
       backgroundRenderer.setUseOcclusion(render, false);
@@ -462,25 +494,30 @@ public class GeospatialActivity extends AppCompatActivity
         message = getResources().getString(R.string.status_localize_timeout);
         break;
       case LOCALIZED:
-        if (anchors.size() > 0) {
-          message =
-              getResources()
-                  .getQuantityString(R.plurals.status_anchors_set, anchors.size(), anchors.size());
-
-        } else if (clearedAnchorsAmount != null) {
-          message =
-              getResources()
-                  .getQuantityString(
-                      R.plurals.status_anchors_cleared, clearedAnchorsAmount, clearedAnchorsAmount);
-        } else {
+        if (pendingTerrainAnchors.size() > 0) {
+          // If there is a terrain anchor, show terrain anchor state.
+          for (Map.Entry<Anchor, TerrainAnchorResolveListener> entry :
+              pendingTerrainAnchors.entrySet()) {
+            Anchor anchor = entry.getKey();
+            TerrainAnchorResolveListener listener = entry.getValue();
+            if (anchor.getTerrainAnchorState() != TerrainAnchorState.TASK_IN_PROGRESS) {
+              listener.onTaskComplete(anchor);
+              pendingTerrainAnchors.remove(anchor);
+            }
+            if (deadlineForMessageMillis > 0
+                && SystemClock.uptimeMillis() > deadlineForMessageMillis) {
+              listener.onDeadlineExceeded();
+              deadlineForMessageMillis = 0;
+              pendingTerrainAnchors.remove(anchor);
+            }
+          }
+        } else if (anchors.size() == 0 && clearedAnchorsAmount == null) {
           message = getResources().getString(R.string.status_localize_complete);
         }
         break;
     }
-    if (message == null) {
-      lastStatusText = null;
-      runOnUiThread(() -> statusTextView.setVisibility(View.INVISIBLE));
-    } else if (lastStatusText != message) {
+
+    if (message != null && lastStatusText != message) {
       lastStatusText = message;
       runOnUiThread(
           () -> {
@@ -515,16 +552,29 @@ public class GeospatialActivity extends AppCompatActivity
     for (Anchor anchor : anchors) {
       // Get the current pose of an Anchor in world space. The Anchor pose is updated
       // during calls to session.update() as ARCore refines its estimate of the world.
+
+      // Only render resolved Terrain Anchors and Geospatial anchors.
+      if (anchor.getTerrainAnchorState() != TerrainAnchorState.SUCCESS
+          && anchor.getTerrainAnchorState() != TerrainAnchorState.NONE) {
+        continue;
+      }
       anchor.getPose().toMatrix(modelMatrix, 0);
 
       // Calculate model/view/projection matrices
       Matrix.multiplyMM(modelViewMatrix, 0, viewMatrix, 0, modelMatrix, 0);
       Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0);
-
       // Update shader properties and draw
-      virtualObjectShader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
+      if (anchor.getTerrainAnchorState() == TerrainAnchorState.SUCCESS) {
+        terrainAnchorVirtualObjectShader.setMat4(
+            "u_ModelViewProjection", modelViewProjectionMatrix);
 
-      render.draw(virtualObjectMesh, virtualObjectShader, virtualSceneFramebuffer);
+        render.draw(virtualObjectMesh, terrainAnchorVirtualObjectShader, virtualSceneFramebuffer);
+      } else {
+        geospatialAnchorVirtualObjectShader.setMat4(
+            "u_ModelViewProjection", modelViewProjectionMatrix);
+        render.draw(
+            virtualObjectMesh, geospatialAnchorVirtualObjectShader, virtualSceneFramebuffer);
+      }
     }
 
     // Compose the virtual scene with the background.
@@ -594,6 +644,7 @@ public class GeospatialActivity extends AppCompatActivity
       runOnUiThread(
           () -> {
             setAnchorButton.setVisibility(View.VISIBLE);
+            setTerrainAnchorButton.setVisibility(View.VISIBLE);
           });
       return;
     }
@@ -628,6 +679,7 @@ public class GeospatialActivity extends AppCompatActivity
       runOnUiThread(
           () -> {
             setAnchorButton.setVisibility(View.INVISIBLE);
+            setTerrainAnchorButton.setVisibility(View.INVISIBLE);
             clearAnchorsButton.setVisibility(View.INVISIBLE);
           });
       return;
@@ -673,7 +725,30 @@ public class GeospatialActivity extends AppCompatActivity
     double headingDegrees = geospatialPose.getHeading();
     createAnchor(earth, latitude, longitude, altitude, headingDegrees);
     storeAnchorParameters(latitude, longitude, altitude, headingDegrees);
-    runOnUiThread(() -> clearAnchorsButton.setVisibility(View.VISIBLE));
+    clearAnchorsButton.setVisibility(View.VISIBLE);
+    if (clearedAnchorsAmount != null) {
+      clearedAnchorsAmount = null;
+    }
+    String message =
+        getResources()
+            .getQuantityString(R.plurals.status_anchors_set, anchors.size(), anchors.size());
+
+    statusTextView.setVisibility(View.VISIBLE);
+    statusTextView.setText(message);
+  }
+
+  private void handleSetTerrainAnchorButton() {
+    Earth earth = session.getEarth();
+    if (earth == null || earth.getTrackingState() != TrackingState.TRACKING) {
+      return;
+    }
+
+    GeospatialPose geospatialPose = earth.getCameraGeospatialPose();
+    double latitude = geospatialPose.getLatitude();
+    double longitude = geospatialPose.getLongitude();
+    double headingDegrees = geospatialPose.getHeading();
+    createTerrainAnchor(earth, latitude, longitude, headingDegrees);
+    clearAnchorsButton.setVisibility(View.VISIBLE);
     if (clearedAnchorsAmount != null) {
       clearedAnchorsAmount = null;
     }
@@ -681,9 +756,22 @@ public class GeospatialActivity extends AppCompatActivity
 
   private void handleClearAnchorsButton() {
     clearedAnchorsAmount = anchors.size();
+    String message =
+        getResources()
+            .getQuantityString(
+                R.plurals.status_anchors_cleared, clearedAnchorsAmount, clearedAnchorsAmount);
+
+    statusTextView.setVisibility(View.VISIBLE);
+    statusTextView.setText(message);
+
+    for (Anchor anchor : anchors) {
+      anchor.detach();
+    }
     anchors.clear();
     clearAnchorsFromSharedPreferences();
     clearAnchorsButton.setVisibility(View.INVISIBLE);
+    setAnchorButton.setVisibility(View.VISIBLE);
+    setTerrainAnchorButton.setVisibility(View.VISIBLE);
   }
 
   /** Create an anchor at a specific geodetic location using a heading. */
@@ -701,8 +789,42 @@ public class GeospatialActivity extends AppCompatActivity
             0.0f,
             (float) Math.cos(angleRadians / 2));
     anchors.add(anchor);
-    if (anchors.size() > MAXIMUM_ANCHORS) {
-      anchors.remove(0);
+    if (anchors.size() >= MAXIMUM_ANCHORS) {
+      setAnchorButton.setVisibility(View.INVISIBLE);
+      setTerrainAnchorButton.setVisibility(View.INVISIBLE);
+    }
+  }
+
+  /** Create a terrain anchor at a specific geodetic location using a heading. */
+  private void createTerrainAnchor(
+      Earth earth, double latitude, double longitude, double headingDegrees) {
+    // Convert a heading to a EUS quaternion:
+    double angleRadians = Math.toRadians(180.0f - headingDegrees);
+    Anchor anchor = null;
+    try {
+      anchor =
+          earth.resolveAnchorOnTerrain(
+              latitude,
+              longitude,
+              /* altitudeAboveTerrain= */ 0.0f,
+              0.0f,
+              (float) Math.sin(angleRadians / 2),
+              0.0f,
+              (float) Math.cos(angleRadians / 2));
+      anchors.add(anchor);
+      if (anchors.size() >= MAXIMUM_ANCHORS) {
+        setAnchorButton.setVisibility(View.INVISIBLE);
+        setTerrainAnchorButton.setVisibility(View.INVISIBLE);
+      }
+    } catch (ResourceExhaustedException e) {
+      messageSnackbarHelper.showMessageWithDismiss(
+          this, getResources().getString(R.string.terrain_anchor_resource_exhausted));
+      Log.d(TAG, "Exception creating terrain anchor", e);
+    }
+    deadlineForMessageMillis =
+        SystemClock.uptimeMillis() + DURATION_FOR_NO_TERRAIN_ANCHOR_RESULT_MS;
+    if (anchor != null) {
+      pendingTerrainAnchors.put(anchor, new TerrainAnchorResolveListener());
     }
   }
 
@@ -759,5 +881,26 @@ public class GeospatialActivity extends AppCompatActivity
       throw new AssertionError("Could not save the user preference to SharedPreferences!");
     }
     createSession();
+  }
+
+  /** Listener for the results of a resolving terrain anchor operation. */
+  private final class TerrainAnchorResolveListener {
+    public void onTaskComplete(Anchor anchor) {
+      TerrainAnchorState state = anchor.getTerrainAnchorState();
+      runOnUiThread(
+          () -> {
+            statusTextView.setVisibility(View.VISIBLE);
+            statusTextView.setText(getString(R.string.status_terrain_anchor, state));
+          });
+    }
+
+    public void onDeadlineExceeded() {
+      runOnUiThread(
+          () -> {
+            statusTextView.setVisibility(View.VISIBLE);
+            statusTextView.setText(getResources().getString(R.string.terrain_anchor_no_result_yet));
+          });
+      deadlineForMessageMillis = 0;
+    }
   }
 }

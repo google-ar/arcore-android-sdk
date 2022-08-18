@@ -17,6 +17,7 @@
 <resources>
   <string translatable="false" name="app_name">Geospatial Java</string>
   <string translatable="false" name="button_text_set_anchor">SET ANCHOR</string>
+  <string translatable="false" name="button_text_set_terrain_anchor">SET TERRAIN ANCHOR</string>
   <string translatable="false" name="button_text_clear_anchors">CLEAR ALL ANCHORS</string>
   <string translatable="false" name="status_unsupported">This device is not supported.</string>
   <string translatable="false" name="status_pretracking">Localizing your device to set anchor.</string>
@@ -24,6 +25,9 @@
   <string translatable="false" name="status_localize_hint">Point your camera at buildings, stores, and signs near you.</string>
   <string translatable="false" name="status_localize_timeout">Localization not possible.\nClose and open the app to restart session.</string>
   <string translatable="false" name="status_localize_complete">Localization complete.</string>
+  <string translatable="false" name="status_terrain_anchor">Terrain Anchor State: %1$s</string>
+  <string translatable="false" name="terrain_anchor_no_result_yet">Still resolving the terrain anchor. Please make sure you\'re in an area that has VPS coverage.</string>
+  <string translatable="false" name="terrain_anchor_resource_exhausted">Too many terrain anchors have already been held. Clear all anchors to create new ones.</string>
   <plurals name="status_anchors_set">
     <item quantity="one">%d Anchor set</item>
     <item quantity="other">%d Anchors set</item>

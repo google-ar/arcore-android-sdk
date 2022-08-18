@@ -986,8 +986,7 @@ AR_DEFINE_ENUM(ArCloudAnchorState){
     AR_CLOUD_ANCHOR_STATE_ERROR_INTERNAL = -1,
 
     /// The authorization provided by the application is not valid.
-    /// - The Google Cloud project may not have enabled the ARCore Cloud Anchor
-    ///   API.
+    /// - The Google Cloud project may not have enabled the ARCore API.
     /// - It may fail if the operation you are trying to perform is not allowed.
     /// - When using API key authentication, this will happen if the API key in
     ///   the manifest is invalid, unauthorized or missing. It may also fail if
@@ -1004,9 +1003,8 @@ AR_DEFINE_ENUM(ArCloudAnchorState){
         "ARCore SDK 1.12. See release notes to learn more.") = -3,
 
     /// The application has exhausted the request quota allotted to the given
-    /// API key. The developer should request additional quota for the ARCore
-    /// Cloud Anchor service for their API key from the Google Developers
-    /// Console.
+    /// API key. The developer should request additional quota for the ARCore API
+    /// for their API key from the Google Developers Console.
     AR_CLOUD_ANCHOR_STATE_ERROR_RESOURCE_EXHAUSTED = -4,
 
     /// Hosting failed, because the server could not successfully process the
@@ -1780,7 +1778,11 @@ void ArConfig_setAugmentedImageDatabase(
 /// @ingroup ArConfig
 /// Returns the image database from the session configuration.
 ///
-/// This function returns a copy of the internally stored image database.
+/// This function returns a copy of the internally stored image database, so any
+/// changes to the copy will not affect the current configuration or session.
+///
+/// If no @c ::ArAugmentedImageDatabase has been configured, a new empty
+/// database will be constructed using @c ::ArAugmentedImageDatabase_create.
 void ArConfig_getAugmentedImageDatabase(
     const ArSession *session,
     const ArConfig *config,
@@ -5522,13 +5524,15 @@ void ArEarth_getCameraGeospatialPose(
     ArGeospatialPose *out_camera_geospatial_pose);
 
 /// @ingroup ArEarth
-/// Creates a new @c ::ArAnchor at the specified geodetic location and
+/// Creates a new @c ::ArAnchor at the specified geospatial location and
 /// orientation relative to the Earth.
 ///
 /// Latitude and longitude are defined by the
 /// <a href="https://en.wikipedia.org/wiki/World_Geodetic_System">WGS84
 /// specification</a>, and altitude values are defined as the elevation above
-/// the WGS84 ellipsoid in meters.
+/// the WGS84 ellipsoid in meters. To create an anchor using an altitude
+/// relative to the Earth's terrain instead of altitude above the WGS84
+/// ellipsoid, use @c ::ArEarth_resolveAndAcquireNewAnchorOnTerrain.
 ///
 /// The rotation provided by @p eus_quaternion_4 is a rotation with respect to
 /// an east-up-south coordinate frame. An identity rotation will have the anchor
@@ -5536,17 +5540,18 @@ void ArEarth_getCameraGeospatialPose(
 /// of the earth, and Z+ points to the south.
 ///
 /// To create an anchor that has the +Z axis pointing in the same direction as
-/// heading obtained from @c ::ArGeospatialPose, use the following formula:
+/// heading contained in an @c ::ArGeospatialPose, use the following formula:
 ///
 /// \code
 /// {qx, qy, qz, qw} = {0, sin((pi - heading * M_PI / 180.0) / 2), 0, cos((pi -
 /// heading * M_PI / 180.0) / 2)}}.
 /// \endcode
 ///
-/// An anchor's @c ::ArTrackingState will be @c #AR_TRACKING_STATE_PAUSED while
-/// @c ::ArEarth is @c #AR_TRACKING_STATE_PAUSED. The tracking state will
-/// permanently become @c #AR_TRACKING_STATE_STOPPED if the @c ::ArSession
-/// configuration is set to @c #AR_GEOSPATIAL_MODE_DISABLED.
+/// An anchor's @c ::ArTrackingState will be @c #AR_TRACKING_STATE_PAUSED
+/// while @c ::ArEarth's @c ::ArTrackingState is @c #AR_TRACKING_STATE_PAUSED.
+/// Its tracking state will permanently become @c
+/// #AR_TRACKING_STATE_STOPPED if @c ::ArSession_configure sets the Geospatial
+/// mode to @c #AR_GEOSPATIAL_MODE_DISABLED.
 ///
 /// Creating anchors near the north pole or south pole is not supported. If the
 /// latitude is within 0.1 degrees of the north pole or south pole (90 degrees
@@ -5578,6 +5583,151 @@ ArStatus ArEarth_acquireNewAnchor(ArSession *session,
                                   double altitude,
                                   const float *eus_quaternion_4,
                                   ArAnchor **out_anchor);
+
+/// @ingroup ArEarth
+/// Creates a new @c ::ArAnchor at a specified horizontal position and altitude
+/// relative to the horizontal position’s terrain. Terrain means the ground or
+/// ground floor inside a building with VPS coverage. If the altitude relative
+/// to the WGS84 ellipsoid is known, use @c ::ArEarth_acquireNewAnchor instead.
+///
+/// The specified @p altitude_above_terrain is interpreted to be relative to the
+/// Earth's terrain (or floor) at the specified latitude/longitude geospatial
+/// coordinates, rather than relative to the WGS84 ellipsoid. Specifying an
+/// altitude of 0 will position the anchor directly on the terrain (or floor)
+/// whereas specifying a positive altitude will position the anchor above the
+/// terrain (or floor), against the direction of gravity.
+///
+/// This creates a new @c ::ArAnchor and schedules a task to resolve the
+/// anchor's pose using the given parameters. You may resolve multiple anchors
+/// at a time, but a session cannot be tracking more than 40 Terrain Anchors at
+/// time. Attempting to resolve more than 40 Terrain Anchors will result in
+/// resolve calls returning status @c #AR_ERROR_RESOURCE_EXHAUSTED.
+///
+/// If this function returns @c #AR_SUCCESS, the Terrain Anchor state of @p
+/// out_terrain_anchor will be @c #AR_TERRAIN_ANCHOR_STATE_TASK_IN_PROGRESS, and
+/// its tracking state will be @c #AR_TRACKING_STATE_PAUSED. The anchor
+/// remains in this state until its pose has been successfully resolved. If
+/// the resolving task results in an error, its tracking state will be
+/// permanently set to @c #AR_TRACKING_STATE_STOPPED, and @c
+/// ::ArAnchor_getTerrainAnchorState details the error that occurred using @c
+/// ::ArTerrainAnchorState. If this function's return value is not @c
+/// #AR_SUCCESS, then @p out_anchor will be set to @c NULL.
+///
+/// Creating a Terrain Anchor requires an active @c ::ArEarth which is @c
+/// #AR_EARTH_STATE_ENABLED. If it is not, then this function returns @c
+/// #AR_ERROR_ILLEGAL_STATE. This call also requires a working internet
+/// connection to communicate with the ARCore API on Google Cloud. ARCore will
+/// continue to retry if it is unable to establish a connection to the ARCore
+/// service.
+///
+/// A Terrain Anchor's @c ::ArTrackingState will be @c #AR_TRACKING_STATE_PAUSED
+/// while @c ::ArEarth's @c ::ArTrackingState is @c #AR_TRACKING_STATE_PAUSED.
+/// The anchor's tracking state will permanently become @c
+/// #AR_TRACKING_STATE_STOPPED if @c ::ArSession_configure is used to set @c
+/// #AR_GEOSPATIAL_MODE_DISABLED.
+///
+///
+/// Latitude and longitude are defined by the
+/// <a href="https://en.wikipedia.org/wiki/World_Geodetic_System">WGS84
+/// specification</a>.
+///
+/// The rotation provided by @p eus_quaternion_4 is a rotation with respect to
+/// an east-up-south coordinate frame. An identity rotation will have the anchor
+/// oriented such that X+ points to the east, Y+ points up away from the center
+/// of the earth, and Z+ points to the south.
+///
+/// To create an anchor that has the +Z axis pointing in the same direction as
+/// heading contained in an @c ::ArGeospatialPose, use the following formula:
+///
+/// \code
+/// {qx, qy, qz, qw} = {0, sin((pi - heading * M_PI / 180.0) / 2), 0, cos((pi -
+/// heading * M_PI / 180.0) / 2)}}.
+/// \endcode
+///
+/// @param[in] session          The ARCore session.
+/// @param[in] earth            The @c ::ArEarth handle.
+/// @param[in] latitude         The latitude of the anchor relative to the
+///                             WGS84 ellipsoid.
+/// @param[in] longitude        The longitude of the anchor relative to the
+///                             WGS84 ellipsoid.
+/// @param[in] altitude_above_terrain The altitude of the anchor above the
+///                             Earth's terrain (or floor).
+/// @param[in] eus_quaternion_4 The rotation quaternion as {qx, qy, qx, qw}.
+/// @param[out] out_anchor      The newly-created anchor.
+/// @return @c #AR_SUCCESS or any of:
+/// - @c #AR_ERROR_ILLEGAL_STATE if @p earth's @c ::ArEarthState is not
+///   @c #AR_EARTH_STATE_ENABLED.
+/// - @c #AR_ERROR_INVALID_ARGUMENT if @p latitude is outside the allowable
+///   range, or if either @p session, @p earth, or @p eus_quaternion_4 is @c
+///   NULL.
+/// - @c #AR_ERROR_RESOURCE_EXHAUSTED if too many terrain anchors are currently
+///   held.
+ArStatus ArEarth_resolveAndAcquireNewAnchorOnTerrain(
+    ArSession *session,
+    ArEarth *earth,
+    double latitude,
+    double longitude,
+    double altitude_above_terrain,
+    const float *eus_quaternion_4,
+    ArAnchor **out_anchor);
+
+/// @ingroup ArAnchor
+/// Describes the current Terrain Anchor state of an @c ::ArAnchor. Obtained by
+/// @c ::ArAnchor_getTerrainAnchorState.
+AR_DEFINE_ENUM(ArTerrainAnchorState){
+    /// This is not a Terrain Anchor, or the Terrain Anchor has become invalid
+    /// due to @c ::ArEarth having @c #AR_TRACKING_STATE_STOPPED
+    /// due to @c #AR_GEOSPATIAL_MODE_DISABLED being set on the @c ::ArSession.
+    /// All Terrain Anchors transition to @c #AR_TERRAIN_ANCHOR_STATE_NONE
+    /// when @c #AR_GEOSPATIAL_MODE_DISABLED becomes active on the @c
+    /// ::ArSession.
+    AR_TERRAIN_ANCHOR_STATE_NONE = 0,
+
+    /// Resolving the Terrain Anchor is in progress. Once the task completes in
+    /// the background, the anchor will get a new state after the next @c
+    /// ::ArSession_update call.
+    AR_TERRAIN_ANCHOR_STATE_TASK_IN_PROGRESS = 1,
+
+    /// A resolving task for this Terrain Anchor has finished successfully.
+    AR_TERRAIN_ANCHOR_STATE_SUCCESS = 2,
+
+    /// Resolving task for this Terrain Anchor finished with an internal
+    /// error. The app should not attempt to recover from this error.
+    AR_TERRAIN_ANCHOR_STATE_ERROR_INTERNAL = -1,
+
+    /// The authorization provided by the application is not valid.
+    /// - The Google Cloud project may not have enabled the ARCore API.
+    /// - When using API key authentication, this will happen if the API key in
+    ///   the manifest is invalid or unauthorized. It may also fail if the API
+    ///   key is restricted to a set of apps not including the current one.
+    /// - When using keyless authentication, this may happen when no OAuth
+    ///   client has been created, or when the signing key and package name
+    ///   combination does not match the values used in the Google Cloud
+    ///   project.  It may also fail if Google Play Services isn't installed,
+    ///   is too old, or is malfunctioning for some reason (e.g. killed
+    ///   due to memory pressure).
+    AR_TERRAIN_ANCHOR_STATE_ERROR_NOT_AUTHORIZED = -2,
+
+    /// There is no terrain info at this location, such as the center of the
+    /// ocean.
+    AR_TERRAIN_ANCHOR_STATE_ERROR_UNSUPPORTED_LOCATION = -3,
+};
+
+/// @ingroup ArAnchor
+/// Gets the current Terrain Anchor state of the anchor. This state is
+/// guaranteed not to change until @c ::ArSession_update is called. For Anchors
+/// that are not Terrain Anchors, this function returns @c
+/// #AR_TERRAIN_ANCHOR_STATE_NONE. See @c ::ArTerrainAnchorState for the
+/// possible Terrain Anchor states.
+///
+/// @param[in]    session   The ARCore session.
+/// @param[in]    anchor    The anchor to retrieve the terrain anchor state of.
+/// @param[inout] out_state The current terrain anchor state of the anchor.
+///                         Non-terrain anchors will always be in
+///                         @c #AR_TERRAIN_ANCHOR_STATE_NONE state.
+void ArAnchor_getTerrainAnchorState(const ArSession *session,
+                                    const ArAnchor *anchor,
+                                    ArTerrainAnchorState *out_state);
 
 // === ArGeospatialPose functions ===
 

@@ -18,9 +18,9 @@ package com.google.ar.core.examples.java.common.samplerender.arcore;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
+import android.media.Image;
 import android.opengl.GLES30;
 import android.util.Log;
-import com.google.ar.core.ArImage;
 import com.google.ar.core.ImageFormat;
 import com.google.ar.core.examples.java.common.samplerender.GLError;
 import com.google.ar.core.examples.java.common.samplerender.Mesh;
@@ -231,9 +231,9 @@ public class SpecularCubemapFilter implements Closeable {
    * com.google.ar.core.LightEstimate.acquireEnvironmentalHdrCubeMap()} to update the filtered
    * cubemap texture, accessible via {@link getFilteredCubemapTexture()}.
    *
-   * <p>The given {@link ArImage}s will be closed by this method, even if an exception occurs.
+   * <p>The given {@link Image}s will be closed by this method, even if an exception occurs.
    */
-  public void update(ArImage[] images) {
+  public void update(Image[] images) {
     try {
       GLES30.glBindTexture(GLES30.GL_TEXTURE_CUBE_MAP, radianceCubemap.getTextureId());
       GLError.maybeThrowGLException("Failed to bind radiance cubemap texture", "glBindTexture");
@@ -244,7 +244,7 @@ public class SpecularCubemapFilter implements Closeable {
       }
 
       for (int i = 0; i < NUMBER_OF_CUBE_FACES; ++i) {
-        ArImage image = images[i];
+        Image image = images[i];
         // Sanity check for the format of the cubemap.
         if (image.getFormat() != ImageFormat.RGBA_FP16) {
           throw new IllegalArgumentException(
@@ -293,7 +293,7 @@ public class SpecularCubemapFilter implements Closeable {
         }
       }
     } finally {
-      for (ArImage image : images) {
+      for (Image image : images) {
         image.close();
       }
     }
@@ -306,7 +306,7 @@ public class SpecularCubemapFilter implements Closeable {
 
   /**
    * Returns the filtered cubemap texture whose contents are updated with each call to {@link
-   * #update(ArImage[])}.
+   * #update(Image[])}.
    */
   public Texture getFilteredCubemapTexture() {
     return ldCubemap;

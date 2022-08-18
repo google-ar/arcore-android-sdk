@@ -22,6 +22,8 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.os.Build;
+import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -72,7 +74,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -116,8 +117,12 @@ public class HelloRecordingPlaybackActivity extends AppCompatActivity
 
   // Recording and playback requires android.permission.WRITE_EXTERNAL_STORAGE and
   // android.permission.CAMERA to operate. These permissions must be mirrored in the manifest.
-  private static final List<String> requiredPermissions =
-      Arrays.asList(permission.CAMERA, permission.WRITE_EXTERNAL_STORAGE);
+  private static final String[] REQUIRED_PERMISSIONS_FOR_ANDROID_S_AND_BELOW = {
+    permission.CAMERA, permission.WRITE_EXTERNAL_STORAGE
+  };
+  private static final String[] REQUIRED_PERMISSIONS_FOR_ANDROID_T_AND_ABOVE = {
+    permission.CAMERA, permission.READ_MEDIA_VIDEO
+  };
 
   // Randomly generated UUID and custom MIME type to mark the anchor track for this sample.
   private static final UUID ANCHOR_TRACK_ID =
@@ -226,7 +231,7 @@ public class HelloRecordingPlaybackActivity extends AppCompatActivity
 
         // If we did not yet obtain runtime permission on Android M and above, now is a good time to
         // ask the user for it.
-        if (requestPermissions()) {
+        if (requestPermissions(getPermissionsForTargetSDK())) {
           return;
         }
 
@@ -572,9 +577,9 @@ public class HelloRecordingPlaybackActivity extends AppCompatActivity
    * <p>Returns false if all permissions are already granted. Otherwise, requests missing
    * permissions and returns true.
    */
-  private boolean requestPermissions() {
+  private boolean requestPermissions(String[] permissions) {
     List<String> permissionsNotGranted = new ArrayList<>();
-    for (String permission : requiredPermissions) {
+    for (String permission : permissions) {
       if (ContextCompat.checkSelfPermission(this, permission)
           != PackageManager.PERMISSION_GRANTED) {
         permissionsNotGranted.add(permission);
@@ -807,5 +812,13 @@ public class HelloRecordingPlaybackActivity extends AppCompatActivity
         }
       }
     }
+  }
+
+  private String[] getPermissionsForTargetSDK() {
+    int targetSdkVersion = this.getApplicationInfo().targetSdkVersion;
+    int buildSdkVersion = Build.VERSION.SDK_INT;
+    return targetSdkVersion >= VERSION_CODES.TIRAMISU && buildSdkVersion >= VERSION_CODES.TIRAMISU
+        ? REQUIRED_PERMISSIONS_FOR_ANDROID_T_AND_ABOVE
+        : REQUIRED_PERMISSIONS_FOR_ANDROID_S_AND_BELOW;
   }
 }
