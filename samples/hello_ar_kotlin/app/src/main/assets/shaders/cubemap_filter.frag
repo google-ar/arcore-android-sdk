@@ -82,7 +82,9 @@ vec4 Filter(const vec3 n) {
   tangentToWorld[1] = cross(n, tangentToWorld[0]);
   tangentToWorld[2] = n;
 
-  ImportanceSampleCache cache = u_ImportanceSampleCaches[u_RoughnessLevel - 1];
+  // TODO(b/243456272): This clamp should not be necessary, but is here due to a
+  // driver issue with certain devices.
+  ImportanceSampleCache cache = u_ImportanceSampleCaches[max(0, u_RoughnessLevel - 1)];
   vec3 radiance = vec3(0.0);
   for (int i = 0; i < cache.number_of_entries; ++i) {
     ImportanceSampleCacheEntry entry = cache.entries[i];

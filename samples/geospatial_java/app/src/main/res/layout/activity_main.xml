@@ -45,19 +45,31 @@
       android:textColor="#ffffff"
       android:background="#bf323232"/>
 
+  <TextView
+      android:id="@+id/tap_screen_text_view"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_above="@+id/status_text_view"
+      android:layout_centerInParent="true"
+      android:visibility="gone"
+      android:text="@string/tap_screen_text"
+      android:textColor="#ffffff"/>
+
+  <Switch
+      android:id="@+id/terrain_anchor_switch"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_above="@+id/set_anchor_button"
+      android:text="@string/switch_terrain_anchor_mode"
+      android:layout_alignParentRight="true"
+      android:textOff="Off"
+      android:textOn="On" />
+
   <Button
       android:id="@+id/set_anchor_button"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:layout_above="@+id/set_terrain_anchor_button"
       android:text="@string/button_text_set_anchor"
-      android:layout_alignParentRight="true"
-      android:visibility="invisible"/>
-  <Button
-      android:id="@+id/set_terrain_anchor_button"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:text="@string/button_text_set_terrain_anchor"
       android:layout_alignParentRight="true"
       android:layout_alignParentBottom="true"
       android:visibility="invisible"/>

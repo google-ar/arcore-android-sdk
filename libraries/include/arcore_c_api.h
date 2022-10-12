@@ -296,6 +296,12 @@
 /// @defgroup ArTrackable ArTrackable
 /// Something that can be tracked and that anchors can be attached to.
 
+/// @defgroup ArVpsAvailabilityFuture ArVpsAvailabilityFuture
+/// An asynchronous operation checking VPS availability. The availability of VPS
+/// in a given location helps to improve the quality of Geospatial localization
+/// and tracking accuracy. See @c ::ArSession_checkVpsAvailabilityAsync for more
+/// details.
+
 /// @ingroup ArConfig
 /// An opaque session configuration object (@ref ownership "value type").
 ///
@@ -756,8 +762,6 @@ AR_DEFINE_ENUM(ArSessionFeature){
         "To create a session using the front-facing (selfie) camera, use "
         "@c ::ArSession_setCameraConfig with the desired config retrieved "
         "from @c ::ArSession_getSupportedCameraConfigsWithFilter.") = 1,
-
-    /// Specifies that the Session will use the Shareable Camera Injection API.
 
 };
 
@@ -1312,13 +1316,34 @@ AR_DEFINE_ENUM(ArCloudAnchorMode){
 };
 
 /// @ingroup ArConfig
-/// Describes the desired behavior of ARCore Geospatial API features and
-/// capabilities. Not all devices support all modes. Use @c
-/// ::ArSession_isGeospatialModeSupported to find whether the current device
-/// supports a particular Geospatial mode. The default value is @c
-/// #AR_GEOSPATIAL_MODE_DISABLED.
+/// Describes the desired behavior of the ARCore Geospatial API.
+/// The Geospatial API uses a combination of Google's Visual Positioning Service
+/// (VPS) and GPS to determine the geospatial pose.
 ///
-/// Use @c ::ArConfig_setGeospatialMode to set the desired mode.
+/// The Geospatial API is able to provide the best user experience when it is
+/// able to generate high accuracy poses. However, the Geospatial API can be
+/// used anywhere, as long as the device is able to determine its location, even
+/// if the available location information has low accuracy.
+///
+/// - In areas with VPS coverage, the Geospatial API is able to generate high
+///   accuracy poses. This can work even where GPS accuracy is low, such as
+///   dense urban environments. Under typical conditions, VPS can be expected to
+///   provide positional accuracy typically better than 5 meters and often
+///   around 1 meter, and a rotational accuracy of better than 5 degrees. Use @c
+///   ::ArSession_checkVpsAvailabilityAsync to determine if a given location
+///   has VPS coverage.
+/// - In outdoor environments with few or no overhead obstructions, GPS may be
+///   sufficient to generate high accuracy poses. GPS accuracy may be low in
+///   dense urban environments and indoors.
+///
+/// A small number of ARCore supported devices do not support the Geospatial
+/// API. Use @c ::ArSession_isGeospatialModeSupported to determine if the
+/// current device is supported. Affected devices are also indicated on the <a
+/// href="https://developers.google.com/ar/devices"> ARCore supported devices
+/// page</a>.
+///
+/// The default value is @c #AR_GEOSPATIAL_MODE_DISABLED. Use @c
+/// ::ArConfig_setGeospatialMode to set the desired mode.
 AR_DEFINE_ENUM(ArGeospatialMode){
     /// The Geospatial API is disabled. When a configuration with @c
     /// #AR_GEOSPATIAL_MODE_DISABLED becomes active on the @c ::ArSession, current
@@ -5524,15 +5549,71 @@ void ArEarth_getCameraGeospatialPose(
     ArGeospatialPose *out_camera_geospatial_pose);
 
 /// @ingroup ArEarth
-/// Creates a new @c ::ArAnchor at the specified geospatial location and
+/// Converts the provided @p pose to a @c ::ArGeospatialPose with respect to the
+/// Earth. The @p out_geospatial_pose's rotation quaternion is a rotation with
+/// respect to an East-Up-South coordinate frame. An identity quaternion will
+/// have the anchor oriented such that X+ points to the east, Y+ points up away
+/// from the center of the earth, and Z+ points to the south.
+///
+/// The heading value for a @c ::ArGeospatialPose obtained by this function
+/// will be 0. See @c ::ArGeospatialPose_getEastUpSouthQuaternion for an
+/// orientation in 3D space.
+///
+/// @param[in] session   The ARCore session.
+/// @param[in] earth     The @c ::ArEarth handle.
+/// @param[in] pose      The local pose to translate to an Earth pose.
+/// @param[out] out_geospatial_pose Pointer to a @c ::ArGeospatialPose
+///     that receives the Geospatial pose.
+/// @return @c #AR_SUCCESS, or any of:
+/// - @c #AR_ERROR_NOT_TRACKING if the Earth's tracking state is not @c
+/// #AR_TRACKING_STATE_TRACKING.
+/// - @c #AR_ERROR_INVALID_ARGUMENT if any of the parameters are null.
+ArStatus ArEarth_getGeospatialPose(const ArSession *session,
+                                   const ArEarth *earth,
+                                   const ArPose *pose,
+                                   ArGeospatialPose *out_geospatial_pose);
+
+/// @ingroup ArEarth
+/// Converts the provided Earth specified horizontal position, altitude and
+/// rotation with respect to an east-up-south coordinate frame to a pose with
+/// respect to GL world coordinates.
+///
+/// Position near the north pole or south pole is not supported. If the
+/// latitude is within 0.1 degrees of the north pole or south pole (90 degrees
+/// or -90 degrees), this function will return @c #AR_ERROR_INVALID_ARGUMENT.
+///
+/// @param[in] session   The ARCore session.
+/// @param[in] earth     The @c ::ArEarth handle.
+/// @param[in] latitude         The latitude of the anchor relative to the WGS84
+///     ellipsoid.
+/// @param[in] longitude        The longitude of the anchor relative to the
+///     WGS84 ellipsoid.
+/// @param[in] altitude         The altitude of the anchor relative to the WGS84
+///     ellipsoid, in meters.
+/// @param[in] eus_quaternion_4 The rotation quaternion as {qx, qy, qx, qw}.
+/// @param[out] out_pose A pointer to @c ::ArPose of the local pose with the
+/// latest frame.
+/// @return @c #AR_SUCCESS, or any of:
+/// - @c #AR_ERROR_NOT_TRACKING if the Earth's tracking state is not @c
+/// #AR_TRACKING_STATE_TRACKING.
+/// - @c #AR_ERROR_INVALID_ARGUMENT, if any of the parameters are null or @p
+/// latitude is outside the allowable range.
+ArStatus ArEarth_getPose(const ArSession *session,
+                         const ArEarth *earth,
+                         double latitude,
+                         double longitude,
+                         double altitude,
+                         const float *eus_quaternion_4,
+                         ArPose *out_pose);
+
+/// @ingroup ArEarth
+/// Creates a new @c ::ArAnchor at the specified geodetic location and
 /// orientation relative to the Earth.
 ///
 /// Latitude and longitude are defined by the
 /// <a href="https://en.wikipedia.org/wiki/World_Geodetic_System">WGS84
 /// specification</a>, and altitude values are defined as the elevation above
-/// the WGS84 ellipsoid in meters. To create an anchor using an altitude
-/// relative to the Earth's terrain instead of altitude above the WGS84
-/// ellipsoid, use @c ::ArEarth_resolveAndAcquireNewAnchorOnTerrain.
+/// the WGS84 ellipsoid in meters.
 ///
 /// The rotation provided by @p eus_quaternion_4 is a rotation with respect to
 /// an east-up-south coordinate frame. An identity rotation will have the anchor
@@ -5540,18 +5621,17 @@ void ArEarth_getCameraGeospatialPose(
 /// of the earth, and Z+ points to the south.
 ///
 /// To create an anchor that has the +Z axis pointing in the same direction as
-/// heading contained in an @c ::ArGeospatialPose, use the following formula:
+/// heading obtained from @c ::ArGeospatialPose, use the following formula:
 ///
 /// \code
 /// {qx, qy, qz, qw} = {0, sin((pi - heading * M_PI / 180.0) / 2), 0, cos((pi -
 /// heading * M_PI / 180.0) / 2)}}.
 /// \endcode
 ///
-/// An anchor's @c ::ArTrackingState will be @c #AR_TRACKING_STATE_PAUSED
-/// while @c ::ArEarth's @c ::ArTrackingState is @c #AR_TRACKING_STATE_PAUSED.
-/// Its tracking state will permanently become @c
-/// #AR_TRACKING_STATE_STOPPED if @c ::ArSession_configure sets the Geospatial
-/// mode to @c #AR_GEOSPATIAL_MODE_DISABLED.
+/// An anchor's @c ::ArTrackingState will be @c #AR_TRACKING_STATE_PAUSED while
+/// @c ::ArEarth is @c #AR_TRACKING_STATE_PAUSED. The tracking state will
+/// permanently become @c #AR_TRACKING_STATE_STOPPED if the @c ::ArSession
+/// configuration is set to @c #AR_GEOSPATIAL_MODE_DISABLED.
 ///
 /// Creating anchors near the north pole or south pole is not supported. If the
 /// latitude is within 0.1 degrees of the north pole or south pole (90 degrees
@@ -5585,47 +5665,39 @@ ArStatus ArEarth_acquireNewAnchor(ArSession *session,
                                   ArAnchor **out_anchor);
 
 /// @ingroup ArEarth
-/// Creates a new @c ::ArAnchor at a specified horizontal position and altitude
-/// relative to the horizontal position’s terrain. Terrain means the ground or
-/// ground floor inside a building with VPS coverage. If the altitude relative
-/// to the WGS84 ellipsoid is known, use @c ::ArEarth_acquireNewAnchor instead.
+/// Creates an anchor at a specified horizontal position and altitude relative
+/// to the horizontal position’s terrain. Terrain means the ground, or ground
+/// floor inside a building with VPS coverage. For areas not covered by VPS,
+/// consider using @c ::ArEarth_acquireNewAnchor to attach anchors to Earth.
 ///
-/// The specified @p altitude_above_terrain is interpreted to be relative to the
-/// Earth's terrain (or floor) at the specified latitude/longitude geospatial
-/// coordinates, rather than relative to the WGS84 ellipsoid. Specifying an
-/// altitude of 0 will position the anchor directly on the terrain (or floor)
-/// whereas specifying a positive altitude will position the anchor above the
-/// terrain (or floor), against the direction of gravity.
+/// The specified altitude is interpreted to be relative to the Earth's terrain
+/// (or floor) at the specified latitude/longitude geodetic coordinates, rather
+/// than relative to the WGS-84 ellipsoid. Specifying an altitude of 0 will
+/// position the anchor directly on the terrain (or floor) whereas specifying a
+/// positive altitude will position the anchor above the terrain (or floor),
+/// against the direction of gravity.
 ///
 /// This creates a new @c ::ArAnchor and schedules a task to resolve the
 /// anchor's pose using the given parameters. You may resolve multiple anchors
-/// at a time, but a session cannot be tracking more than 40 Terrain Anchors at
-/// time. Attempting to resolve more than 40 Terrain Anchors will result in
+/// at a time, but a session cannot be tracking more than 100 Terrain Anchors at
+/// time. Attempting to resolve more than 100 Terrain Anchors will result in
 /// resolve calls returning status @c #AR_ERROR_RESOURCE_EXHAUSTED.
 ///
-/// If this function returns @c #AR_SUCCESS, the Terrain Anchor state of @p
+/// If this function returns @c #AR_SUCCESS, the terrain anchor state of @p
 /// out_terrain_anchor will be @c #AR_TERRAIN_ANCHOR_STATE_TASK_IN_PROGRESS, and
-/// its tracking state will be @c #AR_TRACKING_STATE_PAUSED. The anchor
+/// its tracking state will be @c #AR_TRACKING_STATE_PAUSED. This anchor
 /// remains in this state until its pose has been successfully resolved. If
-/// the resolving task results in an error, its tracking state will be
-/// permanently set to @c #AR_TRACKING_STATE_STOPPED, and @c
-/// ::ArAnchor_getTerrainAnchorState details the error that occurred using @c
-/// ::ArTerrainAnchorState. If this function's return value is not @c
-/// #AR_SUCCESS, then @p out_anchor will be set to @c NULL.
+/// the resolving task results in an error, the tracking state will be set to @c
+/// #AR_TRACKING_STATE_STOPPED. If the return value is not @c #AR_SUCCESS, then
+/// @p out_cloud_anchor will be set to @c NULL.
 ///
-/// Creating a Terrain Anchor requires an active @c ::ArEarth which is @c
-/// #AR_EARTH_STATE_ENABLED. If it is not, then this function returns @c
+/// Creating a terrain anchor requires an active @c ::ArEarth for which the @c
+/// ::ArEarthState is @c #AR_EARTH_STATE_ENABLED and @c ::ArTrackingState is @c
+/// #AR_TRACKING_STATE_TRACKING. If it is not, then this function returns @c
 /// #AR_ERROR_ILLEGAL_STATE. This call also requires a working internet
 /// connection to communicate with the ARCore API on Google Cloud. ARCore will
 /// continue to retry if it is unable to establish a connection to the ARCore
 /// service.
-///
-/// A Terrain Anchor's @c ::ArTrackingState will be @c #AR_TRACKING_STATE_PAUSED
-/// while @c ::ArEarth's @c ::ArTrackingState is @c #AR_TRACKING_STATE_PAUSED.
-/// The anchor's tracking state will permanently become @c
-/// #AR_TRACKING_STATE_STOPPED if @c ::ArSession_configure is used to set @c
-/// #AR_GEOSPATIAL_MODE_DISABLED.
-///
 ///
 /// Latitude and longitude are defined by the
 /// <a href="https://en.wikipedia.org/wiki/World_Geodetic_System">WGS84
@@ -5637,7 +5709,7 @@ ArStatus ArEarth_acquireNewAnchor(ArSession *session,
 /// of the earth, and Z+ points to the south.
 ///
 /// To create an anchor that has the +Z axis pointing in the same direction as
-/// heading contained in an @c ::ArGeospatialPose, use the following formula:
+/// heading obtained from @c ::ArGeospatialPose, use the following formula:
 ///
 /// \code
 /// {qx, qy, qz, qw} = {0, sin((pi - heading * M_PI / 180.0) / 2), 0, cos((pi -
@@ -5647,16 +5719,16 @@ ArStatus ArEarth_acquireNewAnchor(ArSession *session,
 /// @param[in] session          The ARCore session.
 /// @param[in] earth            The @c ::ArEarth handle.
 /// @param[in] latitude         The latitude of the anchor relative to the
-///                             WGS84 ellipsoid.
+///                             WGS-84 ellipsoid.
 /// @param[in] longitude        The longitude of the anchor relative to the
-///                             WGS84 ellipsoid.
+///                             WGS-84 ellipsoid.
 /// @param[in] altitude_above_terrain The altitude of the anchor above the
 ///                             Earth's terrain (or floor).
 /// @param[in] eus_quaternion_4 The rotation quaternion as {qx, qy, qx, qw}.
 /// @param[out] out_anchor      The newly-created anchor.
 /// @return @c #AR_SUCCESS or any of:
-/// - @c #AR_ERROR_ILLEGAL_STATE if @p earth's @c ::ArEarthState is not
-///   @c #AR_EARTH_STATE_ENABLED.
+/// - @c #AR_ERROR_ILLEGAL_STATE if ::ArEarthState is not
+///   AR_EARTH_STATE_ENABLED.
 /// - @c #AR_ERROR_INVALID_ARGUMENT if @p latitude is outside the allowable
 ///   range, or if either @p session, @p earth, or @p eus_quaternion_4 is @c
 ///   NULL.
@@ -5688,10 +5760,10 @@ AR_DEFINE_ENUM(ArTerrainAnchorState){
     /// ::ArSession_update call.
     AR_TERRAIN_ANCHOR_STATE_TASK_IN_PROGRESS = 1,
 
-    /// A resolving task for this Terrain Anchor has finished successfully.
+    /// A resolving task for this anchor has been successfully resolved.
     AR_TERRAIN_ANCHOR_STATE_SUCCESS = 2,
 
-    /// Resolving task for this Terrain Anchor finished with an internal
+    /// Resolving task for this anchor finished with an internal
     /// error. The app should not attempt to recover from this error.
     AR_TERRAIN_ANCHOR_STATE_ERROR_INTERNAL = -1,
 
@@ -5715,10 +5787,7 @@ AR_DEFINE_ENUM(ArTerrainAnchorState){
 
 /// @ingroup ArAnchor
 /// Gets the current Terrain Anchor state of the anchor. This state is
-/// guaranteed not to change until @c ::ArSession_update is called. For Anchors
-/// that are not Terrain Anchors, this function returns @c
-/// #AR_TERRAIN_ANCHOR_STATE_NONE. See @c ::ArTerrainAnchorState for the
-/// possible Terrain Anchor states.
+/// guaranteed not to change until @c ::ArSession_update is called.
 ///
 /// @param[in]    session   The ARCore session.
 /// @param[in]    anchor    The anchor to retrieve the terrain anchor state of.
@@ -5728,6 +5797,186 @@ AR_DEFINE_ENUM(ArTerrainAnchorState){
 void ArAnchor_getTerrainAnchorState(const ArSession *session,
                                     const ArAnchor *anchor,
                                     ArTerrainAnchorState *out_state);
+
+/// @ingroup ArVpsAvailabilityFuture
+/// The result of @c ::ArSession_checkVpsAvailabilityAsync, obtained by @c
+/// ::ArVpsAvailabilityFuture_getResult or from an invocation of an @c
+/// #ArCheckVpsAvailabilityCallback.
+AR_DEFINE_ENUM(ArVpsAvailability){
+    /// The request to the remote service is not yet completed, so the
+    /// availability is not yet known.
+    AR_VPS_AVAILABILITY_UNKNOWN = 0,
+    /// VPS is available at the requested location.
+    AR_VPS_AVAILABILITY_AVAILABLE = 1,
+    /// VPS is not available at the requested location.
+    AR_VPS_AVAILABILITY_UNAVAILABLE = 2,
+    /// An internal error occurred while determining availability.
+    AR_VPS_AVAILABILITY_ERROR_INTERNAL = -1,
+    /// The external service could not be reached due to a network connection
+    /// error.
+    AR_VPS_AVAILABILITY_ERROR_NETWORK_CONNECTION = -2,
+    /// An authorization error occurred when communicating with the Google Cloud
+    /// ARCore API. See <a
+    /// href="https://developers.google.com/ar/develop/c/geospatial/enable">Enable
+    /// the Geospatial API</a> for troubleshooting steps.
+    AR_VPS_AVAILABILITY_ERROR_NOT_AUTHORIZED = -3,
+    /// Too many requests were sent.
+    AR_VPS_AVAILABILITY_ERROR_RESOURCE_EXHAUSTED = -4,
+};
+
+/// @ingroup ArVpsAvailabilityFuture
+/// Callback definition for @c ::ArSession_checkVpsAvailabilityAsync. The
+/// @p context argument will be the same as that passed to
+/// @c ::ArSession_checkVpsAvailabilityAsync. The @p availability argument
+/// will be the same as the result obtained from the future returned by
+/// @c ::ArSession_checkVpsAvailabilityAsync.
+///
+/// It is a best practice to free @c context memory provided to @c
+/// ::ArSession_checkVpsAvailabilityAsync at the end of the callback
+/// implementation.
+typedef void (*ArCheckVpsAvailabilityCallback)(void *context,
+                                               ArVpsAvailability availability);
+
+/// @ingroup ArVpsAvailabilityFuture
+/// Handle to an asynchronous operation launched by
+/// @c ::ArSession_checkVpsAvailabilityAsync.
+/// Release with @c ::ArVpsAvailabilityFuture_release.
+/// (@ref ownership "reference type, long-lived").
+typedef struct ArVpsAvailabilityFuture_ ArVpsAvailabilityFuture;
+
+/// @ingroup ArSession
+/// Gets the availability of the Visual Positioning System (VPS) at a specified
+/// horizontal position. The availability of VPS in a given location helps to
+/// improve the quality of Geospatial localization and tracking accuracy.
+///
+/// This launches an asynchronous operation used to query the Google Cloud
+/// ARCore API. This may be called without first calling @c ::ArSession_resume
+/// or @c ::ArSession_configure, for example to present an "Enter AR" button
+/// only when VPS is available.
+///
+/// The asynchronicity of this operation must be handled in one or
+/// both of the following ways:
+/// - The operation can be continually polled using @p out_future. When the
+///   future is created, its @c #ArFutureState will be set to @c
+///   #AR_FUTURE_STATE_PENDING.
+///   Use @c ::ArVpsAvailabilityFuture_getState to query the state of the
+///   operation. When its state is @c #AR_FUTURE_STATE_DONE, @c
+///   ::ArVpsAvailabilityFuture_getResult can be used to obtain the operation's
+///   result. The future must eventually be released using @c
+///   ::ArVpsAvailabilityFuture_release.
+/// - The operation's result can be reported via a callback. When providing a @p
+///   callback, ARCore will invoke the given function when the operation is
+///   complete, unless the future has been cancelled using @c
+///   ::ArVpsAvailabilityFuture_cancel on @p out_future. This callback will be
+///   invoked on the <a
+///   href="https://developer.android.com/guide/components/processes-and-threads#Threads">main
+///   thread</a>. When providing a callback, you may provide a
+///   @p context, which will be passed as the first parameter to the callback.
+///   It is a best practice to free the memory of @p context at the end of the
+///   callback or when @c ::ArVpsAvailabilityFuture_cancel successfully cancels
+///   the callback.
+///
+/// Your app must be properly set up to communicate with the Google Cloud ARCore
+/// API in order to obtain a result from this call. See <a
+/// href="https://developers.google.com/ar/develop/c/geospatial/check-vps-availability">Check
+/// VPS Availability</a> for more details on setup steps and usage examples.
+///
+/// @param[in] session             The ARCore session.
+/// @param[in] latitude_degrees    The latitude to query, in degrees.
+/// @param[in] longitude_degrees   The longitude to query, in degrees.
+/// @param[in] context An optional void pointer which is passed as the first
+///     parameter to an invocation of @p callback. The app must ensure that the
+///     memory remains valid until the callback has run, or the operation has
+///     been cancelled. This may be null.
+/// @param[in] callback An optional callback function. When the asynchronous
+///     operation is complete this callback will be invoked unless the
+///     operation has been cancelled. This may be null if no callback is
+///     desired, but one of @p callback and @p out_future must be non-null.
+/// @param[out] out_future A optional handler that can be used to poll and
+///     cancel the asynchronous operation. This argument may be null if no
+///     handler is desired, but one of @p callback and @p out_future must be
+///     non-null.
+/// @return @c #AR_SUCCESS, or any of:
+/// - @c #AR_ERROR_INTERNET_PERMISSION_NOT_GRANTED if the @c INTERNET permission
+///   has not been granted.
+/// - @c #AR_ERROR_INVALID_ARGUMENT if @p session is null, or both @p callback
+///   and @p out_future are null.
+ArStatus ArSession_checkVpsAvailabilityAsync(
+    ArSession *session,
+    double latitude_degrees,
+    double longitude_degrees,
+    void *context,
+    ArCheckVpsAvailabilityCallback callback,
+    ArVpsAvailabilityFuture **out_future);
+
+/// @ingroup ArVpsAvailabilityFuture
+/// The state of an asynchronous operation.
+AR_DEFINE_ENUM(ArFutureState){
+    /// The operation is still pending. The result of the operation isn't
+    /// available yet and any associated callback hasn't yet been dispatched or
+    /// invoked.
+    ///
+    /// Do not use this to check if the operation can be cancelled as the state
+    /// can change from another thread between the call to
+    /// @c ::ArVpsAvailabilityFuture_getState and @c
+    /// ::ArVpsAvailabilityFuture_cancel.
+    AR_FUTURE_STATE_PENDING = 0,
+
+    /// The operation has been cancelled. Any associated callback will never be
+    /// invoked.
+    AR_FUTURE_STATE_CANCELLED = 1,
+
+    /// The operation is complete and the result is available. If a callback was
+    /// associated with this future, it will soon be invoked with the result on
+    /// the main thread, if
+    /// it hasn't been invoked already.
+    AR_FUTURE_STATE_DONE = 2,
+};
+
+/// @ingroup ArVpsAvailabilityFuture
+/// Gets the state of an asynchronous operation.
+///
+/// @param[in] session    The ARCore session.
+/// @param[in] future     The handle for the asynchronous operation.
+/// @param[out] out_state The state of the operation.
+void ArVpsAvailabilityFuture_getState(const ArSession *session,
+                                      const ArVpsAvailabilityFuture *future,
+                                      ArFutureState *out_state);
+
+/// @ingroup ArVpsAvailabilityFuture
+/// Returns the result of an asynchronous operation. The returned result is only
+/// valid when @c ::ArVpsAvailabilityFuture_getState returns @c
+/// #AR_FUTURE_STATE_DONE.
+///
+/// @param[in] session The ARCore session.
+/// @param[in] future The handle for the asynchronous operation.
+/// @param[out] out_result_availability The result of the operation, if the
+/// Future's state is @c #AR_FUTURE_STATE_DONE.
+void ArVpsAvailabilityFuture_getResult(
+    const ArSession *session,
+    const ArVpsAvailabilityFuture *future,
+    ArVpsAvailability *out_result_availability);
+
+/// @ingroup ArVpsAvailabilityFuture
+/// Tries to cancel execution of this operation. @p out_was_cancelled will be
+/// set to 1 if the operation was cancelled by this invocation, and in that case
+/// it is a best practice to free @c context memory provided to @c
+/// ::ArSession_checkVpsAvailabilityAsync.
+///
+/// @param[in] session The ARCore session.
+/// @param[in] future The handle for the asynchronous operation.
+/// @param[out] out_was_cancelled Set to 1 if this invocation successfully
+///     cancelled the operation, 0 otherwise. This may be null.
+void ArVpsAvailabilityFuture_cancel(const ArSession *session,
+                                    ArVpsAvailabilityFuture *future,
+                                    int32_t *out_was_cancelled);
+
+/// @ingroup ArVpsAvailabilityFuture
+/// Releases a reference to a future. This does not mean that the operation will
+/// be terminated - see @c ::ArVpsAvailabilityFuture_cancel.
+///
+/// This function may safely be called with @c NULL - it will do nothing.
+void ArVpsAvailabilityFuture_release(ArVpsAvailabilityFuture *future);
 
 // === ArGeospatialPose functions ===
 
@@ -5828,6 +6077,10 @@ void ArGeospatialPose_getVerticalAccuracy(
 /// @ingroup ArGeospatialPose
 /// Gets the @c ::ArGeospatialPose's heading.
 ///
+/// This function will return values for @c ::ArGeospatialPose's
+/// from ArEarth_getCameraGeospatialPose() and returns 0 for all other @c
+/// ::ArGeospatialPose objects.
+///
 /// Heading is specified in degrees clockwise from true north and approximates
 /// the direction the device is facing. The value returned when facing north is
 /// 0°, when facing east is 90°, when facing south is +/-180°, and when facing
@@ -5872,6 +6125,20 @@ void ArGeospatialPose_getHeadingAccuracy(
     const ArSession *session,
     const ArGeospatialPose *geospatial_pose,
     double *out_heading_accuracy_degrees);
+
+/// @ingroup ArGeospatialPose
+/// Extracts the orientation from an Geospatial pose. It represents rotation of
+/// the target with respect to the east-up-south coordinates. That is, X+ points
+/// east, Y+ points up, and Z+ points south. Right handed coordinate system.
+///
+/// @param[in]  session          The ARCore session.
+/// @param[in]  geospatial_pose  The geospatial pose.
+/// @param[out] out_quaternion_4 A pointer of 4 float values, which will store
+///     the quaternion values as [x, y, z, w].
+void ArGeospatialPose_getEastUpSouthQuaternion(
+    const ArSession *session,
+    const ArGeospatialPose *geospatial_pose,
+    float *out_quaternion_4);
 
 /// @ingroup ArImageMetadata
 /// Defines a rational data type in @c ::ArImageMetadata_const_entry.

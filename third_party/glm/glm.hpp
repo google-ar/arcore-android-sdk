@@ -111,26 +111,26 @@
 #include <cfloat>
 #include <limits>
 #include <cassert>
-#include "fwd.hpp"
+#include "fwd.hpp"                // IWYU pragma: export
 
-#include "vec2.hpp"
-#include "vec3.hpp"
-#include "vec4.hpp"
-#include "mat2x2.hpp"
-#include "mat2x3.hpp"
-#include "mat2x4.hpp"
-#include "mat3x2.hpp"
-#include "mat3x3.hpp"
-#include "mat3x4.hpp"
-#include "mat4x2.hpp"
-#include "mat4x3.hpp"
-#include "mat4x4.hpp"
+#include "vec2.hpp"               // IWYU pragma: export
+#include "vec3.hpp"               // IWYU pragma: export
+#include "vec4.hpp"               // IWYU pragma: export
+#include "mat2x2.hpp"             // IWYU pragma: export
+#include "mat2x3.hpp"             // IWYU pragma: export
+#include "mat2x4.hpp"             // IWYU pragma: export
+#include "mat3x2.hpp"             // IWYU pragma: export
+#include "mat3x3.hpp"             // IWYU pragma: export
+#include "mat3x4.hpp"             // IWYU pragma: export
+#include "mat4x2.hpp"             // IWYU pragma: export
+#include "mat4x3.hpp"             // IWYU pragma: export
+#include "mat4x4.hpp"             // IWYU pragma: export
 
-#include "trigonometric.hpp"
-#include "exponential.hpp"
-#include "common.hpp"
-#include "packing.hpp"
-#include "geometric.hpp"
-#include "matrix.hpp"
-#include "vector_relational.hpp"
-#include "integer.hpp"
+#include "trigonometric.hpp"      // IWYU pragma: export
+#include "exponential.hpp"        // IWYU pragma: export
+#include "common.hpp"             // IWYU pragma: export
+#include "packing.hpp"            // IWYU pragma: export
+#include "geometric.hpp"          // IWYU pragma: export
+#include "matrix.hpp"             // IWYU pragma: export
+#include "vector_relational.hpp"  // IWYU pragma: export
+#include "integer.hpp"            // IWYU pragma: export

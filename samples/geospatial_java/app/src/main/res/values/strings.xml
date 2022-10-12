@@ -16,9 +16,10 @@
 -->
 <resources>
   <string translatable="false" name="app_name">Geospatial Java</string>
-  <string translatable="false" name="button_text_set_anchor">SET ANCHOR</string>
-  <string translatable="false" name="button_text_set_terrain_anchor">SET TERRAIN ANCHOR</string>
+  <string translatable="false" name="button_text_set_anchor">SET CAMERA ANCHOR</string>
+  <string translatable="false" name="switch_terrain_anchor_mode">TERRAIN</string>
   <string translatable="false" name="button_text_clear_anchors">CLEAR ALL ANCHORS</string>
+  <string translatable="false" name="tap_screen_text">TAP ON SCREEN TO CREATE ANCHOR</string>
   <string translatable="false" name="status_unsupported">This device is not supported.</string>
   <string translatable="false" name="status_pretracking">Localizing your device to set anchor.</string>
   <string translatable="false" name="status_earth_state_error">There was an error state error, check that you have a valid authentication for the ARCore API.</string>
@@ -49,4 +50,11 @@
   <string name="learn_more">Learn more</string>
   <!-- Geospatial privacy website. [CHAR_LIMIT=NONE] -->
   <string translatable="false" name="learn_more_url">https://developers.google.com/ar/data-privacy</string>
+
+  <!-- Strings used in VPS unavailable notice dialog messages. [CHAR_LIMIT=NONE] -->
+  <string  name="vps_unavailable_title">VPS not available</string>
+  <!-- VPS unavailable notice message. [CHAR_LIMIT=NONE] -->
+  <string name="vps_unavailable_message">Your current location does not have VPS coverage. Your session will be using your GPS signal only if VPS is not available.</string>
+  <!-- VPS unavailable notice continue. [CHAR_LIMIT=NONE] -->
+  <string name="continue_button">Continue</string>
 </resources>
