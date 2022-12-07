@@ -466,7 +466,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     // the video background can be properly adjusted.
     displayRotationHelper.updateSessionIfNeeded(session);
 
-    // Obtain the current frame from ARSession. When the configuration is set to
+    // Obtain the current frame from the AR Session. When the configuration is set to
     // UpdateMode.BLOCKING (it is by default), this will throttle the rendering to the
     // camera framerate.
     Frame frame;

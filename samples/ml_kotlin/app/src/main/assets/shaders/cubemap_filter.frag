@@ -82,8 +82,15 @@ vec4 Filter(const vec3 n) {
   tangentToWorld[1] = cross(n, tangentToWorld[0]);
   tangentToWorld[2] = n;
 
-  // TODO(b/243456272): This clamp should not be necessary, but is here due to a
-  // driver issue with certain devices.
+  // XXX: This clamp should not be necessary, but is here due to a compiler
+  // optimization bug affecting certain devices.
+  //
+  // Some drivers pre-calculate uniform expressions to reduce redundant
+  // computations. Certain drivers will incorrectly ignore uniform control flow
+  // and try to pre-calculate expressions that wouldn't be executed. So even
+  // though we explicitly short-circuit if `u_RoughnessLevel' is 0, the compiled
+  // shader still tries to calculate `u_ImportanceSampleCaches[u_RoughnessLevel
+  // - 1]', with obviously bad results.
   ImportanceSampleCache cache = u_ImportanceSampleCaches[max(0, u_RoughnessLevel - 1)];
   vec3 radiance = vec3(0.0);
   for (int i = 0; i < cache.number_of_entries; ++i) {

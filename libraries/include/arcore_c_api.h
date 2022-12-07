@@ -1,17 +1,8 @@
 /*
  * Copyright 2017 Google LLC
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed for use under "ARCore Additional Terms of Service". You may obtain
+ * a copy of the license at https://developers.google.com/ar/develop/terms.
  */
 #ifndef ARCORE_C_API_H_
 #define ARCORE_C_API_H_
@@ -199,8 +190,10 @@
 ///   specification</a>.
 /// - Altitude is specified in meters above the WGS84 ellipsoid, which is
 ///   roughly equivalent to meters above sea level.
-/// - Heading is defined in degrees clockwise from north. See @c
-///   ::ArGeospatialPose_getHeading for more information.
+/// - Orientation approximates the direction the user is facing in the EUS
+///   coordinate system. The EUS coordinate system has X+ pointing east, Y+
+///   pointing up, and Z+ pointing south.
+
 /// - Accuracy of the latitude, longitude, altitude, and heading are available
 ///   as numeric confidence intervals where a large value (large interval) means
 ///   low confidence and small value (small interval) means high confidence.
@@ -538,7 +531,7 @@ typedef struct ArEarth_ ArEarth;
 // Geospatial Pose.
 
 /// @ingroup ArGeospatialPose
-/// Describes a specific location, elevation, and compass heading relative to
+/// Describes a specific location, elevation, and orientation relative to
 /// Earth (@ref ownership "value type").
 ///
 /// - Create with: @c ::ArGeospatialPose_create
@@ -557,7 +550,7 @@ typedef struct ArGeospatialPose_ ArGeospatialPose;
 ///
 /// Only one image database can be active in a session. Any images in the
 /// currently active image database that have a
-/// @c #AR_TRACKING_STATE_TRACKING/#AR_TRACKING_STATE_PAUSED state will
+/// @c #AR_TRACKING_STATE_TRACKING or @c #AR_TRACKING_STATE_PAUSED state will
 /// immediately be set to the @c #AR_TRACKING_STATE_STOPPED state if a different
 /// or @c NULL image database is made active in the current session Config.
 ///
@@ -1317,7 +1310,7 @@ AR_DEFINE_ENUM(ArCloudAnchorMode){
 
 /// @ingroup ArConfig
 /// Describes the desired behavior of the ARCore Geospatial API.
-/// The Geospatial API uses a combination of Google's Visual Positioning Service
+/// The Geospatial API uses a combination of Google's Visual Positioning System
 /// (VPS) and GPS to determine the geospatial pose.
 ///
 /// The Geospatial API is able to provide the best user experience when it is
@@ -1790,7 +1783,7 @@ void ArConfig_setCloudAnchorMode(const ArSession *session,
 /// Sets the image database in the session configuration.
 ///
 /// Any images in the currently active image database that have a
-/// @c #AR_TRACKING_STATE_TRACKING/#AR_TRACKING_STATE_PAUSED state will
+/// @c #AR_TRACKING_STATE_TRACKING or @c #AR_TRACKING_STATE_PAUSED state will
 /// immediately be set to the @c #AR_TRACKING_STATE_STOPPED state if a different
 /// or @c NULL image database is set.
 ///
@@ -1846,7 +1839,7 @@ void ArConfig_setAugmentedFaceMode(const ArSession *session,
 /// default camera config focus mode changes in a future release.
 ///
 /// To determine whether the configured ARCore camera supports auto focus, check
-/// ACAMERA_LENS_INFO_MINIMUM_FOCUS_DISTANCE, which is 0 for fixed-focus
+/// @c ACAMERA_LENS_INFO_MINIMUM_FOCUS_DISTANCE, which is 0 for fixed-focus
 /// cameras.
 ///
 /// The desired focus mode is ignored while an MP4 dataset file is being played
@@ -2488,16 +2481,16 @@ ArStatus ArSession_checkSupported(const ArSession *session,
 ///   not supported.
 ///   See above restrictions.
 /// - @c #AR_ERROR_INTERNET_PERMISSION_NOT_GRANTED if
-///   #AR_GEOSPATIAL_MODE_ENABLED or
-///   #AR_CLOUD_ANCHOR_MODE_ENABLED is set and the
+///   @c #AR_GEOSPATIAL_MODE_ENABLED or
+///   @c #AR_CLOUD_ANCHOR_MODE_ENABLED is set and the
 ///   Android <a
 ///   href="https://developer.android.com/training/basics/network-ops/connecting">
 ///   INTERNET</a> permission has not been granted.
 /// - @c #AR_ERROR_FINE_LOCATION_PERMISSION_NOT_GRANTED if
-///   #AR_GEOSPATIAL_MODE_ENABLED is set and the @c ACCESS_FINE_LOCATION
+///   @c #AR_GEOSPATIAL_MODE_ENABLED is set and the @c ACCESS_FINE_LOCATION
 ///   permission has not been granted.
 /// - @c #AR_ERROR_GOOGLE_PLAY_SERVICES_LOCATION_LIBRARY_NOT_LINKED if
-///   #AR_GEOSPATIAL_MODE_ENABLED is set and the <a
+///   @c #AR_GEOSPATIAL_MODE_ENABLED is set and the <a
 ///   href="https://developers.google.com/android/guides/setup#declare-dependencies">Fused
 ///   Location Provider for Android library</a> could not be found. See @c
 ///   #AR_ERROR_GOOGLE_PLAY_SERVICES_LOCATION_LIBRARY_NOT_LINKED for additional
@@ -2906,7 +2899,7 @@ ArStatus ArSession_setCameraConfig(const ArSession *session,
                                    const ArCameraConfig *camera_config);
 
 /// @ingroup ArSession
-/// Gets the @c ::ArCameraConfig that the ::ArSession is currently using.  If
+/// Gets the @c ::ArCameraConfig that the @c ::ArSession is currently using.  If
 /// the camera config was not explicitly set then it returns the default camera
 /// config.  Use @c ::ArCameraConfig_destroy to release memory associated with
 /// the returned camera config once it is no longer needed.
@@ -3004,11 +2997,11 @@ void ArSession_acquireEarth(const ArSession *session, ArEarth **out_earth);
 ///   For example, the number of detected planes and other trackables, the
 ///   precise timing of their detection and their pose over time may be
 ///   different in subsequent playback sessions.
-/// - Once playback has started (due to the first call to ::ArSession_resume),
-///   pausing the session (by calling @c ::ArSession_pause) will suspend
-///   processing of all camera image frames and any other recorded sensor data
-///   in the dataset. Camera image frames and sensor frame data that is
-///   discarded in this way will not be reprocessed when the session is again
+/// - Once playback has started (due to the first call to @c
+///   ::ArSession_resume), pausing the session (by calling @c ::ArSession_pause)
+///   will suspend processing of all camera image frames and any other recorded
+///   sensor data in the dataset. Camera image frames and sensor frame data that
+///   is discarded in this way will not be reprocessed when the session is again
 ///   resumed (by calling @c ::ArSession_resume). AR tracking for the session
 ///   will generally suffer due to the gap in processed data.
 ///
@@ -3161,14 +3154,14 @@ void ArSession_getRecordingStatus(ArSession *session,
 /// @param[in] payload                     The byte array payload to record
 /// @param[in] payload_size                Size in bytes of the payload
 ///
-/// @return #AR_SUCCESS or any of:
-/// - #AR_ERROR_ILLEGAL_STATE when either @c ::ArSession_getRecordingStatus is
-/// not currently @c ::AR_RECORDING_OK or the system is currently under excess
-/// load for images to be produced. The system should not be under such excess
-/// load for more than a few frames and an app should try to record the data
-/// again during the next frame.
-/// - #AR_ERROR_INVALID_ARGUMENT when any argument is invalid, e.g. null
-/// - #AR_ERROR_DEADLINE_EXCEEDED when the frame is not the current frame
+/// @return @c #AR_SUCCESS or any of:
+/// - @c #AR_ERROR_ILLEGAL_STATE when either @c ::ArSession_getRecordingStatus
+///   is not currently @c ::AR_RECORDING_OK or the system is currently under
+///   excess load for images to be produced. The system should not be under such
+///   excess load for more than a few frames and an app should try to record the
+///   data again during the next frame.
+/// - @c #AR_ERROR_INVALID_ARGUMENT when any argument is invalid, e.g. null.
+/// - @c #AR_ERROR_DEADLINE_EXCEEDED when the frame is not the current frame.
 ArStatus ArFrame_recordTrackData(ArSession *session,
                                  const ArFrame *frame,
                                  const uint8_t *track_id_uuid_16,
@@ -4725,8 +4718,9 @@ void ArAnchor_release(ArAnchor *anchor);
 /// Acquires the Cloud Anchor ID of the anchor. The ID acquired is an ASCII
 /// null-terminated string. The acquired ID must be released after use by the
 /// @c ::ArString_release function. For anchors with cloud state
-/// @c #AR_CLOUD_ANCHOR_STATE_NONE or #AR_CLOUD_ANCHOR_STATE_TASK_IN_PROGRESS,
-/// this will always be an empty string.
+/// @c #AR_CLOUD_ANCHOR_STATE_NONE or @c
+/// #AR_CLOUD_ANCHOR_STATE_TASK_IN_PROGRESS, this will always be an empty
+/// string.
 ///
 /// @param[in]    session             The ARCore session.
 /// @param[in]    anchor              The anchor to retrieve the cloud ID of.
@@ -4947,10 +4941,8 @@ void ArPoint_getPose(const ArSession *session,
                      ArPose *out_pose);
 
 /// @ingroup ArPoint
-/// Returns the @c ::ArPointOrientationMode of the point. For ::ArPoint objects
-/// created by
-/// @c ::ArFrame_hitTest.
-/// If @c ::ArPointOrientationMode is
+/// Returns the @c ::ArPointOrientationMode of the point. For @c ::ArPoint
+/// objects created by @c ::ArFrame_hitTest. If @c ::ArPointOrientationMode is
 /// @c #AR_POINT_ORIENTATION_ESTIMATED_SURFACE_NORMAL, then normal of the
 /// surface centered around the @c ::ArPoint was estimated successfully.
 ///
@@ -5015,8 +5007,8 @@ void ArAugmentedImage_getCenterPose(const ArSession *session,
 /// different from the originally specified size.
 ///
 /// If the tracking state is
-/// @c #AR_TRACKING_STATE_PAUSED/#AR_TRACKING_STATE_STOPPED, this returns the
-/// estimated width when the image state was last @c
+/// @c #AR_TRACKING_STATE_PAUSED or @c #AR_TRACKING_STATE_STOPPED, this returns
+/// the estimated width when the image state was last @c
 /// #AR_TRACKING_STATE_TRACKING. If the image state has never been @c
 /// #AR_TRACKING_STATE_TRACKING, this returns 0, even the image has a specified
 /// physical size in the image database.
@@ -5036,8 +5028,8 @@ void ArAugmentedImage_getExtentX(const ArSession *session,
 /// the originally specified size.
 ///
 /// If the tracking state is
-/// @c #AR_TRACKING_STATE_PAUSED/#AR_TRACKING_STATE_STOPPED, this returns the
-/// estimated height when the image state was last @c
+/// @c #AR_TRACKING_STATE_PAUSED or @c #AR_TRACKING_STATE_STOPPED, this returns
+/// the estimated height when the image state was last @c
 /// #AR_TRACKING_STATE_TRACKING. If the image state has never been @c
 /// #AR_TRACKING_STATE_TRACKING, this returns 0, even the image has a specified
 /// physical size in the image database.
@@ -5520,20 +5512,12 @@ void ArEarth_getEarthState(const ArSession *session,
                            ArEarthState *out_state);
 
 /// @ingroup ArEarth
-/// Returns the Earth-relative virtual camera pose for the latest frame.
+/// Returns the Earth-relative camera pose for the latest frame.
 ///
-/// The heading of the obtained @c ::ArGeospatialPose approximates the direction
-/// the user is facing, specifically:
-///
-/// - When the display is perpendicular to the ground, the back of the device
-/// points in the heading direction.
-/// - When the display is parallel to the ground and facing upward, heading is
-/// along the logical display's up direction, taking into account display
-/// rotation.
-/// - When the display is parallel to the ground and facing downward, heading is
-/// along the logical display's down direction.
-/// - In intermediate positions, the heading blends smoothly between the above
-/// behaviors.
+/// The orientation of the obtained @c ::ArGeospatialPose approximates the
+/// direction the user is facing in the EUS coordinate system. The EUS
+/// coordinate system has X+ pointing east, Y+ pointing up, and Z+ pointing
+/// south.
 ///
 /// Note: This pose is only valid when @c ::ArTrackable_getTrackingState is @c
 /// #AR_TRACKING_STATE_TRACKING. Otherwise, the resulting @c ::ArGeospatialPose
@@ -5542,7 +5526,7 @@ void ArEarth_getEarthState(const ArSession *session,
 /// @param[in]    session                    The ARCore session.
 /// @param[in]    earth                      The @c ::ArEarth object.
 /// @param[out]   out_camera_geospatial_pose Pointer to a @c ::ArGeospatialPose
-///     to receive the geospatial pose.
+///     to receive the Geospatial pose.
 void ArEarth_getCameraGeospatialPose(
     const ArSession *session,
     const ArEarth *earth,
@@ -5620,14 +5604,6 @@ ArStatus ArEarth_getPose(const ArSession *session,
 /// oriented such that X+ points to the east, Y+ points up away from the center
 /// of the earth, and Z+ points to the south.
 ///
-/// To create an anchor that has the +Z axis pointing in the same direction as
-/// heading obtained from @c ::ArGeospatialPose, use the following formula:
-///
-/// \code
-/// {qx, qy, qz, qw} = {0, sin((pi - heading * M_PI / 180.0) / 2), 0, cos((pi -
-/// heading * M_PI / 180.0) / 2)}}.
-/// \endcode
-///
 /// An anchor's @c ::ArTrackingState will be @c #AR_TRACKING_STATE_PAUSED while
 /// @c ::ArEarth is @c #AR_TRACKING_STATE_PAUSED. The tracking state will
 /// permanently become @c #AR_TRACKING_STATE_STOPPED if the @c ::ArSession
@@ -5679,8 +5655,8 @@ ArStatus ArEarth_acquireNewAnchor(ArSession *session,
 ///
 /// This creates a new @c ::ArAnchor and schedules a task to resolve the
 /// anchor's pose using the given parameters. You may resolve multiple anchors
-/// at a time, but a session cannot be tracking more than 100 Terrain Anchors at
-/// time. Attempting to resolve more than 100 Terrain Anchors will result in
+/// at a time, but a session cannot be tracking more than 100 Terrain anchors at
+/// time. Attempting to resolve more than 100 Terrain anchors will result in
 /// resolve calls returning status @c #AR_ERROR_RESOURCE_EXHAUSTED.
 ///
 /// If this function returns @c #AR_SUCCESS, the terrain anchor state of @p
@@ -5708,14 +5684,6 @@ ArStatus ArEarth_acquireNewAnchor(ArSession *session,
 /// oriented such that X+ points to the east, Y+ points up away from the center
 /// of the earth, and Z+ points to the south.
 ///
-/// To create an anchor that has the +Z axis pointing in the same direction as
-/// heading obtained from @c ::ArGeospatialPose, use the following formula:
-///
-/// \code
-/// {qx, qy, qz, qw} = {0, sin((pi - heading * M_PI / 180.0) / 2), 0, cos((pi -
-/// heading * M_PI / 180.0) / 2)}}.
-/// \endcode
-///
 /// @param[in] session          The ARCore session.
 /// @param[in] earth            The @c ::ArEarth handle.
 /// @param[in] latitude         The latitude of the anchor relative to the
@@ -5727,8 +5695,8 @@ ArStatus ArEarth_acquireNewAnchor(ArSession *session,
 /// @param[in] eus_quaternion_4 The rotation quaternion as {qx, qy, qx, qw}.
 /// @param[out] out_anchor      The newly-created anchor.
 /// @return @c #AR_SUCCESS or any of:
-/// - @c #AR_ERROR_ILLEGAL_STATE if ::ArEarthState is not
-///   AR_EARTH_STATE_ENABLED.
+/// - @c #AR_ERROR_ILLEGAL_STATE if @c ::ArEarthState is not
+///   @c #AR_EARTH_STATE_ENABLED.
 /// - @c #AR_ERROR_INVALID_ARGUMENT if @p latitude is outside the allowable
 ///   range, or if either @p session, @p earth, or @p eus_quaternion_4 is @c
 ///   NULL.
@@ -5744,18 +5712,18 @@ ArStatus ArEarth_resolveAndAcquireNewAnchorOnTerrain(
     ArAnchor **out_anchor);
 
 /// @ingroup ArAnchor
-/// Describes the current Terrain Anchor state of an @c ::ArAnchor. Obtained by
+/// Describes the current Terrain anchor state of an @c ::ArAnchor. Obtained by
 /// @c ::ArAnchor_getTerrainAnchorState.
 AR_DEFINE_ENUM(ArTerrainAnchorState){
-    /// This is not a Terrain Anchor, or the Terrain Anchor has become invalid
+    /// This is not a Terrain anchor, or the Terrain anchor has become invalid
     /// due to @c ::ArEarth having @c #AR_TRACKING_STATE_STOPPED
     /// due to @c #AR_GEOSPATIAL_MODE_DISABLED being set on the @c ::ArSession.
-    /// All Terrain Anchors transition to @c #AR_TERRAIN_ANCHOR_STATE_NONE
+    /// All Terrain anchors transition to @c #AR_TERRAIN_ANCHOR_STATE_NONE
     /// when @c #AR_GEOSPATIAL_MODE_DISABLED becomes active on the @c
     /// ::ArSession.
     AR_TERRAIN_ANCHOR_STATE_NONE = 0,
 
-    /// Resolving the Terrain Anchor is in progress. Once the task completes in
+    /// Resolving the Terrain anchor is in progress. Once the task completes in
     /// the background, the anchor will get a new state after the next @c
     /// ::ArSession_update call.
     AR_TERRAIN_ANCHOR_STATE_TASK_IN_PROGRESS = 1,
@@ -5786,7 +5754,7 @@ AR_DEFINE_ENUM(ArTerrainAnchorState){
 };
 
 /// @ingroup ArAnchor
-/// Gets the current Terrain Anchor state of the anchor. This state is
+/// Gets the current Terrain anchor state of the anchor. This state is
 /// guaranteed not to change until @c ::ArSession_update is called.
 ///
 /// @param[in]    session   The ARCore session.
@@ -6077,8 +6045,8 @@ void ArGeospatialPose_getVerticalAccuracy(
 /// @ingroup ArGeospatialPose
 /// Gets the @c ::ArGeospatialPose's heading.
 ///
-/// This function will return values for @c ::ArGeospatialPose's
-/// from ArEarth_getCameraGeospatialPose() and returns 0 for all other @c
+/// This function will return valid values for @c ::ArGeospatialPose's
+/// from @c ::ArEarth_getCameraGeospatialPose and returns 0 for all other @c
 /// ::ArGeospatialPose objects.
 ///
 /// Heading is specified in degrees clockwise from true north and approximates
@@ -6100,12 +6068,27 @@ void ArGeospatialPose_getVerticalAccuracy(
 /// @param[in]    geospatial_pose        The Geospatial pose.
 /// @param[out]   out_heading_degrees    The heading component of this pose's
 ///     orientation in [-180.0, 180.0] degree range.
+///
+/// @deprecated This function has been deprecated in favor of
+/// @c ::ArGeospatialPose_getEastUpSouthQuaternion, which provides orientation
+/// values in 3D space. To determine a value analogous to the heading value,
+/// calculate the yaw, pitch, and roll values from @c
+/// ::ArGeospatialPose_getEastUpSouthQuaternion. When the device is pointing
+/// downwards, i.e. perpendicular to the ground, heading is analoguous to roll,
+/// and when the device is upright in the device's default orientation mode,
+/// heading is analogous to yaw.
 void ArGeospatialPose_getHeading(const ArSession *session,
                                  const ArGeospatialPose *geospatial_pose,
-                                 double *out_heading_degrees);
+                                 double *out_heading_degrees)
+    AR_DEPRECATED("Deprecated in release 1.35.0. Please use "
+                  "ArGeospatialPose_getEastUpSouthQuaternion instead.");
 
 /// @ingroup ArGeospatialPose
 /// Gets the @c ::ArGeospatialPose's estimated heading accuracy.
+///
+/// This function will return valid values for @c ::ArGeospatialPose's
+/// from @c ::ArEarth_getCameraGeospatialPose and returns 0 for all other @c
+/// ::ArGeospatialPose's objects.
 ///
 /// We define heading accuracy as the estimated radius of the 68th percentile
 /// confidence level around @c ::ArGeospatialPose_getHeading. In other words,
@@ -6121,13 +6104,20 @@ void ArGeospatialPose_getHeading(const ArSession *session,
 /// @param[in]    geospatial_pose              The geospatial pose.
 /// @param[out]   out_heading_accuracy_degrees The accuracy of the heading
 ///     confidence in degrees.
+///
+/// @deprecated This function has deprecated in favor of @c
+/// ::ArGeospatialPose_getOrientationYawAccuracy, which provides the accuracy
+/// analogous to the heading accuracy when the device is held upright in the
+/// default orientation mode.
 void ArGeospatialPose_getHeadingAccuracy(
     const ArSession *session,
     const ArGeospatialPose *geospatial_pose,
-    double *out_heading_accuracy_degrees);
+    double *out_heading_accuracy_degrees)
+    AR_DEPRECATED("Deprecated in release 1.35.0. Please use "
+                  "ArGeospatialPose_getOrientationYawAccuracy instead.");
 
 /// @ingroup ArGeospatialPose
-/// Extracts the orientation from an Geospatial pose. It represents rotation of
+/// Extracts the orientation from a Geospatial pose. It represents rotation of
 /// the target with respect to the east-up-south coordinates. That is, X+ points
 /// east, Y+ points up, and Z+ points south. Right handed coordinate system.
 ///
@@ -6139,6 +6129,32 @@ void ArGeospatialPose_getEastUpSouthQuaternion(
     const ArSession *session,
     const ArGeospatialPose *geospatial_pose,
     float *out_quaternion_4);
+
+/// @ingroup ArGeospatialPose
+/// Gets the @c ::ArGeospatialPose's estimated orientation yaw angle accuracy.
+/// Yaw rotation is the angle between the pose's compass direction and
+/// north, and can be determined from @c
+/// ::ArGeospatialPose_getEastUpSouthQuaternion.
+///
+/// We define yaw accuracy as the estimated radius of the 68th percentile
+/// confidence level around yaw angles from
+/// @c ::ArGeospatialPose_getEastUpSouthQuaternion. In other words, there is a
+/// 68% probability that the true yaw angle is within
+/// @p out_orientation_yaw_accuracy_degrees of this @c ::ArGeospatialPose's
+/// rotation. Larger numbers indicate lower accuracy.
+///
+/// For example, if the estimated yaw angle is 60°, and @p
+/// out_orientation_yaw_accuracy_degrees is 10°, then there is a 68% probability
+/// of the true yaw angle being between 50° and 70°.
+///
+/// @param[in]    session                      The ARCore session.
+/// @param[in]    geospatial_pose              The Geospatial pose.
+/// @param[out]   out_orientation_yaw_accuracy_degrees The accuracy of the
+///     orientation confidence in degrees.
+void ArGeospatialPose_getOrientationYawAccuracy(
+    const ArSession *session,
+    const ArGeospatialPose *geospatial_pose,
+    double *out_orientation_yaw_accuracy_degrees);
 
 /// @ingroup ArImageMetadata
 /// Defines a rational data type in @c ::ArImageMetadata_const_entry.

@@ -58,6 +58,8 @@ to users. You can do this by adding the following text on your main menu or
 notice screen: "This application runs on [Google Play Services for AR](//play.google.com/store/apps/details?id=com.google.ar.core) (ARCore),
 which is provided by Google LLC and governed by the [Google Privacy Policy](//policies.google.com/privacy)".
 
+See the [User privacy requirements](https://developers.google.com/ar/develop/privacy-requirements).
+
 ## Deprecation policy
 
 Apps built with **ARCore SDK 1.12.0 or higher** are covered by the

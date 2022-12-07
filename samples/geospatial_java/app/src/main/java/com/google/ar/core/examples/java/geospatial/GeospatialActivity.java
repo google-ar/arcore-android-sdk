@@ -114,16 +114,16 @@ public class GeospatialActivity extends AppCompatActivity
   private static final float Z_NEAR = 0.1f;
   private static final float Z_FAR = 1000f;
 
-  // The thresholds that are required for horizontal and heading accuracies before entering into the
-  // LOCALIZED state. Once the accuracies are equal or less than these values, the app will
+  // The thresholds that are required for horizontal and orientation accuracies before entering into
+  // the LOCALIZED state. Once the accuracies are equal or less than these values, the app will
   // allow the user to place anchors.
   private static final double LOCALIZING_HORIZONTAL_ACCURACY_THRESHOLD_METERS = 10;
-  private static final double LOCALIZING_HEADING_ACCURACY_THRESHOLD_DEGREES = 15;
+  private static final double LOCALIZING_ORIENTATION_YAW_ACCURACY_THRESHOLD_DEGREES = 15;
 
   // Once in the LOCALIZED state, if either accuracies degrade beyond these amounts, the app will
   // revert back to the LOCALIZING state.
   private static final double LOCALIZED_HORIZONTAL_ACCURACY_HYSTERESIS_METERS = 10;
-  private static final double LOCALIZED_HEADING_ACCURACY_HYSTERESIS_DEGREES = 10;
+  private static final double LOCALIZED_ORIENTATION_YAW_ACCURACY_HYSTERESIS_DEGREES = 10;
 
   private static final int LOCALIZING_TIMEOUT_SECONDS = 180;
   private static final int MAXIMUM_ANCHORS = 5;
@@ -524,7 +524,7 @@ public class GeospatialActivity extends AppCompatActivity
                   /*defines=*/ null)
               .setTexture("u_Texture", virtualObjectTexture);
 
-      // Virtual object to render (Terrain Anchor marker)
+      // Virtual object to render (Terrain anchor marker)
       Texture terrainAnchorVirtualObjectTexture =
           Texture.createFromAsset(
               render,
@@ -717,15 +717,21 @@ public class GeospatialActivity extends AppCompatActivity
       // Get the current pose of an Anchor in world space. The Anchor pose is updated
       // during calls to session.update() as ARCore refines its estimate of the world.
 
-      // Only render resolved Terrain Anchors and Geospatial anchors.
+      // Only render resolved Terrain anchors and Geospatial anchors.
       if (anchor.getTerrainAnchorState() != TerrainAnchorState.SUCCESS
           && anchor.getTerrainAnchorState() != TerrainAnchorState.NONE) {
         continue;
       }
       anchor.getPose().toMatrix(modelMatrix, 0);
 
+      // Rotate the virtual object 180 degrees around the Y axis to make the object face the GL
+      // camera -Z axis, since camera Z axis faces toward users.
+      float[] rotationMatrix = new float[16];
+      Matrix.setRotateM(rotationMatrix, 0, 180, 0.0f, 1.0f, 0.0f);
+      float[] rotationModelMatrix = new float[16];
+      Matrix.multiplyMM(rotationModelMatrix, 0, modelMatrix, 0, rotationMatrix, 0);
       // Calculate model/view/projection matrices
-      Matrix.multiplyMM(modelViewMatrix, 0, viewMatrix, 0, modelMatrix, 0);
+      Matrix.multiplyMM(modelViewMatrix, 0, viewMatrix, 0, rotationModelMatrix, 0);
       Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0);
       // Update shader properties and draw
       if (anchor.getTerrainAnchorState() == TerrainAnchorState.SUCCESS) {
@@ -795,7 +801,7 @@ public class GeospatialActivity extends AppCompatActivity
 
   /**
    * Handles the updating for {@link State.LOCALIZING}. In this state, wait for the horizontal and
-   * heading threshold to improve until it reaches your threshold.
+   * orientation threshold to improve until it reaches your threshold.
    *
    * <p>If it takes too long for the threshold to be reached, this could mean that GPS data isn't
    * accurate enough, or that the user is in an area that can't be localized with StreetView.
@@ -803,7 +809,8 @@ public class GeospatialActivity extends AppCompatActivity
   private void updateLocalizingState(Earth earth) {
     GeospatialPose geospatialPose = earth.getCameraGeospatialPose();
     if (geospatialPose.getHorizontalAccuracy() <= LOCALIZING_HORIZONTAL_ACCURACY_THRESHOLD_METERS
-        && geospatialPose.getHeadingAccuracy() <= LOCALIZING_HEADING_ACCURACY_THRESHOLD_DEGREES) {
+        && geospatialPose.getOrientationYawAccuracy()
+            <= LOCALIZING_ORIENTATION_YAW_ACCURACY_THRESHOLD_DEGREES) {
       state = State.LOCALIZED;
       if (anchors.isEmpty()) {
         createAnchorFromSharedPreferences(earth);
@@ -842,9 +849,9 @@ public class GeospatialActivity extends AppCompatActivity
     if (geospatialPose.getHorizontalAccuracy()
             > LOCALIZING_HORIZONTAL_ACCURACY_THRESHOLD_METERS
                 + LOCALIZED_HORIZONTAL_ACCURACY_HYSTERESIS_METERS
-        || geospatialPose.getHeadingAccuracy()
-            > LOCALIZING_HEADING_ACCURACY_THRESHOLD_DEGREES
-                + LOCALIZED_HEADING_ACCURACY_HYSTERESIS_DEGREES) {
+        || geospatialPose.getOrientationYawAccuracy()
+            > LOCALIZING_ORIENTATION_YAW_ACCURACY_THRESHOLD_DEGREES
+                + LOCALIZED_ORIENTATION_YAW_ACCURACY_HYSTERESIS_DEGREES) {
       // Accuracies have degenerated, return to the localizing state.
       state = State.LOCALIZING;
       localizingStartTimestamp = System.currentTimeMillis();
@@ -861,6 +868,7 @@ public class GeospatialActivity extends AppCompatActivity
   }
 
   private void updateGeospatialPoseText(GeospatialPose geospatialPose) {
+    float[] quaternion = geospatialPose.getEastUpSouthQuaternion();
     String poseText =
         getResources()
             .getString(
@@ -870,8 +878,11 @@ public class GeospatialActivity extends AppCompatActivity
                 geospatialPose.getHorizontalAccuracy(),
                 geospatialPose.getAltitude(),
                 geospatialPose.getVerticalAccuracy(),
-                geospatialPose.getHeading(),
-                geospatialPose.getHeadingAccuracy());
+                quaternion[0],
+                quaternion[1],
+                quaternion[2],
+                quaternion[3],
+                geospatialPose.getOrientationYawAccuracy());
     runOnUiThread(
         () -> {
           geospatialPoseTextView.setText(poseText);
@@ -899,13 +910,13 @@ public class GeospatialActivity extends AppCompatActivity
     double latitude = geospatialPose.getLatitude();
     double longitude = geospatialPose.getLongitude();
     double altitude = geospatialPose.getAltitude();
-    double headingDegrees = geospatialPose.getHeading();
+    float[] quaternion = geospatialPose.getEastUpSouthQuaternion();
     if (isTerrainAnchorMode) {
-      createTerrainAnchor(earth, latitude, longitude, headingDegrees);
-      storeAnchorParameters(latitude, longitude, 0, headingDegrees);
+      createTerrainAnchor(earth, latitude, longitude, quaternion);
+      storeAnchorParameters(latitude, longitude, 0, quaternion);
     } else {
-      createAnchor(earth, latitude, longitude, altitude, headingDegrees);
-      storeAnchorParameters(latitude, longitude, altitude, headingDegrees);
+      createAnchor(earth, latitude, longitude, altitude, quaternion);
+      storeAnchorParameters(latitude, longitude, altitude, quaternion);
       String message =
           getResources()
               .getQuantityString(R.plurals.status_anchors_set, anchors.size(), anchors.size());
@@ -944,20 +955,18 @@ public class GeospatialActivity extends AppCompatActivity
     tapScreenTextView.setVisibility(View.VISIBLE);
   }
 
-  /** Create an anchor at a specific geodetic location using a heading. */
+  /** Create an anchor at a specific geodetic location using a EUS quaternion. */
   private void createAnchor(
-      Earth earth, double latitude, double longitude, double altitude, double headingDegrees) {
-    // Convert a heading to a EUS quaternion:
-    double angleRadians = Math.toRadians(180.0f - headingDegrees);
+      Earth earth, double latitude, double longitude, double altitude, float[] quaternion) {
     Anchor anchor =
         earth.createAnchor(
             latitude,
             longitude,
             altitude,
-            0.0f,
-            (float) Math.sin(angleRadians / 2),
-            0.0f,
-            (float) Math.cos(angleRadians / 2));
+            quaternion[0],
+            quaternion[1],
+            quaternion[2],
+            quaternion[3]);
     anchors.add(anchor);
     if (anchors.size() >= MAXIMUM_ANCHORS) {
       runOnUiThread(
@@ -968,11 +977,9 @@ public class GeospatialActivity extends AppCompatActivity
     }
   }
 
-  /** Create a terrain anchor at a specific geodetic location using a heading. */
+  /** Create a terrain anchor at a specific geodetic location using a EUS quaternion. */
   private void createTerrainAnchor(
-      Earth earth, double latitude, double longitude, double headingDegrees) {
-    // Convert a heading to a EUS quaternion:
-    double angleRadians = Math.toRadians(180.0f - headingDegrees);
+      Earth earth, double latitude, double longitude, float[] quaternion) {
     Anchor anchor = null;
     try {
       anchor =
@@ -980,10 +987,10 @@ public class GeospatialActivity extends AppCompatActivity
               latitude,
               longitude,
               /* altitudeAboveTerrain= */ 0.0f,
-              0.0f,
-              (float) Math.sin(angleRadians / 2),
-              0.0f,
-              (float) Math.cos(angleRadians / 2));
+              quaternion[0],
+              quaternion[1],
+              quaternion[2],
+              quaternion[3]);
       anchors.add(anchor);
       if (anchors.size() >= MAXIMUM_ANCHORS) {
         runOnUiThread(
@@ -1008,7 +1015,7 @@ public class GeospatialActivity extends AppCompatActivity
    * Helper function to store the parameters used in anchor creation in {@link SharedPreferences}.
    */
   private void storeAnchorParameters(
-      double latitude, double longitude, double altitude, double headingDegrees) {
+      double latitude, double longitude, double altitude, float[] quaternion) {
     Set<String> anchorParameterSet =
         sharedPreferences.getStringSet(SHARED_PREFERENCES_SAVED_ANCHORS, new HashSet<>());
     HashSet<String> newAnchorParameterSet = new HashSet<>(anchorParameterSet);
@@ -1017,7 +1024,14 @@ public class GeospatialActivity extends AppCompatActivity
     String terrain = isTerrainAnchorMode ? "Terrain" : "";
     newAnchorParameterSet.add(
         String.format(
-            terrain + "%.6f,%.6f,%.6f,%.6f", latitude, longitude, altitude, headingDegrees));
+            terrain + "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f",
+            latitude,
+            longitude,
+            altitude,
+            quaternion[0],
+            quaternion[1],
+            quaternion[2],
+            quaternion[3]));
     editor.putStringSet(SHARED_PREFERENCES_SAVED_ANCHORS, newAnchorParameterSet);
     editor.commit();
   }
@@ -1042,19 +1056,25 @@ public class GeospatialActivity extends AppCompatActivity
         anchorParameters = anchorParameters.replace("Terrain", "");
       }
       String[] parameters = anchorParameters.split(",");
-      if (parameters.length != 4) {
+      if (parameters.length != 7) {
         Log.d(
             TAG, "Invalid number of anchor parameters. Expected four, found " + parameters.length);
-        return;
+        continue;
       }
       double latitude = Double.parseDouble(parameters[0]);
       double longitude = Double.parseDouble(parameters[1]);
       double altitude = Double.parseDouble(parameters[2]);
-      double heading = Double.parseDouble(parameters[3]);
+      float[] quaternion =
+          new float[] {
+            Float.parseFloat(parameters[3]),
+            Float.parseFloat(parameters[4]),
+            Float.parseFloat(parameters[5]),
+            Float.parseFloat(parameters[6])
+          };
       if (isTerrain) {
-        createTerrainAnchor(earth, latitude, longitude, heading);
+        createTerrainAnchor(earth, latitude, longitude, quaternion);
       } else {
-        createAnchor(earth, latitude, longitude, altitude, heading);
+        createAnchor(earth, latitude, longitude, altitude, quaternion);
       }
     }
 
