@@ -25,7 +25,7 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.objects.ObjectDetection
 import com.google.mlkit.vision.objects.custom.CustomObjectDetectorOptions
 import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
-import kotlinx.coroutines.tasks.asDeferred
+import kotlinx.coroutines.tasks.await
 
 /** Analyzes an image using ML Kit. */
 class MLKitObjectDetector(context: Activity) : ObjectDetector(context) {
@@ -55,7 +55,7 @@ class MLKitObjectDetector(context: Activity) : ObjectDetector(context) {
 
     val inputImage = InputImage.fromBitmap(rotatedImage, 0)
 
-    val mlKitDetectedObjects = detector.process(inputImage).asDeferred().await()
+    val mlKitDetectedObjects = detector.process(inputImage).await()
     return mlKitDetectedObjects.mapNotNull { obj ->
       val bestLabel = obj.labels.maxByOrNull { label -> label.confidence } ?: return@mapNotNull null
       val coords =

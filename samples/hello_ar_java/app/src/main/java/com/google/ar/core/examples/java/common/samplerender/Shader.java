@@ -75,6 +75,7 @@ public class Shader implements Closeable {
 
   private boolean depthTest = true;
   private boolean depthWrite = true;
+  private boolean cullFace = true;
   private BlendFactor sourceRgbBlend = BlendFactor.ONE;
   private BlendFactor destRgbBlend = BlendFactor.ZERO;
   private BlendFactor sourceAlphaBlend = BlendFactor.ONE;
@@ -184,6 +185,17 @@ public class Shader implements Closeable {
    */
   public Shader setDepthWrite(boolean depthWrite) {
     this.depthWrite = depthWrite;
+    return this;
+  }
+
+  /**
+   * Sets cull face state.
+   *
+   * @see <a
+   *     href="https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glEnable.xhtml">glEnable(GL_CULL_FACE)</a>.
+   */
+  public Shader setCullFace(boolean cullFace) {
+    this.cullFace = cullFace;
     return this;
   }
 
@@ -410,6 +422,13 @@ public class Shader implements Closeable {
     } else {
       GLES30.glDisable(GLES30.GL_DEPTH_TEST);
       GLError.maybeThrowGLException("Failed to disable depth test", "glDisable");
+    }
+    if (cullFace) {
+      GLES30.glEnable(GLES30.GL_CULL_FACE);
+      GLError.maybeThrowGLException("Failed to enable backface culling", "glEnable");
+    } else {
+      GLES30.glDisable(GLES30.GL_CULL_FACE);
+      GLError.maybeThrowGLException("Failed to disable backface culling", "glDisable");
     }
     try {
       // Remove all non-texture uniforms from the map after setting them, since they're stored as

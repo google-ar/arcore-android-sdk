@@ -50,6 +50,16 @@ public final class SnackbarHelper {
     show(activity, message, DismissBehavior.SHOW);
   }
 
+  /** Shows a snackbar with a given message for Snackbar.LENGTH_SHORT milliseconds */
+  public void showMessageForShortDuration(Activity activity, String message) {
+    show(activity, message, DismissBehavior.SHOW, Snackbar.LENGTH_SHORT);
+  }
+
+  /** Shows a snackbar with a given message for Snackbar.LENGTH_LONG milliseconds */
+  public void showMessageForLongDuration(Activity activity, String message) {
+    show(activity, message, DismissBehavior.SHOW, Snackbar.LENGTH_LONG);
+  }
+
   /**
    * Shows a snackbar with a given error message. When dismissed, will finish the activity. Useful
    * for notifying errors, where no further interaction with the activity is possible.
@@ -96,8 +106,15 @@ public final class SnackbarHelper {
     this.snackbarView = snackbarView;
   }
 
+  private void show(Activity activity, String message, DismissBehavior dismissBehavior) {
+    show(activity, message, dismissBehavior, Snackbar.LENGTH_INDEFINITE);
+  }
+
   private void show(
-      final Activity activity, final String message, final DismissBehavior dismissBehavior) {
+      final Activity activity,
+      final String message,
+      final DismissBehavior dismissBehavior,
+      int duration) {
     activity.runOnUiThread(
         new Runnable() {
           @Override
@@ -108,9 +125,9 @@ public final class SnackbarHelper {
                         ? activity.findViewById(android.R.id.content)
                         : snackbarView,
                     message,
-                    Snackbar.LENGTH_INDEFINITE);
+                    duration);
             messageSnackbar.getView().setBackgroundColor(BACKGROUND_COLOR);
-            if (dismissBehavior != DismissBehavior.HIDE) {
+            if (dismissBehavior != DismissBehavior.HIDE && duration == Snackbar.LENGTH_INDEFINITE) {
               messageSnackbar.setAction(
                   "Dismiss",
                   new View.OnClickListener() {

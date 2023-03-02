@@ -193,7 +193,6 @@
 /// - Orientation approximates the direction the user is facing in the EUS
 ///   coordinate system. The EUS coordinate system has X+ pointing east, Y+
 ///   pointing up, and Z+ pointing south.
-
 /// - Accuracy of the latitude, longitude, altitude, and heading are available
 ///   as numeric confidence intervals where a large value (large interval) means
 ///   low confidence and small value (small interval) means high confidence.
@@ -2138,7 +2137,7 @@ void ArCameraConfigFilter_destroy(ArCameraConfigFilter *filter);
 ///     @c ::ArCameraConfigTargetFps values, bitwise-or'd together
 void ArCameraConfigFilter_setTargetFps(const ArSession *session,
                                        ArCameraConfigFilter *filter,
-                                       const uint32_t fps_filters);
+                                       uint32_t fps_filters);
 
 /// @ingroup ArCameraConfigFilter
 /// Gets the desired framerates to allow.
@@ -5186,8 +5185,6 @@ void ArAugmentedFace_getRegionPose(const ArSession *session,
                                    const ArAugmentedFace *face,
                                    const ArAugmentedFaceRegionType region_type,
                                    ArPose *out_pose);
-
-/// @}
 
 /// @ingroup ArAugmentedFace
 /// Returns the pose of the center of the face.

@@ -171,13 +171,18 @@ public class Mesh implements Closeable {
     GLError.maybeThrowGLException("Failed to bind vertex array object", "glBindVertexArray");
     if (indexBuffer == null) {
       // Sanity check for debugging
-      int numberOfVertices = vertexBuffers[0].getNumberOfVertices();
+      int vertexCount = vertexBuffers[0].getNumberOfVertices();
       for (int i = 1; i < vertexBuffers.length; ++i) {
-        if (vertexBuffers[i].getNumberOfVertices() != numberOfVertices) {
-          throw new IllegalStateException("Vertex buffers have mismatching numbers of vertices");
+        int iterCount = vertexBuffers[i].getNumberOfVertices();
+        if (iterCount != vertexCount) {
+          throw new IllegalStateException(
+              String.format(
+                  "Vertex buffers have mismatching numbers of vertices ([0] has %d but [%d] has"
+                      + " %d)",
+                  vertexCount, i, iterCount));
         }
       }
-      GLES30.glDrawArrays(primitiveMode.glesEnum, 0, numberOfVertices);
+      GLES30.glDrawArrays(primitiveMode.glesEnum, 0, vertexCount);
       GLError.maybeThrowGLException("Failed to draw vertex array object", "glDrawArrays");
     } else {
       GLES30.glDrawElements(
