@@ -590,8 +590,7 @@ public class CloudAnchorActivity extends AppCompatActivity
     }
 
     @Override
-    public void onCloudTaskComplete(Anchor anchor) {
-      CloudAnchorState cloudState = anchor.getCloudAnchorState();
+    public void onCloudTaskComplete(String cloudId, CloudAnchorState cloudState) {
       if (cloudState.isError()) {
         Log.e(TAG, "Error hosting a cloud anchor, state " + cloudState);
         snackbarHelper.showMessageWithDismiss(
@@ -600,8 +599,7 @@ public class CloudAnchorActivity extends AppCompatActivity
       }
       Preconditions.checkState(
           cloudAnchorId == null, "The cloud anchor ID cannot have been set before.");
-      cloudAnchorId = anchor.getCloudAnchorId();
-      setNewAnchor(anchor);
+      cloudAnchorId = cloudId;
       checkAndMaybeShare();
     }
 
@@ -624,9 +622,8 @@ public class CloudAnchorActivity extends AppCompatActivity
     }
 
     @Override
-    public void onCloudTaskComplete(Anchor anchor) {
+    public void onCloudTaskComplete(Anchor anchor, CloudAnchorState cloudState) {
       // When the anchor has been resolved, or had a final error state.
-      CloudAnchorState cloudState = anchor.getCloudAnchorState();
       if (cloudState.isError()) {
         Log.w(
             TAG,

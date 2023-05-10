@@ -92,8 +92,9 @@
 /// Note: These functions only change the type of a pointer; they do not change
 /// the reference count of the referenced objects.
 ///
-/// Note: There is no runtime checking that casts are correct. Call
-/// @c ::ArTrackable_getType beforehand to figure out the correct cast.
+/// Note: There is no runtime checking that casts are correct. When downcasting
+/// @c ::ArTrackable, call @c ::ArTrackable_getType beforehand to figure out the
+/// correct cast.
 
 /// @defgroup ArAnchor ArAnchor
 /// Describes a fixed location and orientation in the real world, representing
@@ -127,6 +128,69 @@
 /// Provides information about the physical characteristics of the device
 /// camera.
 
+/// @defgroup ArFuture ArFuture
+/// Futures in ARCore.
+///
+/// @section future_concept Futures in ARCore
+///
+/// Futures represent the eventual completion of an asynchronous
+/// operation. A future has one of three states, @c ::ArFutureState, which can
+/// be obtained with @c ::ArFuture_getState:
+///
+/// - @c #AR_FUTURE_STATE_PENDING - The operation is still pending. The result
+///   of the operation isn't available yet and any associated callback hasn't
+///   yet been invoked.
+/// - @c #AR_FUTURE_STATE_DONE - The operation is complete, and a result is
+///   available.
+/// - @c #AR_FUTURE_STATE_CANCELLED - The operation has been cancelled.
+///
+/// An @c ::ArFuture starts in the @c #AR_FUTURE_STATE_PENDING state and
+/// transitions to @c #AR_FUTURE_STATE_DONE upon completion. If the
+/// future is cancelled using @c ::ArFuture_cancel, then its state may become @c
+/// #AR_FUTURE_STATE_CANCELLED (see @ref future_cancellation
+/// "cancelling a future" for caveats).
+///
+/// Futures must eventually be released using @c ::ArFuture_release.
+/// (@ref ownership "reference type, long-lived").
+///
+/// @section future_results Obtaining results from a Future
+///
+/// There are two ways of obtaining results from an @c ::ArFuture:
+///
+/// @subsection future_polling Polling a Future
+///
+/// When the @c ::ArFuture is created, its @c ::ArFutureState is set to @c
+/// #AR_FUTURE_STATE_PENDING. You may poll the future using @c
+/// ::ArFuture_getState to query the state of the asynchronous operation. When
+/// its state is @c #AR_FUTURE_STATE_DONE, you can obtain the operation's
+/// result. The future must eventually be released using @c ::ArFuture_release.
+///
+/// @subsection future_callback Using a callback to obtain Future results
+///
+/// The operation's result can be reported via a callback. When providing a
+/// callback, ARCore will invoke the given function when the operation is
+/// complete, unless the future has been cancelled using @c ::ArFuture_cancel.
+/// This callback will be invoked on the <a
+/// href="https://developer.android.com/guide/components/processes-and-threads#Threads">main
+/// thread</a>.
+///
+/// When providing a callback, you may provide a
+/// @c context, which will be passed as the first parameter to the callback.
+/// It is a best practice to free the memory of @c context at the end of the
+/// callback and when @c ::ArFuture_cancel successfully cancels the callback.
+///
+/// @section future_cancellation Cancelling a Future
+///
+/// You can try to cancel an @c ::ArFuture by calling @c ::ArFuture_cancel.
+/// Due to multi-threading, it is possible that the cancel operation is not
+/// successful. The @c out_was_cancelled parameter indicates if the cancellation
+/// was successful.
+///
+/// If the cancellation is successful, then any
+/// @ref future_callback "associated callback" will never be called. It is a
+/// best practice to free context memory
+/// provided to the callback, if any.
+///
 /// @defgroup ArConfig ArConfig
 /// Session configuration.
 ///
@@ -200,6 +264,16 @@
 /// An @c ::ArGeospatialPose can be retrieved from @c
 /// ::ArEarth_getCameraGeospatialPose.
 ///
+
+/// @defgroup ArSemantics ArSemantics
+/// Scene Semantics API. See the
+/// <a href="https://developers.google.com/ar/develop/c/scene-semantics">Scene
+/// Semantics Developer Guide</a> for more information.
+
+/// @defgroup ArStreetscapeGeometry ArStreetscapeGeometry
+/// ARCore Geospatial Streetscape Geometry APIs. See the <a
+/// href="https://developers.google.com/ar/develop/c/geospatial/streetscape-geometry">Streetscape
+/// Geometry Developer Guide</a> for additional information.
 
 /// @defgroup ArFrame ArFrame
 /// Per-frame state.
@@ -285,6 +359,11 @@
 /// @defgroup ArSession ArSession
 /// Session management.
 
+/// @defgroup ArMesh ArMesh
+/// Represents a polygon mesh describing geometry.
+///
+/// Obtained by @c ::ArStreetscapeGeometry_acquireMesh.
+
 /// @defgroup ArTrackable ArTrackable
 /// Something that can be tracked and that anchors can be attached to.
 
@@ -293,6 +372,30 @@
 /// in a given location helps to improve the quality of Geospatial localization
 /// and tracking accuracy. See @c ::ArSession_checkVpsAvailabilityAsync for more
 /// details.
+
+/// @defgroup ArHostCloudAnchorFuture ArHostCloudAnchorFuture
+/// An asynchronous operation for hosting a Cloud Anchor launched by @c
+/// ::ArSession_hostCloudAnchorAsync. See the <a
+/// href="https://developers.google.com/ar/develop/c/cloud-anchors/developer-guide">Cloud
+/// Anchors developer guide</a> for more information.
+
+/// @defgroup ArResolveCloudAnchorFuture ArResolveCloudAnchorFuture
+/// An asynchronous operation for resolving a Cloud Anchor launched by @c
+/// ::ArSession_resolveCloudAnchorAsync. See the <a
+/// href="https://developers.google.com/ar/develop/c/cloud-anchors/developer-guide">Cloud
+/// Anchors developer guide</a> for more information.
+
+/// @defgroup ArResolveAnchorOnTerrainFuture ArResolveAnchorOnTerrainFuture
+/// An asynchronous operation for resolving a terrain anchor launched by
+/// @c ::ArEarth_resolveAnchorOnTerrainAsync. See the <a
+/// href="https://developers.google.com/ar/develop/geospatial/c/anchors#terrain-anchors">Terrain
+/// anchors developer guide</a> for more information.
+
+/// @defgroup ArResolveAnchorOnRooftopFuture ArResolveAnchorOnRooftopFuture
+/// Handle to an async operation launched by @c
+/// ::ArEarth_resolveAnchorOnRooftopAsync. See the <a
+/// href="https://developers.google.com/ar/develop/geospatial/c/anchors#rooftop-anchors">Rooftop
+/// anchors developer guide</a> for more information.
 
 /// @ingroup ArConfig
 /// An opaque session configuration object (@ref ownership "value type").
@@ -517,6 +620,24 @@ typedef struct ArAugmentedImage_ ArAugmentedImage;
 /// - Release with: @c ::ArTrackable_release
 typedef struct ArAugmentedFace_ ArAugmentedFace;
 
+/// @ingroup ArStreetscapeGeometry
+/// A Streetscape Geometry trackable (@ref ownership "reference type,
+/// long-lived").
+///
+/// Defines geometry such as terrain, buildings, or other structures obtained
+/// from the Streetscape Geometry API. See the <a
+/// href="https://developers.google.com/ar/develop/c/geospatial/streetscape-geometry">Streetscape
+/// Geometry Developer Guide</a> for additional information.
+///
+/// <p>Obtained from a call to @c ::ArSession_getAllTrackables
+/// and @c ::ArFrame_getUpdatedTrackables when @c ::ArStreetscapeGeometryMode is
+/// set to @c #AR_STREETSCAPE_GEOMETRY_MODE_ENABLED and @c ::ArGeospatialMode is
+/// set to @c #AR_GEOSPATIAL_MODE_ENABLED.
+///
+/// - Trackable type: @c #AR_TRACKABLE_STREETSCAPE_GEOMETRY
+/// - Release with: @c ::ArTrackable_release
+typedef struct ArStreetscapeGeometry_ ArStreetscapeGeometry;
+
 // Earth.
 
 /// @ingroup ArEarth
@@ -579,6 +700,13 @@ typedef struct ArAnchor_ ArAnchor;
 /// - Create with: @c ::ArAnchorList_create
 /// - Release with: @c ::ArAnchorList_destroy
 typedef struct ArAnchorList_ ArAnchorList;
+
+/// @ingroup ArMesh
+/// A triangulated mesh representing a surface reconstruction of the scene.
+/// (@ref ownership "reference type, large data").
+///
+/// - Release with: @c ::ArMesh_release
+typedef struct ArMesh_ ArMesh;
 
 // Hit result functionality.
 
@@ -660,6 +788,18 @@ inline ArAugmentedFace *ArAsFace(ArTrackable *trackable) {
   return reinterpret_cast<ArAugmentedFace *>(trackable);
 }
 
+/// @ingroup type_conversions
+/// Upcasts to @c ::ArTrackable
+inline ArTrackable *ArAsTrackable(ArStreetscapeGeometry *streetscape_geometry) {
+  return reinterpret_cast<ArTrackable *>(streetscape_geometry);
+}
+
+/// @ingroup type_conversions
+/// Downcasts to @c ::ArStreetscapeGeometry.
+inline ArStreetscapeGeometry *ArAsStreetscapeGeometry(ArTrackable *trackable) {
+  return reinterpret_cast<ArStreetscapeGeometry *>(trackable);
+}
+
 #endif  // __cplusplus
 
 // If compiling for C++11, use the 'enum underlying type' feature to enforce
@@ -698,6 +838,9 @@ AR_DEFINE_ENUM(ArTrackableType){
 
     /// Trackable type for faces.
     AR_TRACKABLE_FACE = 0x41520105,
+
+    /// Trackable type for Streetscape Geometry.
+    AR_TRACKABLE_STREETSCAPE_GEOMETRY = 0x41520103,
 
     /// Trackable type for @c ::ArEarth.
     AR_TRACKABLE_EARTH = 0x41520109,
@@ -826,8 +969,8 @@ AR_DEFINE_ENUM(ArStatus){
     /// have.
     AR_ERROR_INTERNET_PERMISSION_NOT_GRANTED = -15,
 
-    /// @c ::ArSession_hostAndAcquireNewCloudAnchor failed because the anchor is
-    /// not a type of anchor that is currently supported for hosting.
+    /// Hosting a Cloud Anchor failed because the anchor is not a type of anchor
+    /// that is currently supported for hosting.
     AR_ERROR_ANCHOR_NOT_SUPPORTED_FOR_HOSTING = -16,
 
     /// Attempted to add an image with insufficient quality (e.g., too few
@@ -961,18 +1104,17 @@ AR_DEFINE_ENUM(ArTrackingFailureReason){
     AR_TRACKING_FAILURE_REASON_CAMERA_UNAVAILABLE = 5};
 
 /// @ingroup ArAnchor
-/// Describes the current cloud state of an @c ::ArAnchor.
+/// Result of a Cloud Anchor hosting or resolving operation.
 AR_DEFINE_ENUM(ArCloudAnchorState){
-    /// The anchor is purely local. It has never been hosted using
-    /// @c ::ArSession_hostAndAcquireNewCloudAnchor, and has not been resolved
-    /// using
-    /// @c ::ArSession_resolveAndAcquireNewCloudAnchor.
+    /// Not a valid value for a Cloud Anchor operation.
     AR_CLOUD_ANCHOR_STATE_NONE = 0,
 
     /// A hosting/resolving task for the anchor is in progress. Once the task
     /// completes in the background, the anchor will get a new cloud state after
     /// the next @c ::ArSession_update call.
-    AR_CLOUD_ANCHOR_STATE_TASK_IN_PROGRESS = 1,
+    AR_CLOUD_ANCHOR_STATE_TASK_IN_PROGRESS AR_DEPRECATED(
+        "Not returned by async cloud anchor APIs - replaced by "
+        "AR_FUTURE_STATE_PENDING.") = 1,
 
     /// A hosting/resolving task for this anchor completed successfully.
     AR_CLOUD_ANCHOR_STATE_SUCCESS = 2,
@@ -1034,7 +1176,6 @@ AR_DEFINE_ENUM(ArCloudAnchorState){
     /// might affect the device's ability to connect to the ARCore Cloud Anchor
     /// service.
     AR_CLOUD_ANCHOR_STATE_ERROR_HOSTING_SERVICE_UNAVAILABLE = -10,
-
 };
 
 /// @ingroup ArCoreApk
@@ -1191,6 +1332,40 @@ AR_DEFINE_ENUM(ArFocusMode){/// Focus is fixed.
                             AR_FOCUS_MODE_AUTO = 1};
 
 /// @ingroup ArConfig
+/// Describes the behavior of the Electronic Image Stabilization (EIS) API. When
+/// enabled, EIS smoothes the camera feed and helps correct video shakes in the
+/// camera preview. See the <a
+/// href="https://developers.google.com/ar/develop/c/electronic-image-stabilization">Electronic
+/// Image Stabilization Developer Guide</a> for more information.
+///
+/// Not all devices support all modes. Use @c
+/// ::ArSession_isImageStabilizationModeSupported to detect if a @c
+/// ::ArImageStabilizationMode is supported with the selected camera
+/// configuration.
+///
+/// Attempting to use @c ::ArSession_configure to configure a @c
+/// ::ArImageStabilizationMode mode on a device that that isn't supported, @c
+/// ::ArSession_configure will return #AR_ERROR_UNSUPPORTED_CONFIGURATION.
+///
+/// The default value is #AR_IMAGE_STABILIZATION_MODE_OFF. Use
+/// @c ::ArConfig_setImageStabilizationMode to set the desired mode.
+AR_DEFINE_ENUM(ArImageStabilizationMode){
+    /// Image stabilization is off.
+    ///
+    /// This is the default mode.
+    AR_IMAGE_STABILIZATION_MODE_OFF = 0,
+    /// Image stabilization is on. @c ::ArFrame_transformCoordinates3d can be
+    /// use to convert 2D coordinates to @c
+    /// #AR_COORDINATES_3D_EIS_TEXTURE_NORMALIZED and @c
+    /// #AR_COORDINATES_3D_EIS_NORMALIZED_DEVICE_COORDINATES.
+    ///
+    /// See the <a
+    /// href="https://developers.google.com/ar/develop/c/electronic-image-stabilization">Electronic
+    /// Image Stabilization Developer Guide</a> for more information.
+    AR_IMAGE_STABILIZATION_MODE_EIS = 1,
+};
+
+/// @ingroup ArConfig
 /// Selects the desired depth mode. Not all devices support all modes, use
 /// @c ::ArSession_isDepthModeSupported to find whether the current device and
 /// the selected camera support a particular depth mode.
@@ -1231,6 +1406,127 @@ AR_DEFINE_ENUM(ArDepthMode){
     /// Raw depth is intended to be used in cases that involve understanding of
     /// the geometry in the environment.
     AR_DEPTH_MODE_RAW_DEPTH_ONLY = 3,
+};
+
+/// @ingroup ArConfig
+/// Describes how ARCore will update the camera texture. See <a
+/// href="https://developers.google.com/ar/develop/c/vulkan">Vulkan Rendering
+/// developer guide</a> for more information.
+///
+/// The default value is @c
+/// #AR_TEXTURE_UPDATE_MODE_BIND_TO_TEXTURE_EXTERNAL_OES. Use
+/// @c ::ArConfig_setTextureUpdateMode to set the desired mode.
+AR_DEFINE_ENUM(ArTextureUpdateMode){
+    /// ARCore provides the camera image through the @c GL_TEXTURE_EXTERNAL_OES
+    /// texture provided to @c ::ArSession_setCameraTextureName or @c
+    /// ::ArSession_setCameraTextureNames.
+    ///
+    /// This is the default mode.
+    AR_TEXTURE_UPDATE_MODE_BIND_TO_TEXTURE_EXTERNAL_OES = 0,
+    /// ARCore provides the camera image through an @c AHardwareBuffer. The
+    /// hardware buffer for an @c ::ArFrame is accessible via
+    /// @c ::ArFrame_getHardwareBuffer. See documentation on <a
+    /// href="https://developer.android.com/ndk/reference/group/a-hardware-buffer">Native
+    /// Hardware Buffer</a> in the Android NDK.
+    ///
+    /// The client app is responsible for binding it to
+    /// a @c GL_TEXTURE_EXTERNAL_OES (OpenGL ES) or @c VkImage (Vulkan).
+    ///
+    /// When a configuration is active with @c
+    /// #AR_TEXTURE_UPDATE_MODE_EXPOSE_HARDWARE_BUFFER,
+    /// texture names provided to @c ::ArSession_setCameraTextureName and
+    /// @c ::ArSession_setCameraTextureNames are ignored.
+    ///
+    /// This is only available on Android API levels 27 and above. Using @c
+    /// ::ArSession_configure to set
+    /// #AR_TEXTURE_UPDATE_MODE_EXPOSE_HARDWARE_BUFFER on an incompatible
+    /// device will return @c #AR_ERROR_UNSUPPORTED_CONFIGURATION.
+    AR_TEXTURE_UPDATE_MODE_EXPOSE_HARDWARE_BUFFER = 1,
+};
+
+/// @ingroup ArConfig
+/// Describes the desired behavior of Scene Semantics. Scene Semantics uses a
+/// machine learning model to label each pixel from the camera feed with a @c
+/// ::ArSemanticLabel. See the
+/// <a href="https://developers.google.com/ar/develop/c/scene-semantics">Scene
+/// Semantics Developer Guide</a> for more information.
+///
+/// The Scene Semantics API is currently able to distinguish
+/// between outdoor labels specified by @c ::ArSemanticLabel. Usage indoors is
+/// currently unsupported and may yield unreliable results.
+///
+/// A small number of ARCore supported devices do not support the Scene
+/// Semantics API. Use  @c ::ArSession_isSemanticModeSupported to query for
+/// support for Scene Semantics. Affected devices are also indicated on the <a
+/// href="https://developers.google.com/ar/devices">ARCore supported devices
+/// page</a>.
+///
+/// The default value is @c #AR_SEMANTIC_MODE_DISABLED. Use @c
+/// ::ArConfig_setSemanticMode to set the desired mode.
+AR_DEFINE_ENUM(ArSemanticMode){
+    /// The Scene Semantics API is disabled. Calls to
+    /// @c ::ArFrame_acquireSemanticImage,
+    /// @c ::ArFrame_acquireSemanticConfidenceImage,
+    /// and @c ::ArFrame_getSemanticLabelFraction will not return valid results.
+    ///
+    /// This is the default mode.
+    AR_SEMANTIC_MODE_DISABLED = 0,
+    /// The Scene Semantics API is enabled. Calls to
+    /// @c ::ArFrame_acquireSemanticImage,
+    /// @c ::ArFrame_acquireSemanticConfidenceImage,
+    /// and @c ::ArFrame_getSemanticLabelFraction will return valid results.
+    ///
+    /// Use @c ::ArConfig_setSemanticMode to set this mode.
+    AR_SEMANTIC_MODE_ENABLED = 1,
+};
+
+/// @ingroup ArSemantics
+/// Defines the labels the Scene Semantics API is able to detect and maps
+/// human-readable names to per-pixel semantic labels. See the
+/// <a href="https://developers.google.com/ar/develop/c/scene-semantics">Scene
+/// Semantics Developer Guide</a> for more information.
+///
+/// Use @c ::ArFrame_acquireSemanticImage to obtain an image containing these
+/// pixels and @c ::ArFrame_getSemanticLabelFraction to query what percentage of
+/// the image contains these pixels.
+AR_DEFINE_ENUM(ArSemanticLabel){
+    /// Pixels with no semantic label available in the API output.
+    AR_SEMANTIC_LABEL_UNLABELED = 0,
+    /// Pixels of the open sky, including clouds. Thin electrical wires in front
+    /// of the sky are included, but leaves/vegetation are not included.
+    AR_SEMANTIC_LABEL_SKY = 1,
+    /// Pixels of buildings, including houses, garages, etc. Includes all
+    /// structures attached to the building, such as signs, solar panels,
+    /// scaffolding, etc.
+    AR_SEMANTIC_LABEL_BUILDING = 2,
+    /// Pixels of non-walkable vegetation, like trees and shrubs. In contrast,
+    /// 'terrain' specifies walkable vegetation, like grass.
+    AR_SEMANTIC_LABEL_TREE = 3,
+    /// Pixels of drivable surfaces for vehicles, including paved, unpaved, dirt,
+    /// driveways, crosswalks, etc.
+    AR_SEMANTIC_LABEL_ROAD = 4,
+    /// Pixels of sidewalks for pedestrians and cyclists, including associated
+    /// curbs.
+    AR_SEMANTIC_LABEL_SIDEWALK = 5,
+    /// Pixels of walkable vegetation areas, including grass, soil, sand,
+    /// mountains, etc. In contrast, 'tree' specifies non-walkable vegetation,
+    /// like trees and bushes.
+    AR_SEMANTIC_LABEL_TERRAIN = 6,
+    /// Pixels of structures that are not buildings, including fences, guardrails,
+    /// stand-alone walls, tunnels, bridges, etc.
+    AR_SEMANTIC_LABEL_STRUCTURE = 7,
+    /// Pixels of general temporary and permanent objects and obstacles, including
+    /// street signs, traffic signs, free-standing business signs, billboards,
+    /// poles, mailboxes, fire hydrants, street lights, phone booths, bus stop
+    /// enclosures, cones, parking meters, animals, etc.
+    AR_SEMANTIC_LABEL_OBJECT = 8,
+    /// Pixels of vehicles, including cars, vans, buses, trucks, motorcycles,
+    /// bicycles, trains, etc.
+    AR_SEMANTIC_LABEL_VEHICLE = 9,
+    /// Pixels of humans, including pedestrians and bicycle/motorcycle riders.
+    AR_SEMANTIC_LABEL_PERSON = 10,
+    /// Pixels of ground surfaces covered by water, including lakes, rivers, etc.
+    AR_SEMANTIC_LABEL_WATER = 11,
 };
 
 /// @ingroup ArPlane
@@ -1295,15 +1591,44 @@ AR_DEFINE_ENUM(ArInstantPlacementPointTrackingMethod){
     /// being tracked concurrently.
     AR_INSTANT_PLACEMENT_POINT_TRACKING_METHOD_FULL_TRACKING = 2};
 
-/// @ingroup ArAnchor
-/// Indicates the cloud configuration of the @c ::ArSession.
+/// @ingroup ArConfig
+/// Describes the desired behavior of the ARCore Cloud Anchor API. The Cloud
+/// Anchor API uses feature maps to persist an anchor throughout sessions and
+/// across devices. See the <a
+/// href="https://developers.google.com/ar/develop/c/cloud-anchors/developer-guide">Cloud
+/// Anchors developer guide</a> for more information.
+///
+/// The default value is @c #AR_CLOUD_ANCHOR_MODE_DISABLED. Use @c
+/// ::ArConfig_setCloudAnchorMode to set the Cloud Anchor API mode and
+/// @c ::ArSession_configure to configure the session.
 AR_DEFINE_ENUM(ArCloudAnchorMode){
-    /// Cloud Anchors are disabled. This is the value set in the default
-    /// @c ::ArConfig.
+    /// The Cloud Anchor API is disabled. Calling @c
+    /// ::ArSession_hostCloudAnchorAsync and @c
+    /// ::ArSession_resolveCloudAnchorAsync will return
+    /// @c #AR_ERROR_CLOUD_ANCHORS_NOT_CONFIGURED.
+    ///
+    /// This is the default value.
     AR_CLOUD_ANCHOR_MODE_DISABLED = 0,
-    /// This mode will enable Cloud Anchors. Setting this value and calling
-    /// @c ::ArSession_configure will require the application to have the Android
-    /// INTERNET permission.
+
+    /// The Cloud Anchor API is enabled. @c
+    /// ::ArSession_hostCloudAnchorAsync and @c
+    /// ::ArSession_resolveCloudAnchorAsync can be used to host and resolve
+    /// Cloud Anchors.
+    ///
+    /// Using this mode requires your app to do the following:
+    ///
+    /// - Include the <a
+    ///   href="https://developer.android.com/training/basics/network-ops/connecting">@c
+    ///    ACCESS_INTERNET </a> permission to the app's AndroidManifest;
+    ///    otherwise, @c ::ArSession_configure returns @c
+    ///    #AR_ERROR_INTERNET_PERMISSION_NOT_GRANTED.
+    /// - Configure <a
+    ///   href="https://developers.google.com/ar/develop/c/cloud-anchors/developer-guide#authorize_your_app_to_call_the_arcore_api">Keyless
+    ///   or API Key authorization</a>.
+    ///
+    /// Use @c
+    /// ::ArConfig_setCloudAnchorMode to set the Cloud Anchor API mode and
+    /// @c ::ArSession_configure to configure the session.
     AR_CLOUD_ANCHOR_MODE_ENABLED = 1,
 };
 
@@ -1333,6 +1658,12 @@ AR_DEFINE_ENUM(ArCloudAnchorMode){
 /// current device is supported. Affected devices are also indicated on the <a
 /// href="https://developers.google.com/ar/devices"> ARCore supported devices
 /// page</a>.
+///
+/// When the Geospatial API and the Depth API are enabled, output images
+/// from the Depth API will include terrain and building geometry when in a
+/// location with VPS coverage. See the <a
+/// href="https://developers.google.com/ar/develop/c/depth/geospatial-depth">Geospatial
+/// Depth Developer Guide</a> for more information.
 ///
 /// The default value is @c #AR_GEOSPATIAL_MODE_DISABLED. Use @c
 /// ::ArConfig_setGeospatialMode to set the desired mode.
@@ -1379,6 +1710,12 @@ AR_DEFINE_ENUM(ArGeospatialMode){
     ///     href="https://developers.google.com/ar/develop/c/geospatial/developer-guide">the
     ///     Geospatial API on Google Developers</a>.
     ///
+    /// When the Geospatial API and the Depth API are enabled, output images
+    /// from the Depth API will include terrain and building geometry when in a
+    /// location with VPS coverage. See the <a
+    /// href="https://developers.google.com/ar/develop/c/depth/geospatial-depth">Geospatial
+    /// Depth Developer Guide</a> for more information.
+    ///
     /// This mode is not compatible with the front-facing
     /// (selfie) camera. If @c ::ArGeospatialMode is @c
     /// #AR_GEOSPATIAL_MODE_ENABLED on a session using
@@ -1389,6 +1726,72 @@ AR_DEFINE_ENUM(ArGeospatialMode){
     /// @c ::ArSession_isGeospatialModeSupported to check if the current device
     /// and selected camera support enabling this mode.
     AR_GEOSPATIAL_MODE_ENABLED = 2,
+};
+
+/// @ingroup ArConfig
+/// Describes the desired behavior of the Geospatial Streetscape Geometry API.
+/// The Streetscape Geometry API provides polygon meshes of terrain, buildings,
+/// and other structures in a radius surrounding the device. See the <a
+/// href="https://developers.google.com/ar/develop/c/geospatial/streetscape-geometry">Streetscape
+/// Geometry Developer Guide</a> for additional information.
+///
+/// <p>When Streetscape Geometry is enabled, @c ::ArSession_getAllTrackables
+/// and @c ::ArFrame_getUpdatedTrackables may additionally return
+/// @c ::ArStreetscapeGeometry trackables.
+///
+/// <p>The Streetscape Geometry API requires both @c ::ArStreetscapeGeometryMode
+/// to be set to @c #AR_STREETSCAPE_GEOMETRY_MODE_ENABLED and @c
+/// ::ArGeospatialMode to be set to @c #AR_GEOSPATIAL_MODE_ENABLED.
+///
+/// <p>The default value is @c #AR_STREETSCAPE_GEOMETRY_MODE_DISABLED. Use
+/// @c ::ArConfig_setStreetscapeGeometryMode to set the desired mode.
+
+AR_DEFINE_ENUM(ArStreetscapeGeometryMode){
+    /// The Streetscape Geometry API is disabled.
+    ///
+    /// This is the default mode.
+    AR_STREETSCAPE_GEOMETRY_MODE_DISABLED = 0,
+    /// The Streetscape Geometry API is enabled. @c ::ArSession_getAllTrackables
+    /// and @c ::ArFrame_getUpdatedTrackables may additionally return
+    /// @c ::ArStreetscapeGeometry trackables. This mode requires @c
+    /// ::ArGeospatialMode to be set to @c #AR_GEOSPATIAL_MODE_ENABLED.
+    ///
+    /// Use @c ::ArConfig_setStreetscapeGeometryMode to set this mode.
+    AR_STREETSCAPE_GEOMETRY_MODE_ENABLED = 1,
+};
+
+// === ArStreetscapeGeometry types ===
+
+/// @ingroup ArStreetscapeGeometry
+/// Describes the type of a Streetscape Geometry. Obtained by @c
+/// ::ArStreetscapeGeometry_getType.
+AR_DEFINE_ENUM(ArStreetscapeGeometryType){
+    /// This geometry represents the ground or floor.
+    AR_STREETSCAPE_GEOMETRY_TYPE_TERRAIN = 0,
+    /// This geometry represents a building or other structure.
+    AR_STREETSCAPE_GEOMETRY_TYPE_BUILDING = 1,
+};
+
+/// @ingroup ArStreetscapeGeometry
+/// Describes the quality of the mesh data. The values correspond to the levels
+/// of detail (LOD) defined by the <a
+/// href="https://portal.ogc.org/files/?artifact_id=16675">CityGML 2.0
+/// standard</a>.
+///
+/// Obtained by @c ::ArStreetscapeGeometry_getQuality.
+AR_DEFINE_ENUM(ArStreetscapeGeometryQuality){
+    /// The quality of the geometry is not defined, e.g. when the @c
+    /// ::ArStreetscapeGeometryType is @c #AR_STREETSCAPE_GEOMETRY_TYPE_TERRAIN.
+    AR_STREETSCAPE_GEOMETRY_QUALITY_NONE = 0,
+    /// The @c #AR_STREETSCAPE_GEOMETRY_TYPE_BUILDING geometry is the building
+    /// footprint extruded up to a single flat top. The building contains empty
+    /// space above any angled roofs.
+    AR_STREETSCAPE_GEOMETRY_QUALITY_BUILDING_LOD_1 = 1,
+    /// The @c #AR_STREETSCAPE_GEOMETRY_TYPE_BUILDING geometry is the building
+    /// footprint with rough heightmap. The geometry will closely follow simple
+    /// angled roofs. Chimneys and roof vents on top of roofs will poke outside
+    /// of the Streetscape Geometry.
+    AR_STREETSCAPE_GEOMETRY_QUALITY_BUILDING_LOD_2 = 2,
 };
 
 /// @ingroup ArInstantPlacementPoint
@@ -1444,14 +1847,33 @@ AR_DEFINE_ENUM(ArCoordinates2dType){
     AR_COORDINATES_2D_IMAGE_PIXELS = 2,
     /// CPU image, (x,y) normalized to [0.0f, 1.0f] range.
     AR_COORDINATES_2D_IMAGE_NORMALIZED = 3,
-    /// OpenGL Normalized Device Coordinates, display-rotated,
-    /// (x,y) normalized to [-1.0f, 1.0f] range.
+    /// OpenGL Normalized Device Coordinates, display-rotated, (x,y) normalized
+    /// to [-1.0f, 1.0f] range.
     AR_COORDINATES_2D_OPENGL_NORMALIZED_DEVICE_COORDINATES = 6,
     /// Android view, display-rotated, (x,y) in pixels.
     AR_COORDINATES_2D_VIEW = 7,
     /// Android view, display-rotated, (x,y) normalized to [0.0f, 1.0f] range.
     AR_COORDINATES_2D_VIEW_NORMALIZED = 8,
 
+};
+
+/// @ingroup ArFrame
+/// 3d coordinate systems supported by ARCore.
+AR_DEFINE_ENUM(ArCoordinates3dType){
+    /// GPU texture coordinates, using the Z component to compensate for
+    /// perspective shift when using Electronic Image Stabilization (EIS).
+    ///
+    /// <p>Use with @c ::ArFrame_transformCoordinates3d. See the <a
+    /// href="https://developers.google.com/ar/develop/c/electronic-image-stabilization">Electronic
+    /// Image Stabilization developer guide</a> for more information.
+    AR_COORDINATES_3D_EIS_TEXTURE_NORMALIZED = 0,
+    /// Normalized Device Coordinates (NDC), display-rotated, (x,y) normalized to
+    /// [-1.0f, 1.0f] range to compensate for perspective shift for EIS.
+    ///
+    /// <p>Use with @c ::ArFrame_transformCoordinates3d. See the <a
+    /// href="https://developers.google.com/ar/develop/c/electronic-image-stabilization">Electronic
+    /// Image Stabilization developer guide</a> for more information.
+    AR_COORDINATES_3D_EIS_NORMALIZED_DEVICE_COORDINATES = 1,
 };
 
 /// @ingroup ArCameraConfig
@@ -1488,6 +1910,98 @@ AR_DEFINE_ENUM(ArCameraConfigFacingDirection){
     ///   Lighting Estimation mode.
     AR_CAMERA_CONFIG_FACING_DIRECTION_FRONT = 1};
 
+/// @ingroup ArFuture
+/// Base type for asynchronous operations. See
+/// @ref future_concept "Futures in ARCore" for more details.
+///
+/// An acquired future must eventually be released using @c ::ArFuture_release.
+/// (@ref ownership "reference type, long-lived").
+typedef struct ArFuture_ ArFuture;
+
+/// @ingroup ArFuture
+/// The state of an asynchronous operation.
+AR_DEFINE_ENUM(ArFutureState){
+    /// The operation is still pending. The result of the operation isn't
+    /// available yet and any associated callback hasn't yet been dispatched or
+    /// invoked. Do not use this to check if the operation can be cancelled as
+    /// the state can change from another thread between the calls to
+    /// @c ::ArFuture_getState and @c ::ArFuture_cancel.
+    AR_FUTURE_STATE_PENDING = 0,
+
+    /// The operation has been cancelled. Any associated callback will never be
+    /// invoked.
+    AR_FUTURE_STATE_CANCELLED = 1,
+
+    /// The operation is complete and the result is available. If a callback was
+    /// associated with this future, it will soon be invoked with the result on
+    /// the main thread, if it hasn't been invoked already.
+    AR_FUTURE_STATE_DONE = 2,
+};
+
+/// @ingroup ArHostCloudAnchorFuture
+/// Handle to an asynchronous operation launched by
+/// @c ::ArSession_hostCloudAnchorAsync. See the <a
+///  href="https://developers.google.com/ar/develop/c/cloud-anchors/developer-guide">Cloud
+///  Anchors developer guide</a> for more information.
+///
+/// Release with @c ::ArFuture_release.
+/// (@ref ownership "reference type, long-lived").
+typedef struct ArHostCloudAnchorFuture_ ArHostCloudAnchorFuture;
+
+#ifdef __cplusplus
+/// @ingroup type_conversions
+/// Upcasts to @c ::ArFuture
+inline ArFuture *ArAsFuture(ArHostCloudAnchorFuture *future) {
+  return reinterpret_cast<ArFuture *>(future);
+}
+#endif  // __cplusplus
+
+/// @ingroup ArResolveCloudAnchorFuture
+/// Handle to an asynchronous operation launched by
+/// @c ::ArSession_resolveCloudAnchorAsync.
+/// Release with @c ::ArFuture_release.
+/// (@ref ownership "reference type, long-lived").
+typedef struct ArResolveCloudAnchorFuture_ ArResolveCloudAnchorFuture;
+
+#ifdef __cplusplus
+/// @ingroup type_conversions
+/// Upcasts to @c ::ArFuture
+inline ArFuture *ArAsFuture(ArResolveCloudAnchorFuture *future) {
+  return reinterpret_cast<ArFuture *>(future);
+}
+#endif  // __cplusplus
+
+/// @ingroup ArResolveAnchorOnTerrainFuture
+/// Handle to an asynchronous operation launched by
+/// @c ::ArEarth_resolveAnchorOnTerrainAsync.
+///
+/// Release with @c ::ArFuture_release.
+/// (@ref ownership "reference type, long-lived").
+typedef struct ArResolveAnchorOnTerrainFuture_ ArResolveAnchorOnTerrainFuture;
+
+#ifdef __cplusplus
+/// @ingroup type_conversions
+/// Upcasts to @c ::ArFuture
+inline ArFuture *ArAsFuture(ArResolveAnchorOnTerrainFuture *future) {
+  return reinterpret_cast<ArFuture *>(future);
+}
+#endif  // __cplusplus
+
+/// @ingroup ArResolveAnchorOnRooftopFuture
+/// Handle to an asynchronous operation launched by
+/// @c ::ArEarth_resolveAnchorOnRooftopAsync.
+/// Release with @c ::ArFuture_release.
+/// (@ref ownership "reference type, long-lived").
+typedef struct ArResolveAnchorOnRooftopFuture_ ArResolveAnchorOnRooftopFuture;
+
+#ifdef __cplusplus
+/// @ingroup type_conversions
+/// Upcasts to @c ::ArFuture
+inline ArFuture *ArAsFuture(ArResolveAnchorOnRooftopFuture *future) {
+  return reinterpret_cast<ArFuture *>(future);
+}
+#endif  // __cplusplus
+
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
@@ -1521,6 +2035,51 @@ extern "C" {
 void ArCoreApk_checkAvailability(void *env,
                                  void *context,
                                  ArAvailability *out_availability);
+
+/// @ingroup ArCoreApk
+/// Callback definition for @c ::ArCoreApk_checkAvailabilityAsync. The
+/// @p callback_context argument will be the same as that passed to
+/// @c ::ArCoreApk_checkAvailabilityAsync.
+///
+/// It is a best practice to free @c callback_context memory provided to
+/// @c ::ArCoreApk_checkAvailabilityAsync at the end of the callback
+/// implementation.
+typedef void (*ArAvailabilityCallback)(void *callback_context,
+                                       ArAvailability availability);
+
+/// @ingroup ArCoreApk
+/// Asynchronously determines if ARCore is supported on this device. This may
+/// initiate a query with a remote service to determine if the device is
+/// compatible.
+///
+/// The callback will be invoked asynchronously on the Main thread.
+/// Unlike the synchronous function @c ::ArCoreApk_checkAvailability, the result
+/// will never be @c #AR_AVAILABILITY_UNKNOWN_CHECKING.
+///
+/// For ARCore-required apps (as indicated by the <a
+/// href="https://developers.google.com/ar/develop/c/enable-arcore#ar_required">manifest
+/// @c meta-data </a>) this function will assume device compatibility and the
+/// callback will be asynchronously invoked on the Main thread with one of
+/// @c #AR_AVAILABILITY_SUPPORTED_INSTALLED,
+/// @c #AR_AVAILABILITY_SUPPORTED_APK_TOO_OLD, or
+/// @c #AR_AVAILABILITY_SUPPORTED_NOT_INSTALLED.
+///
+/// Note: A result @c #AR_AVAILABILITY_SUPPORTED_INSTALLED only indicates
+/// presence of a suitably versioned ARCore APK. Session creation may still fail
+/// if the ARCore APK has been side-loaded onto an unsupported device.
+///
+/// May be called prior to @c ::ArSession_create.
+///
+/// @param[in] env The current thread's @c JNIEnv object
+/// @param[in] application_context A @c JOBject for an Android @c Context.
+/// @param[in] callback_context An arbitrary pointer which will be passed as the
+///     first argument to the callback.
+/// @param[in] callback The callback to invoke with the result on the Main
+///     thread. Must not be @c NULL.
+void ArCoreApk_checkAvailabilityAsync(void *env,
+                                      void *application_context,
+                                      void *callback_context,
+                                      ArAvailabilityCallback callback);
 
 /// @ingroup ArCoreApk
 /// On supported devices initiates download and installation of
@@ -1708,6 +2267,40 @@ ArStatus ArSession_createWithFeatures(void *env,
                                       const ArSessionFeature *features,
                                       ArSession **out_session_pointer);
 
+// === ArFuture functions ===
+
+/// @ingroup ArFuture
+/// Gets the state of an asynchronous operation. See @c ::ArFutureState and
+/// @ref future_concept "Futures in ARCore" for more details.
+///
+/// @param[in] session    The ARCore session.
+/// @param[in] future     The handle for the asynchronous operation.
+/// @param[out] out_state The state of the operation.
+void ArFuture_getState(const ArSession *session,
+                       const ArFuture *future,
+                       ArFutureState *out_state);
+
+/// @ingroup ArFuture
+/// Tries to cancel execution of this operation. @p out_was_cancelled will be
+/// set to 1 if the operation was cancelled by this invocation, and in that case
+/// it is a best practice to free @c context memory provided to the
+/// @ref future_callback "callback", if any.
+///
+/// @param[in] session The ARCore session.
+/// @param[in] future The handle for the asynchronous operation.
+/// @param[out] out_was_cancelled Set to 1 if this invocation successfully
+///     cancelled the operation, 0 otherwise. You may pass @c NULL.
+void ArFuture_cancel(const ArSession *session,
+                     ArFuture *future,
+                     int32_t *out_was_cancelled);
+
+/// @ingroup ArFuture
+/// Releases a reference to a future. This does not mean that the operation will
+/// be terminated - see @ref future_cancellation "cancelling a future".
+///
+/// This function may safely be called with @c NULL - it will do nothing.
+void ArFuture_release(ArFuture *future);
+
 // === ArConfig functions ===
 
 /// @ingroup ArConfig
@@ -1806,6 +2399,25 @@ void ArConfig_getAugmentedImageDatabase(
     ArAugmentedImageDatabase *out_augmented_image_database);
 
 /// @ingroup ArConfig
+/// Stores the desired texture update mode from the given @p config into
+/// @p out_texture_update_mode.
+void ArConfig_getTextureUpdateMode(
+    const ArSession *session,
+    const ArConfig *config,
+    ArTextureUpdateMode *out_texture_update_mode);
+
+/// @ingroup ArConfig
+/// Sets the desired texture update mode. See @c ::ArTextureUpdateMode for
+/// available options.
+///
+/// Some values for @p texture_update_mode may not be supported on the current
+/// device. If an unsupported value is set, @c ::ArSession_configure will throw
+/// @c #AR_ERROR_UNSUPPORTED_CONFIGURATION.
+void ArConfig_setTextureUpdateMode(const ArSession *session,
+                                   ArConfig *config,
+                                   ArTextureUpdateMode texture_update_mode);
+
+/// @ingroup ArConfig
 /// Stores the currently configured augmented face mode into
 /// @p *augmented_face_mode.
 void ArConfig_getAugmentedFaceMode(const ArSession *session,
@@ -1858,6 +2470,33 @@ void ArConfig_getFocusMode(const ArSession *session,
                            ArFocusMode *focus_mode);
 
 /// @ingroup ArConfig
+/// Gets the camera image stabilization mode set on this config
+/// object.
+///
+/// @param[in]    session          The ARCore session.
+/// @param[in]    config           The configuration object.
+/// @param[inout] out_image_stabilization_mode     The current EIS mode.
+void ArConfig_getImageStabilizationMode(
+    const ArSession *session,
+    const ArConfig *config,
+    ArImageStabilizationMode *out_image_stabilization_mode);
+
+/// @ingroup ArConfig
+/// Sets the camera image stabilization mode.
+///
+/// See @c ::ArImageStabilizationMode for available options. Currently, the
+/// default image stabilization mode is @c #AR_IMAGE_STABILIZATION_MODE_OFF.
+///
+/// @param[in]   session      The ARCore session.
+/// @param[in]   config       The configuration object.
+/// @param[in]   image_stabilization_mode     The desired camera image
+/// stabilization mode.
+void ArConfig_setImageStabilizationMode(
+    const ArSession *session,
+    ArConfig *config,
+    ArImageStabilizationMode image_stabilization_mode);
+
+/// @ingroup ArConfig
 /// Sets the Geospatial mode. See @c ::ArGeospatialMode for available options.
 void ArConfig_setGeospatialMode(const ArSession *session,
                                 ArConfig *config,
@@ -1875,10 +2514,36 @@ void ArConfig_getGeospatialMode(const ArSession *session,
                                 ArGeospatialMode *out_geospatial_mode);
 
 /// @ingroup ArConfig
+/// Sets the desired configuration for the Streetscape Geometry API. See @c
+/// ::ArStreetscapeGeometryMode for available options and usage information.
+void ArConfig_setStreetscapeGeometryMode(
+    const ArSession *session,
+    ArConfig *config,
+    ArStreetscapeGeometryMode streetscape_geometry_mode);
+
+/// @ingroup ArConfig
+/// Gets the current Streetscape Geometry mode set on the configuration.
+///
+/// @param[in]   session             The ARCore session.
+/// @param[in]   config              The configuration object.
+/// @param[out]  out_streetscape_geometry_mode The current @c
+///   ::ArStreetscapeGeometry mode set on the config.
+void ArConfig_getStreetscapeGeometryMode(
+    const ArSession *session,
+    const ArConfig *config,
+    ArStreetscapeGeometryMode *out_streetscape_geometry_mode);
+
+/// @ingroup ArConfig
 /// Gets the currently configured desired @c ::ArDepthMode.
 void ArConfig_getDepthMode(const ArSession *session,
                            const ArConfig *config,
                            ArDepthMode *out_depth_mode);
+
+/// @ingroup ArConfig
+/// Gets the currently configured @c ::ArSemanticMode.
+void ArConfig_getSemanticMode(const ArSession *session,
+                              const ArConfig *config,
+                              ArSemanticMode *out_semantic_mode);
 
 /// @ingroup ArConfig
 /// Sets the desired @c ::ArDepthMode.
@@ -1897,6 +2562,17 @@ void ArConfig_getDepthMode(const ArSession *session,
 void ArConfig_setDepthMode(const ArSession *session,
                            ArConfig *config,
                            ArDepthMode mode);
+
+/// @ingroup ArConfig
+/// Sets the desired configuration for the Scene Semantics API. See
+/// @c ::ArSemanticMode for available options and usage information.
+///
+/// Not all devices support all modes. Use
+/// @c ::ArSession_isSemanticModeSupported to determine whether the current
+/// device and the selected camera support a particular semantic mode.
+void ArConfig_setSemanticMode(const ArSession *session,
+                              ArConfig *config,
+                              ArSemanticMode semantic_mode);
 
 /// @ingroup ArConfig
 /// Sets the current Instant Placement mode from the @c ::ArConfig.
@@ -2470,6 +3146,8 @@ ArStatus ArSession_checkSupported(const ArSession *session,
 ///   - @c #AR_CLOUD_ANCHOR_MODE_ENABLED.
 ///   - @c #AR_LIGHT_ESTIMATION_MODE_ENVIRONMENTAL_HDR.
 ///   - @c #AR_GEOSPATIAL_MODE_ENABLED.
+/// - When on an Android device with API level 26 or below:
+///   - @c #AR_TEXTURE_UPDATE_MODE_EXPOSE_HARDWARE_BUFFER.
 ///
 /// @param[in] session The ARCore session.
 /// @param[in] config The new configuration setting for the session.
@@ -2559,6 +3237,10 @@ ArStatus ArSession_pause(ArSession *session);
 /// Note: this function doesn't fail. If given invalid input, it logs an error
 /// without setting the texture names.
 ///
+/// When a configuration is active using @c
+/// #AR_TEXTURE_UPDATE_MODE_EXPOSE_HARDWARE_BUFFER, values provided to this
+/// function are ignored.
+///
 /// @param[in] session The ARCore session
 /// @param[in] number_of_textures The number of textures being passed. This
 ///     must always be at least 1.
@@ -2577,6 +3259,10 @@ void ArSession_setCameraTextureNames(ArSession *session,
 /// to @c ::ArSession_setCameraTextureName or
 /// @c ::ArSession_setCameraTextureNames, and additionally are not guaranteed to
 /// remain valid after a call to @c ::ArSession_pause or @c ::ArSession_destroy.
+///
+/// When a configuration is active using @c
+/// #AR_TEXTURE_UPDATE_MODE_EXPOSE_HARDWARE_BUFFER, values provided to this
+/// function are ignored.
 void ArSession_setCameraTextureName(ArSession *session, uint32_t texture_id);
 
 /// @ingroup ArSession
@@ -2684,34 +3370,32 @@ void ArSession_getAllTrackables(const ArSession *session,
 /// few seconds and visible from a desired camera @c ::ArPose. A higher quality
 /// indicates a Cloud Anchor hosted at the current time with the current set of
 /// recently seen features will generally be easier to resolve more accurately.
-/// For more details, see
-/// https://developers.google.com/ar/develop/c/cloud-anchors/overview-c
+/// See the <a
+/// href="https://developers.google.com/ar/develop/c/cloud-anchors/developer-guide">Cloud
+/// Anchors developer guide</a> for more information.
 AR_DEFINE_ENUM(ArFeatureMapQuality){
     /// The quality of features seen from the pose in the preceding
     /// seconds is low. This state indicates that ARCore will likely have more
-    /// difficulty resolving (@c ::ArSession_resolveAndAcquireNewCloudAnchor)
-    /// the Cloud Anchor. Encourage the user to move the device, so that the
-    /// desired position of the Cloud Anchor to be hosted is seen from different
-    /// angles.
+    /// difficulty resolving the Cloud Anchor. Encourage the user to move the
+    /// device, so that the desired position of the Cloud Anchor to be hosted is
+    /// seen from different angles.
     AR_FEATURE_MAP_QUALITY_INSUFFICIENT = 0,
     /// The quality of features seen from the pose in the preceding few
-    /// seconds is likely sufficient for ARCore to successfully resolve
-    /// (@c ::ArSession_resolveAndAcquireNewCloudAnchor) a Cloud Anchor,
-    /// although the accuracy of the resolved pose will likely be reduced.
-    /// Encourage the user to move the device, so that the desired position of
-    /// the Cloud
-    /// Anchor to be hosted is seen from different angles.
+    /// seconds is likely sufficient for ARCore to successfully resolve a Cloud
+    /// Anchor, although the accuracy of the resolved pose will likely be
+    /// reduced. Encourage the user to move the device, so that the desired
+    /// position of the Cloud Anchor to be hosted is seen from different angles.
     AR_FEATURE_MAP_QUALITY_SUFFICIENT = 1,
     /// The quality of features seen from the pose in the preceding few
-    /// seconds is likely sufficient for ARCore to successfully resolve
-    /// (@c ::ArSession_resolveAndAcquireNewCloudAnchor) a Cloud Anchor with a
-    /// high degree of accuracy.
+    /// seconds is likely sufficient for ARCore to successfully resolve a Cloud
+    /// Anchor with a high degree of accuracy.
     AR_FEATURE_MAP_QUALITY_GOOD = 2,
 };
 
 /// @ingroup ArSession
 /// Estimates the quality of the visual features seen by ARCore in the
 /// preceding few seconds and visible from the provided camera pose.
+///
 /// Cloud Anchors hosted using higher quality features will generally result
 /// in easier and more accurately resolved Cloud Anchor poses.
 ///
@@ -2750,9 +3434,13 @@ ArStatus ArSession_estimateFeatureMapQualityForHosting(
 /// - @c #AR_ERROR_CLOUD_ANCHORS_NOT_CONFIGURED
 /// - @c #AR_ERROR_RESOURCE_EXHAUSTED
 /// - @c #AR_ERROR_ANCHOR_NOT_SUPPORTED_FOR_HOSTING
+/// @deprecated Use @c ::ArSession_hostCloudAnchorAsync with @c ttl_days = 1
+/// instead.
 ArStatus ArSession_hostAndAcquireNewCloudAnchor(ArSession *session,
                                                 const ArAnchor *anchor,
-                                                ArAnchor **out_cloud_anchor);
+                                                ArAnchor **out_cloud_anchor)
+    AR_DEPRECATED(
+        "Use ArSession_hostCloudAnchorAsync with ttl_days = 1 instead.");
 
 /// @ingroup ArSession
 /// This creates a new Cloud Anchor and schedules a task to resolve the anchor's
@@ -2777,9 +3465,11 @@ ArStatus ArSession_hostAndAcquireNewCloudAnchor(ArSession *session,
 /// - @c #AR_ERROR_SESSION_PAUSED
 /// - @c #AR_ERROR_CLOUD_ANCHORS_NOT_CONFIGURED
 /// - @c #AR_ERROR_RESOURCE_EXHAUSTED
+/// @deprecated Use @c ::ArSession_resolveCloudAnchorAsync instead.
 ArStatus ArSession_resolveAndAcquireNewCloudAnchor(ArSession *session,
                                                    const char *cloud_anchor_id,
-                                                   ArAnchor **out_cloud_anchor);
+                                                   ArAnchor **out_cloud_anchor)
+    AR_DEPRECATED("Use @c ::ArSession_resolveCloudAnchorAsync instead.");
 
 /// @ingroup ArSession
 /// This creates a new Cloud Anchor with a given lifetime in days, using the
@@ -2811,11 +3501,204 @@ ArStatus ArSession_resolveAndAcquireNewCloudAnchor(ArSession *session,
 /// - @c #AR_ERROR_CLOUD_ANCHORS_NOT_CONFIGURED
 /// - @c #AR_ERROR_RESOURCE_EXHAUSTED
 /// - @c #AR_ERROR_ANCHOR_NOT_SUPPORTED_FOR_HOSTING
+/// @deprecated Use @c ::ArSession_hostCloudAnchorAsync with @c ttl_days = 1
+/// instead.
 ArStatus ArSession_hostAndAcquireNewCloudAnchorWithTtl(
     ArSession *session,
     const ArAnchor *anchor,
     int32_t ttl_days,
-    ArAnchor **out_cloud_anchor);
+    ArAnchor **out_cloud_anchor)
+    AR_DEPRECATED(
+        "Use ArSession_hostCloudAnchorAsync with ttl_days = 1 instead.");
+
+/// @ingroup ArHostCloudAnchorFuture
+/// Gets the Cloud Anchor ID of the hosted anchor. If the operation isn't done
+/// yet or the operation failed, this will be @c NULL. The caller must release
+/// the string using @c ::ArString_release.
+///
+/// @param[in] session    The ARCore session.
+/// @param[in] future     The handle for the asynchronous operation.
+/// @param[out] out_cloud_anchor_id The Cloud Anchor ID.
+void ArHostCloudAnchorFuture_acquireResultCloudAnchorId(
+    const ArSession *session,
+    const ArHostCloudAnchorFuture *future,
+    char **out_cloud_anchor_id);
+
+/// @ingroup ArHostCloudAnchorFuture
+/// Gets the result status of the hosting operation, if the operation is done.
+///
+/// @param[in] session    The ARCore session.
+/// @param[in] future     The handle for the asynchronous operation.
+/// @param[out] out_cloud_anchor_state The result status.
+void ArHostCloudAnchorFuture_getResultCloudAnchorState(
+    const ArSession *session,
+    const ArHostCloudAnchorFuture *future,
+    ArCloudAnchorState *out_cloud_anchor_state);
+
+/// @ingroup ArHostCloudAnchorFuture
+/// Callback definition for @c ::ArSession_hostCloudAnchorAsync. The
+/// @p context argument will be the same as that passed to
+/// @c ::ArSession_hostCloudAnchorAsync. The @p cloud_anchor_id argument
+/// will contain the same value as that returned by
+/// @c ::ArHostCloudAnchorFuture_acquireResultCloudAnchorId and must be released
+/// using @c ::ArString_release. The @p cloud_anchor_state argument will be the
+/// same as that returned by
+/// @c ::ArHostCloudAnchorFuture_getResultCloudAnchorState.
+///
+/// It is a best practice to free @c context memory provided to
+/// @c ::ArSession_hostCloudAnchorAsync at the end of the callback
+/// implementation.
+typedef void (*ArHostCloudAnchorCallback)(
+    void *context,
+    char *cloud_anchor_id,
+    ArCloudAnchorState cloud_anchor_state);
+
+/// @ingroup ArSession
+/// Uses the pose and other data from @p anchor to host a new Cloud Anchor.
+/// A Cloud Anchor is assigned an identifier that can be used to create an
+/// @c ::ArAnchor in the same position in subsequent sessions across devices
+/// using @c ::ArSession_resolveCloudAnchorAsync. See the <a
+/// href="https://developers.google.com/ar/develop/c/cloud-anchors/developer-guide">Cloud
+/// Anchors developer guide</a> for more information.
+///
+/// The duration that a Cloud Anchor can be resolved for is specified by
+/// @p ttl_days. When using <a
+/// href="https://developers.google.com/ar/develop/c/cloud-anchors/developer-guide#keyless-authorization">Keyless
+/// authorization</a>, the maximum allowed value is 365 days. When using an <a
+/// href="https://developers.google.com/ar/develop/c/cloud-anchors/developer-guide#api-key-authorization">API
+/// Key</a> to authenticate with the ARCore API, the maximum allowed value is 1
+/// day.
+///
+/// This launches an asynchronous operation used to query the Google Cloud
+/// ARCore API. See @c ::ArFuture for information on obtaining results and
+/// cancelling the operation.
+///
+/// Cloud Anchors requires a @c ::ArConfig with @c
+/// #AR_CLOUD_ANCHOR_MODE_ENABLED set on this session. Use @c
+/// ::ArConfig_setCloudAnchorMode to set the Cloud Anchor API mode and
+/// @c ::ArSession_configure to configure the session.
+///
+/// Hosting a Cloud Anchor works best when ARCore is able to create a good
+/// feature map around the @c ::ArAnchor. Use @c
+/// ::ArSession_estimateFeatureMapQualityForHosting to determine the quality of
+/// visual features seen by ARCore in the preceding few seconds. Cloud Anchors
+/// hosted using higher quality features will generally result in quicker and
+/// more accurately resolved Cloud Anchor poses.
+///
+/// ARCore can have up to 40 simultaneous Cloud Anchor operations, including
+/// resolved anchors and active hosting operations.
+///
+/// @param[in] session  The ARCore session.
+/// @param[in] anchor   The anchor with the desired pose to be used to host a
+///     Cloud Anchor.
+/// @param[in] ttl_days The lifetime of the anchor in days. Must be positive.
+/// @param[in] context An optional void pointer passed when using a @ref
+///   future_callback "callback".
+/// @param[in] callback A @ref future_callback "callback function".
+/// @param[out] out_future An optional @c ::ArFuture which can be @ref
+///   future_polling "polled".
+/// @return @c #AR_SUCCESS or any of:
+/// - @c #AR_ERROR_INVALID_ARGUMENT if any of the provided arguments are
+/// invalid,
+/// - @c #AR_ERROR_NOT_TRACKING if the camera is not currently tracking,
+/// - @c #AR_ERROR_SESSION_PAUSED if the session is currently paused,
+/// - @c #AR_ERROR_CLOUD_ANCHORS_NOT_CONFIGURED if the Cloud Anchor API has not
+/// been enabled in the session configuration,
+/// - @c #AR_ERROR_RESOURCE_EXHAUSTED if too many Cloud Anchors operations are
+/// ongoing.
+/// - @c #AR_ERROR_ANCHOR_NOT_SUPPORTED_FOR_HOSTING if the anchor is not
+/// supported for hosting.
+ArStatus ArSession_hostCloudAnchorAsync(ArSession *session,
+                                        const ArAnchor *anchor,
+                                        int32_t ttl_days,
+                                        void *context,
+                                        ArHostCloudAnchorCallback callback,
+                                        ArHostCloudAnchorFuture **out_future);
+
+/// @ingroup ArResolveCloudAnchorFuture
+/// Gets the resolved Cloud Anchor. If the operation isn't done yet or the
+/// operation failed, this will be @c NULL. The caller must release the anchor
+/// using @c ::ArAnchor_release.
+///
+/// @param[in] session    The ARCore session.
+/// @param[in] future     The handle for the asynchronous operation.
+/// @param[out] out_anchor The anchor.
+void ArResolveCloudAnchorFuture_acquireResultAnchor(
+    const ArSession *session,
+    const ArResolveCloudAnchorFuture *future,
+    ArAnchor **out_anchor);
+
+/// @ingroup ArResolveCloudAnchorFuture
+/// Gets the result status of the resolving operation, if the operation is done.
+///
+/// @param[in] session    The ARCore session.
+/// @param[in] future     The handle for the asynchronous operation.
+/// @param[out] out_cloud_anchor_state The result status.
+void ArResolveCloudAnchorFuture_getResultCloudAnchorState(
+    const ArSession *session,
+    const ArResolveCloudAnchorFuture *future,
+    ArCloudAnchorState *out_cloud_anchor_state);
+
+/// @ingroup ArResolveCloudAnchorFuture
+/// Callback definition for @c ::ArSession_resolveCloudAnchorAsync. The
+/// @p context argument will be the same as that passed to
+/// @c ::ArSession_resolveCloudAnchorAsync. The @p anchor argument will be the
+/// same as that returned by
+/// @c ::ArResolveCloudAnchorFuture_acquireResultAnchor and must be released
+/// using @c ::ArAnchor_release. The @p cloud_anchor_state argument will be the
+/// same as that returned by
+/// @c ::ArResolveCloudAnchorFuture_getResultCloudAnchorState.
+///
+/// It is a best practice to free @c context memory provided to
+/// @c ::ArSession_resolveCloudAnchorAsync at the end of the callback
+/// implementation.
+typedef void (*ArResolveCloudAnchorCallback)(
+    void *context, ArAnchor *anchor, ArCloudAnchorState cloud_anchor_state);
+
+/// @ingroup ArSession
+/// Attempts to resolve a Cloud Anchor using the provided @p cloud_anchor_id.
+/// The Cloud Anchor must previously have been hosted by @c
+/// ::ArSession_hostCloudAnchorAsync or another Cloud Anchor hosting method
+/// within the allotted @c ttl_days. See the <a
+/// href="https://developers.google.com/ar/develop/c/cloud-anchors/developer-guide">Cloud
+/// Anchors developer guide</a> for more information.
+///
+/// This launches an asynchronous operation used to query the Google Cloud
+/// ARCore API. See @c ::ArFuture for information on obtaining results and
+/// cancelling the operation.
+///
+/// When resolving a Cloud Anchor, the ARCore API periodically compares visual
+/// features from the scene against the anchor's 3D feature map to pinpoint the
+/// user's position and orientation relative to the anchor. When it finds a
+/// match, the task completes.
+///
+/// Cloud Anchors requires a @c ::ArConfig with @c
+/// #AR_CLOUD_ANCHOR_MODE_ENABLED set on this session. Use @c
+/// ::ArConfig_setCloudAnchorMode to set the Cloud Anchor API mode and
+/// @c ::ArSession_configure to configure the session.
+///
+/// ARCore can have up to 40 simultaneous Cloud Anchor operations, including
+/// resolved anchors and active hosting operations.
+///
+/// @param[in] session          The ARCore session
+/// @param[in] cloud_anchor_id  The cloud ID of the anchor to be resolved.
+/// @param[in] context An optional void pointer passed when using a @ref
+///   future_callback "callback".
+/// @param[in] callback A @ref future_callback "callback function".
+/// @param[out] out_future An optional @c ::ArFuture which can be @ref
+///   future_polling "polled".
+/// @return @c #AR_SUCCESS or any of:
+/// - @c #AR_ERROR_INVALID_ARGUMENT
+/// - @c #AR_ERROR_SESSION_PAUSED
+/// - @c #AR_ERROR_CLOUD_ANCHORS_NOT_CONFIGURED
+/// - @c #AR_ERROR_RESOURCE_EXHAUSTED if too many Cloud Anchors operations are
+/// ongoing.
+ArStatus ArSession_resolveCloudAnchorAsync(
+    ArSession *session,
+    const char *cloud_anchor_id,
+    void *context,
+    ArResolveCloudAnchorCallback callback,
+    ArResolveCloudAnchorFuture **out_future);
 
 /// @ingroup ArSession
 /// Gets a list of camera configs supported by the camera being used by the
@@ -3181,6 +4064,37 @@ ArStatus ArFrame_recordTrackData(ArSession *session,
 void ArSession_isDepthModeSupported(const ArSession *session,
                                     ArDepthMode depth_mode,
                                     int32_t *out_is_supported);
+
+/// @ingroup ArSession
+/// Checks whether the provided @c ::ArImageStabilizationMode is supported on
+/// this device with the selected camera configuration. See <a
+/// href="https://developers.google.com/ar/develop/c/electronic-image-stabilization">Enabling
+/// Electronic Image Stabilization</a> for more information.
+///
+/// @param[in] session The ARCore session.
+/// @param[in] image_stabilization_mode The desired image stabilization mode to
+/// check.
+/// @param[out] out_is_supported Non zero if given @c ::ArImageStabilizationMode
+/// is supported on this device.
+void ArSession_isImageStabilizationModeSupported(
+    const ArSession *session,
+    ArImageStabilizationMode image_stabilization_mode,
+    int32_t *out_is_supported);
+
+/// @ingroup ArSession
+/// Checks whether the provided @c ::ArSemanticMode is supported on this device
+/// with the selected camera configuration. The current list of supported
+/// devices is documented on the <a
+/// href="https://developers.google.com/ar/devices">ARCore
+/// supported devices</a> page.
+///
+/// @param[in] session The ARCore session.
+/// @param[in] semantic_mode The desired semantic mode to check.
+/// @param[out] out_is_supported Non zero if the semantic mode is supported on
+/// this device.
+void ArSession_isSemanticModeSupported(const ArSession *session,
+                                       ArSemanticMode semantic_mode,
+                                       int32_t *out_is_supported);
 
 /// @ingroup ArSession
 /// Checks whether the provided @c ::ArGeospatialMode is supported on this
@@ -3572,6 +4486,44 @@ void ArFrame_transformCoordinates2d(const ArSession *session,
                                     const float *vertices_2d,
                                     ArCoordinates2dType output_coordinates,
                                     float *out_vertices_2d);
+
+/// @ingroup ArFrame
+/// Transforms a list of 2D coordinates from one 2D coordinate space to 3D
+/// coordinate space. See the <a
+/// href="https://developers.google.com/ar/develop/c/electronic-image-stabilization">Electronic
+/// Image Stabilization Developer Guide</a> for more information.
+///
+/// The view information is taken from the most recent call to @c
+/// ::ArSession_setDisplayGeometry.
+///
+/// If Electronic Image Stabilization is off, the device coordinates return (-1,
+/// -1, 0) -> (1, 1, 0) and texture coordinates return the same coordinates as
+/// @c ::ArFrame_transformCoordinates2d with the Z component set to 1.0f.
+///
+/// In order to use EIS, your app should use EIS compensated screen coordinates
+/// and camera texture coordinates to pass on to shaders. Use the 2D NDC space
+/// coordinates as input to obtain EIS compensated 3D screen coordinates and
+/// matching camera texture coordinates.
+///
+/// @param[in]  session         The ARCore session.
+/// @param[in]  frame           The current frame.
+/// @param[in]  input_coordinates The coordinate system used by @p vectors2d_in.
+/// @param[in]  number_of_vertices The number of 2D vertices to transform.
+///                             @p vertices_2d must
+///                             point to arrays of size at least
+///                             @p number_of_vertices * 2. And @p
+///                             out_vertices_2d must point to arrays of size at
+///                             least @p number_of_vertices * 3.
+/// @param[in] vertices_2d      Input 2D vertices to transform.
+/// @param[in] output_coordinates The 3D coordinate system to convert to.
+/// @param[out] out_vertices_3d Transformed 3d vertices.
+void ArFrame_transformCoordinates3d(const ArSession *session,
+                                    const ArFrame *frame,
+                                    ArCoordinates2dType input_coordinates,
+                                    int32_t number_of_vertices,
+                                    const float *vertices_2d,
+                                    ArCoordinates3dType output_coordinates,
+                                    float *out_vertices_3d);
 
 /// @ingroup ArFrame
 /// Performs a ray cast from the user's device in the direction of the given
@@ -3999,6 +4951,12 @@ ArStatus ArFrame_acquireDepthImage(const ArSession *session,
 /// This is expected only to occur on compute-constrained devices. An up-to-date
 /// depth image should typically become available again within a few frames.
 ///
+/// When the Geospatial API and the Depth API are enabled, output images
+/// from the Depth API will include terrain and building geometry when in a
+/// location with VPS coverage. See the <a
+/// href="https://developers.google.com/ar/develop/c/depth/geospatial-depth">Geospatial
+/// Depth Developer Guide</a> for more information.
+///
 /// The image must be released with @c ::ArImage_release once it is no
 /// longer needed.
 ///
@@ -4170,6 +5128,12 @@ ArStatus ArFrame_acquireRawDepthImage(const ArSession *session,
 /// ::ArImage_getTimestamp, with the previously recorded raw depth image
 /// timestamp. If they are different, the depth image contains new information.
 ///
+/// When the Geospatial API and the Depth API are enabled, output images
+/// from the Depth API will include terrain and building geometry when in a
+/// location with VPS coverage. See the <a
+/// href="https://developers.google.com/ar/develop/c/depth/geospatial-depth">Geospatial
+/// Depth Developer Guide</a> for more information.
+///
 /// The image must be released via @c ::ArImage_release once it is no longer
 /// needed.
 ///
@@ -4255,6 +5219,143 @@ ArStatus ArFrame_acquireRawDepthConfidenceImage(const ArSession *session,
                                                 ArImage **out_confidence_image);
 
 /// @ingroup ArFrame
+/// Attempts to acquire the semantic image corresponding to the current frame.
+/// Each pixel in the image is an 8-bit unsigned integer representing a semantic
+/// class label: see @c ::ArSemanticLabel for a list of pixel labels and the
+/// <a href="https://developers.google.com/ar/develop/c/scene-semantics">Scene
+/// Semantics Developer Guide</a> for more information.
+///
+/// The image must be released via @c ::ArImage_release once it is no longer
+/// needed.
+///
+/// In order to obtain a valid result from this function, you must set the
+/// session's @c ::ArSemanticMode to @c #AR_SEMANTIC_MODE_ENABLED. Use
+/// @c ::ArSession_isSemanticModeSupported to query for support for Scene
+/// Semantics.
+///
+/// The width of the semantic image is currently 256 pixels. The height of the
+/// image depends on the device and will match its display aspect ratio.
+///
+/// @param[in]  session                The ARCore session.
+/// @param[in]  frame                  The current frame.
+/// @param[out] out_semantic_image     On successful return, this is filled out
+///   with a pointer to an @c ::ArImage formatted as UINT8, where each pixel
+///   denotes the semantic class. On error return, this is filled out
+///   with @c NULL.
+/// @return @c #AR_SUCCESS or any of:
+/// - @c #AR_ERROR_INVALID_ARGUMENT if the @p session, @p frame, or
+///   @p out_semantic_image arguments are invalid.
+/// - @c #AR_ERROR_NOT_YET_AVAILABLE if no semantic image is available
+///   that corresponds to the frame.
+/// - @c #AR_ERROR_RESOURCE_EXHAUSTED if the caller app has exceeded maximum
+///   number of images that it can hold without releasing.
+/// - @c #AR_ERROR_DEADLINE_EXCEEDED if the provided @c ::ArFrame is not the
+///   current one.
+ArStatus ArFrame_acquireSemanticImage(const ArSession *session,
+                                      const ArFrame *frame,
+                                      ArImage **out_semantic_image);
+
+/// @ingroup ArFrame
+/// Attempts to acquire the semantic confidence image corresponding to the
+/// current frame. Each pixel is an 8-bit integer representing the estimated
+/// confidence of the corresponding pixel in the semantic image. See the
+/// <a href="https://developers.google.com/ar/develop/c/scene-semantics">Scene
+/// Semantics Developer Guide</a> for more information.
+///
+/// The confidence value is between 0 and 255, inclusive, with 0 representing
+/// the lowest confidence and 255 representing the highest confidence in the
+/// semantic class prediction (see @c ::ArFrame_acquireSemanticImage).
+///
+/// The image must be released via @c ::ArImage_release once it is no longer
+/// needed.
+///
+/// In order to obtain a valid result from this function, you must set the
+/// session's @c ::ArSemanticMode to @c #AR_SEMANTIC_MODE_ENABLED. Use
+/// @c ::ArSession_isSemanticModeSupported to query for support for Scene
+/// Semantics.
+///
+/// The size of the semantic confidence image is the same size as the image
+/// obtained by @c ::ArFrame_acquireSemanticImage.
+///
+/// @param[in]  session                          The ARCore session.
+/// @param[in]  frame                            The current frame.
+/// @param[out] out_semantic_confidence_image    On successful return, this is
+///   filled out with a pointer to an @c ::ArImage, where each pixel denotes the
+///   confidence corresponding to the semantic label. On error return, this is
+///   filled out with @c nullptr.
+/// @return @c #AR_SUCCESS or any of:
+/// - @c #AR_ERROR_INVALID_ARGUMENT if the @p session, @p frame, or
+///   @p out_semantic_confidence_image arguments are invalid.
+/// - @c #AR_ERROR_NOT_YET_AVAILABLE if no semantic image is available
+///   that corresponds to the frame.
+/// - @c #AR_ERROR_RESOURCE_EXHAUSTED if the caller app has exceeded maximum
+///   number of images that it can hold without releasing.
+/// - @c #AR_ERROR_DEADLINE_EXCEEDED if the provided @c ::ArFrame is not the
+///   current one.
+ArStatus ArFrame_acquireSemanticConfidenceImage(
+    const ArSession *session,
+    const ArFrame *frame,
+    ArImage **out_semantic_confidence_image);
+
+/// @ingroup ArFrame
+/// Retrieves the fraction of the most recent semantics frame that are @p
+/// query_label.
+///
+/// Queries the semantic image provided by @c ::ArFrame_acquireSemanticImage for
+/// pixels labeled by @p query_label. This call is more efficient than
+/// retrieving the @c ArImage and performing a pixel-wise search for the
+/// detected labels.
+///
+/// @param[in]  session                          The ARCore session.
+/// @param[in]  frame                            The current frame.
+/// @param[in]  query_label                      The label to search for within
+///   the semantic image for this frame.
+/// @param[out] out_fraction                     The fraction of pixels in the
+///   most recent semantic image that contain the query label.  This value is in
+///   the range 0 to 1.  If no pixels are present with that label, or if an
+///   invalid label is provided, this call returns 0.
+/// @return @c #AR_SUCCESS or any of:
+/// - @c #AR_ERROR_INVALID_ARGUMENT if @p session, @p frame, or @p query_label
+///   are invalid.
+/// - @c #AR_ERROR_NOT_YET_AVAILABLE if no semantic image has been generated
+///   yet.
+ArStatus ArFrame_getSemanticLabelFraction(const ArSession *session,
+                                          const ArFrame *frame,
+                                          ArSemanticLabel query_label,
+                                          float *out_fraction);
+
+/// @ingroup ArFrame
+/// Gets the <a
+/// href="https://developer.android.com/ndk/reference/group/a-hardware-buffer">@c
+/// AHardwareBuffer </a> for this frame. See <a
+/// href="https://developers.google.com/ar/develop/c/vulkan">Vulkan Rendering
+/// developer guide</a> for more information.
+///
+/// The result in @p out_hardware_buffer is
+/// only valid when a configuration is active that uses @c
+/// #AR_TEXTURE_UPDATE_MODE_EXPOSE_HARDWARE_BUFFER.
+///
+/// This hardware buffer is only guaranteed to be valid until the next call to
+/// @c ::ArSession_update(). If you want to use the hardware buffer beyond that,
+/// such as for rendering, you must call <a
+/// href="https://developer.android.com/ndk/reference/group/a-hardware-buffer#ahardwarebuffer_acquire">@c
+/// AHardwareBuffer_acquire </a> and then call <a
+/// href="https://developer.android.com/ndk/reference/group/a-hardware-buffer#ahardwarebuffer_release">@c
+/// AHardwareBuffer_release </a> after your rendering is complete.
+///
+/// @param[in]    session  The ARCore session.
+/// @param[in]    frame    The current frame.
+/// @param[out]   out_hardware_buffer The destination @c AHardwareBuffer
+///              representing a memory chunk of a camera image.
+/// @return @c #AR_SUCCESS or any of:
+/// - @c #AR_ERROR_INVALID_ARGUMENT - one or more input arguments are invalid.
+/// - @c #AR_ERROR_DEADLINE_EXCEEDED - the input frame is not the current frame.
+/// - @c #AR_ERROR_NOT_YET_AVAILABLE - the camera failed to produce the image.
+ArStatus ArFrame_getHardwareBuffer(const ArSession *session,
+                                   const ArFrame *frame,
+                                   void **out_hardware_buffer);
+
+/// @ingroup ArFrame
 /// Returns the OpenGL ES camera texture name (ID) associated with this frame.
 /// This is guaranteed to be one of the texture names previously set via
 /// @c ::ArSession_setCameraTextureNames or @c ::ArSession_setCameraTextureName.
@@ -4267,6 +5368,75 @@ ArStatus ArFrame_acquireRawDepthConfidenceImage(const ArSession *session,
 void ArFrame_getCameraTextureName(const ArSession *session,
                                   const ArFrame *frame,
                                   uint32_t *out_texture_id);
+
+/// @ingroup ArMesh
+/// Releases a reference to the Mesh.
+/// This must match a call to @c ::ArStreetscapeGeometry_acquireMesh.
+///
+/// This function may safely be called with @c NULL - it will do nothing.
+void ArMesh_release(ArMesh *mesh);
+
+/// @ingroup ArMesh
+/// Retrieves the number of vertices in this mesh.
+///
+/// @param[in]  session                   The ARCore session.
+/// @param[in]  mesh                      The mesh object to query.
+/// @param[out] out_num_vertices          The number of vertices in this mesh.
+void ArMesh_getVertexListSize(const ArSession *session,
+                              const ArMesh *mesh,
+                              int32_t *out_num_vertices);
+
+/// @ingroup ArMesh
+/// Retrieves the vertex coordinate data for this mesh. Each vertex is three
+/// @c float values, stored in XYZ order. The total number of @c float values in
+/// @p out_vertex_positions_xyz is 3 * @c ::ArMesh_getVertexListSize.
+///
+/// The array returned in @p out_vertex_positions_xyz will only remain valid as
+/// long as @p mesh is valid.
+///
+/// @param[in]  session                   The ARCore session.
+/// @param[in]  mesh                      The mesh object to query.
+/// @param[out] out_vertex_positions_xyz  Where to store the vertex positions
+///                                       positions.
+void ArMesh_getVertexList(const ArSession *session,
+                          const ArMesh *mesh,
+                          const float **out_vertex_positions_xyz);
+
+/// @ingroup ArMesh
+/// Retrieves the number of triangle indices (represented by @c
+/// ::ArMesh_getIndexList) in this mesh. The indices should always be used as a
+/// triangle list, with three indices per triangle. The result can be passed as
+/// the @c indices parameter to <a
+/// href="https://registry.khronos.org/OpenGL-Refpages/es3.0/html/glDrawElements.xhtml">@c
+/// glDrawElements </a> or copied into a buffer bound via <a
+/// href="https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/vkCmdDrawIndexed.html">@c
+/// vkCmdDrawIndexed </a>.
+///
+/// @param[in]  session                The ARCore session.
+/// @param[in]  mesh                   The mesh object to query.
+/// @param[out] out_num_indices        The number of indices in this mesh. This
+/// will always be a multiple of 3.
+void ArMesh_getIndexListSize(const ArSession *session,
+                             const ArMesh *mesh,
+                             int32_t *out_num_indices);
+
+/// @ingroup ArMesh
+/// Retrieves the triangle data for this mesh in an array of length @c
+/// ::ArMesh_getIndexListSize. Each face is a triplet of indices into the
+/// vertices array. The indices should always be used as a triangle list, with
+/// three indices per triangle. The result can be passed as the "indices"
+/// parameter to @c glDrawElements or copied into a buffer bound via
+/// @c vkCmdBindIndexBuffer.
+///
+/// @param[in]  session                The ARCore session.
+/// @param[in]  mesh                   The mesh object to query.
+/// @param[out] out_indices            Where to store the concatenated indices
+///                                    of mesh vertices that correspond to each
+///                                    face.  This length is @c out_num_indices
+///                                    from @c ::ArMesh_getIndexListSize().
+void ArMesh_getIndexList(const ArSession *session,
+                         const ArMesh *mesh,
+                         const uint32_t **out_indices);
 
 // === ArPointCloud functions ===
 
@@ -4724,9 +5894,19 @@ void ArAnchor_release(ArAnchor *anchor);
 /// @param[in]    session             The ARCore session.
 /// @param[in]    anchor              The anchor to retrieve the cloud ID of.
 /// @param[inout] out_cloud_anchor_id A pointer to the acquired ID string.
+/// @deprecated Use @c ::ArHostCloudAnchorFuture_acquireResultCloudAnchorId
+/// instead.
 void ArAnchor_acquireCloudAnchorId(ArSession *session,
                                    ArAnchor *anchor,
-                                   char **out_cloud_anchor_id);
+                                   char **out_cloud_anchor_id)
+    AR_DEPRECATED(
+        "For anchors hosted using ArSession_hostCloudAnchorAsync, the cloud "
+        "anchor ID can be obtained from the callback or future object. This "
+        "function will always return the empty string except for anchors "
+        "created using the deprecated functions "
+        "ArSession_resolveAndAcquireNewCloudAnchor, "
+        "ArSession_hostAndAcquireNewCloudAnchor, and "
+        "ArSession_hostAndAcquireNewCloudAnchorWithTtl.");
 
 /// @ingroup ArAnchor
 /// Gets the current Cloud Anchor state of the anchor. This state is guaranteed
@@ -4735,9 +5915,19 @@ void ArAnchor_acquireCloudAnchorId(ArSession *session,
 /// @param[in]    session   The ARCore session.
 /// @param[in]    anchor    The anchor to retrieve the cloud state of.
 /// @param[inout] out_state The current cloud state of the anchor.
+/// @deprecated Use @c ::ArHostCloudAnchorFuture_getResultCloudAnchorState or
+/// @c ::ArResolveCloudAnchorFuture_getResultCloudAnchorState instead.
 void ArAnchor_getCloudAnchorState(const ArSession *session,
                                   const ArAnchor *anchor,
-                                  ArCloudAnchorState *out_state);
+                                  ArCloudAnchorState *out_state)
+    AR_DEPRECATED(
+        "For anchors hosted or resolved using async cloud anchor APIs, the "
+        "state can be obtained from the callback or future object. This "
+        "function will always return AR_CLOUD_ANCHOR_STATE_NONE except for "
+        "anchors created using the deprecated functions "
+        "ArSession_resolveAndAcquireNewCloudAnchor, "
+        "ArSession_hostAndAcquireNewCloudAnchor, and "
+        "ArSession_hostAndAcquireNewCloudAnchorWithTtl.");
 
 // === ArTrackableList functions ===
 
@@ -5699,6 +6889,7 @@ ArStatus ArEarth_acquireNewAnchor(ArSession *session,
 ///   NULL.
 /// - @c #AR_ERROR_RESOURCE_EXHAUSTED if too many terrain anchors are currently
 ///   held.
+/// @deprecated Use @c ::ArEarth_resolveAnchorOnTerrainAsync instead.
 ArStatus ArEarth_resolveAndAcquireNewAnchorOnTerrain(
     ArSession *session,
     ArEarth *earth,
@@ -5706,24 +6897,21 @@ ArStatus ArEarth_resolveAndAcquireNewAnchorOnTerrain(
     double longitude,
     double altitude_above_terrain,
     const float *eus_quaternion_4,
-    ArAnchor **out_anchor);
+    ArAnchor **out_anchor)
+    AR_DEPRECATED("Use ArEarth_resolveAnchorOnTerrainAsync instead.");
 
 /// @ingroup ArAnchor
-/// Describes the current Terrain anchor state of an @c ::ArAnchor. Obtained by
-/// @c ::ArAnchor_getTerrainAnchorState.
+/// Describes the result of a Terrain anchor resolving operation.
 AR_DEFINE_ENUM(ArTerrainAnchorState){
-    /// This is not a Terrain anchor, or the Terrain anchor has become invalid
-    /// due to @c ::ArEarth having @c #AR_TRACKING_STATE_STOPPED
-    /// due to @c #AR_GEOSPATIAL_MODE_DISABLED being set on the @c ::ArSession.
-    /// All Terrain anchors transition to @c #AR_TERRAIN_ANCHOR_STATE_NONE
-    /// when @c #AR_GEOSPATIAL_MODE_DISABLED becomes active on the @c
-    /// ::ArSession.
+    /// Not a valid value for a terrain anchor operation.
     AR_TERRAIN_ANCHOR_STATE_NONE = 0,
 
     /// Resolving the Terrain anchor is in progress. Once the task completes in
     /// the background, the anchor will get a new state after the next @c
     /// ::ArSession_update call.
-    AR_TERRAIN_ANCHOR_STATE_TASK_IN_PROGRESS = 1,
+    AR_TERRAIN_ANCHOR_STATE_TASK_IN_PROGRESS AR_DEPRECATED(
+        "Not returned by async APIs - replaced by "
+        "AR_FUTURE_STATE_PENDING.") = 1,
 
     /// A resolving task for this anchor has been successfully resolved.
     AR_TERRAIN_ANCHOR_STATE_SUCCESS = 2,
@@ -5759,14 +6947,287 @@ AR_DEFINE_ENUM(ArTerrainAnchorState){
 /// @param[inout] out_state The current terrain anchor state of the anchor.
 ///                         Non-terrain anchors will always be in
 ///                         @c #AR_TERRAIN_ANCHOR_STATE_NONE state.
+/// @deprecated Use @c
+/// ::ArResolveAnchorOnTerrainFuture_getResultTerrainAnchorState.
 void ArAnchor_getTerrainAnchorState(const ArSession *session,
                                     const ArAnchor *anchor,
-                                    ArTerrainAnchorState *out_state);
+                                    ArTerrainAnchorState *out_state)
+    AR_DEPRECATED(
+        "For anchors resolved using async terrain anchor APIs, the state can "
+        "be obtained from the callback or future object.");
+
+/// @ingroup ArResolveAnchorOnTerrainFuture
+/// Gets the resolved Terrain anchor. If the operation isn't done yet or the
+/// operation failed, this will be @c NULL. The caller must release the anchor
+/// using @c ::ArAnchor_release.
+///
+/// @param[in] session     The ARCore session.
+/// @param[in] future      The handle for the asynchronous operation.
+/// @param[out] out_anchor The anchor.
+void ArResolveAnchorOnTerrainFuture_acquireResultAnchor(
+    const ArSession *session,
+    const ArResolveAnchorOnTerrainFuture *future,
+    ArAnchor **out_anchor);
+
+/// @ingroup ArResolveAnchorOnTerrainFuture
+/// Gets the result status of the resolving operation, if the operation is done.
+///
+/// @param[in] session    The ARCore session.
+/// @param[in] future     The handle for the asynchronous operation.
+/// @param[out] out_terrain_anchor_state The result status.
+void ArResolveAnchorOnTerrainFuture_getResultTerrainAnchorState(
+    const ArSession *session,
+    const ArResolveAnchorOnTerrainFuture *future,
+    ArTerrainAnchorState *out_terrain_anchor_state);
+
+/// @ingroup ArResolveAnchorOnTerrainFuture
+/// Callback definition for @c ::ArEarth_resolveAnchorOnTerrainAsync. The
+/// @p context argument will be the same as that passed to
+/// @c ::ArEarth_resolveAnchorOnTerrainAsync. The @p anchor argument will be the
+/// same as that returned by
+/// @c ::ArResolveAnchorOnTerrainFuture_acquireResultAnchor and must be released
+/// using @c ::ArAnchor_release. The @p terrain_anchor_state argument will be
+/// the same as that returned by
+/// @c ::ArResolveAnchorOnTerrainFuture_getResultTerrainAnchorState.
+///
+/// It is a best practice to free @c context memory provided to
+/// @c ::ArEarth_resolveAnchorOnTerrainAsync at the end of the callback
+/// implementation.
+typedef void (*ArResolveAnchorOnTerrainCallback)(
+    void *context, ArAnchor *anchor, ArTerrainAnchorState terrain_anchor_state);
+
+/// @ingroup ArEarth
+/// Asynchronously creates an anchor at a specified horizontal position and
+/// altitude relative to the horizontal position’s terrain. See the <a
+/// href="https://developers.google.com/ar/develop/geospatial/c/anchors#terrain-anchors">Terrain
+/// anchors developer guide</a> for more information.
+///
+/// The specified altitude is interpreted to be relative to the Earth's terrain
+/// (or floor) at the specified latitude/longitude geodetic coordinates, rather
+/// than relative to the WGS-84 ellipsoid. Specifying an altitude of 0 will
+/// position the anchor directly on the terrain (or floor) whereas specifying a
+/// positive altitude will position the anchor above the terrain (or floor),
+/// against the direction of gravity.
+///
+/// This launches an asynchronous operation used to query the Google Cloud
+/// ARCore API. See @c ::ArFuture for information on obtaining results and
+/// cancelling the operation.
+///
+/// You may resolve multiple anchors at a time, but a session cannot
+/// be tracking more than 100 Terrain and Rooftop anchors at time. Attempting to
+/// resolve more than 100 Terrain or Rooftop anchors will result in resolve
+/// calls returning status @c #AR_ERROR_RESOURCE_EXHAUSTED.
+///
+/// Creating a terrain anchor requires an active @c ::ArEarth for which the @c
+/// ::ArEarthState is @c #AR_EARTH_STATE_ENABLED and @c ::ArTrackingState is @c
+/// #AR_TRACKING_STATE_TRACKING. If it is not, then this function returns @c
+/// #AR_ERROR_ILLEGAL_STATE. This call also requires a working internet
+/// connection to communicate with the ARCore API on Google Cloud. ARCore will
+/// continue to retry if it is unable to establish a connection to the ARCore
+/// service.
+///
+/// Latitude and longitude are defined by the
+/// <a href="https://en.wikipedia.org/wiki/World_Geodetic_System">WGS84
+/// specification</a>.
+///
+/// The rotation provided by @p eus_quaternion_4 is a rotation with respect to
+/// an east-up-south coordinate frame. An identity rotation will have the anchor
+/// oriented such that X+ points to the east, Y+ points up away from the center
+/// of the earth, and Z+ points to the south.
+///
+/// @param[in] session          The ARCore session.
+/// @param[in] earth            The @c ::ArEarth handle.
+/// @param[in] latitude         The latitude of the anchor relative to the
+///                             WGS-84 ellipsoid.
+/// @param[in] longitude        The longitude of the anchor relative to the
+///                             WGS-84 ellipsoid.
+/// @param[in] altitude_above_terrain The altitude of the anchor above the
+///                             Earth's terrain (or floor).
+/// @param[in] eus_quaternion_4 The rotation quaternion as {qx, qy, qx, qw}.
+/// @param[in] context An optional void pointer passed when using a @ref
+///   future_callback "callback".
+/// @param[in] callback A @ref future_callback "callback function".
+/// @param[out] out_future An optional @c ::ArFuture which can be @ref
+///   future_polling "polled".
+/// @return @c #AR_SUCCESS or any of:
+/// - @c #AR_ERROR_ILLEGAL_STATE if @c ::ArEarthState is not
+///   @c #AR_EARTH_STATE_ENABLED.
+/// - @c #AR_ERROR_INVALID_ARGUMENT if @p latitude is outside the allowable
+///   range, or if either @p session, @p earth, or @p eus_quaternion_4 is @c
+///   NULL, or both @p callback and @p out_future are @c NULL.
+/// - @c #AR_ERROR_RESOURCE_EXHAUSTED if too many anchors (counting both Terrain
+///   and Rooftop anchors) are currently held or are being resolved.
+ArStatus ArEarth_resolveAnchorOnTerrainAsync(
+    ArSession *session,
+    ArEarth *earth,
+    double latitude,
+    double longitude,
+    double altitude_above_terrain,
+    const float *eus_quaternion_4,
+    void *context,
+    ArResolveAnchorOnTerrainCallback callback,
+    ArResolveAnchorOnTerrainFuture **out_future);
+
+/// @ingroup ArAnchor
+/// Describes the current Rooftop anchor state of an @c ::ArAnchor. Obtained by
+/// @c ::ArResolveAnchorOnRooftopFuture_getResultRooftopAnchorState or as a
+/// parameter to the callback.
+AR_DEFINE_ENUM(ArRooftopAnchorState){
+    /// Not a valid value for a Rooftop anchor operation.
+    AR_ROOFTOP_ANCHOR_STATE_NONE = 0,
+    /// A resolving task for this anchor has been successfully resolved.
+    AR_ROOFTOP_ANCHOR_STATE_SUCCESS = 1,
+
+    /// Resolving task for this anchor finished with an internal
+    /// error. The app should not attempt to recover from this error.
+    AR_ROOFTOP_ANCHOR_STATE_ERROR_INTERNAL = -1,
+
+    /// The authorization provided by the application is not valid.
+    /// - The Google Cloud project may not have enabled the ARCore API.
+    /// - When using API key authentication, this will happen if the API key in
+    ///   the manifest is invalid or unauthorized. It may also fail if the API
+    ///   key is restricted to a set of apps not including the current one.
+    /// - When using keyless authentication, this may happen when no OAuth
+    ///   client has been created, or when the signing key and package name
+    ///   combination does not match the values used in the Google Cloud
+    ///   project.  It may also fail if Google Play Services isn't installed,
+    ///   is too old, or is malfunctioning for some reason (e.g. killed
+    ///   due to memory pressure).
+    AR_ROOFTOP_ANCHOR_STATE_ERROR_NOT_AUTHORIZED = -2,
+
+    /// There is no rooftop or terrain info at this location, such as the center
+    /// of the ocean.
+    AR_ROOFTOP_ANCHOR_STATE_ERROR_UNSUPPORTED_LOCATION = -3,
+};
+
+/// @ingroup ArResolveAnchorOnRooftopFuture
+/// Gets the resolved Rooftop anchor. If the operation isn't done yet or the
+/// operation failed, this will be @c NULL. The caller must release the anchor
+/// using @c ::ArAnchor_release.
+///
+/// @param[in] session    The ARCore session.
+/// @param[in] future     The handle for the asynchronous operation.
+/// @param[out] out_anchor The anchor.
+void ArResolveAnchorOnRooftopFuture_acquireResultAnchor(
+    const ArSession *session,
+    const ArResolveAnchorOnRooftopFuture *future,
+    ArAnchor **out_anchor);
+
+/// @ingroup ArResolveAnchorOnRooftopFuture
+/// Gets the result status of the resolving operation, if the operation is done.
+///
+/// @param[in] session    The ARCore session.
+/// @param[in] future     The handle for the asynchronous operation.
+/// @param[out] out_rooftop_anchor_state The result status.
+void ArResolveAnchorOnRooftopFuture_getResultRooftopAnchorState(
+    const ArSession *session,
+    const ArResolveAnchorOnRooftopFuture *future,
+    ArRooftopAnchorState *out_rooftop_anchor_state);
+
+/// @ingroup ArResolveAnchorOnRooftopFuture
+/// Callback definition for @c ::ArEarth_resolveAnchorOnRooftopAsync.
+/// The @p context argument will be the same as that passed to
+/// @c ::ArEarth_resolveAnchorOnRooftopAsync. The @p anchor argument
+/// will be the same as that returned by
+/// @c ::ArResolveAnchorOnRooftopFuture_acquireResultAnchor and must be
+/// released using @c ::ArAnchor_release. The @p rooftop_anchor_state argument
+/// will be the same as that returned by @c
+/// ::ArResolveAnchorOnRooftopFuture_getResultRooftopAnchorState.
+///
+/// It is a best practice to free @c context memory provided to
+/// @c ::ArEarth_resolveAnchorOnRooftopAsync at the end of the callback
+/// implementation.
+typedef void (*ArResolveAnchorOnRooftopCallback)(
+    void *context, ArAnchor *anchor, ArRooftopAnchorState rooftop_anchor_state);
+
+/// @ingroup ArEarth
+/// Asynchronously creates an anchor at a specified horizontal position and
+/// altitude relative to the horizontal position’s rooftop. See the <a
+/// href="https://developers.google.com/ar/develop/geospatial/c/anchors#rooftop-anchors">Rooftop
+/// anchors developer guide</a> for more information.
+///
+/// The specified @p altitude_above_rooftop is interpreted to be relative to the
+/// top of a building at the given horizontal location, rather than relative to
+/// the WGS84 ellipsoid. If there is no building at the given location, then the
+/// altitude is interpreted to be relative to the terrain instead. Specifying an
+/// altitude of 0 will position the anchor directly on the rooftop whereas
+/// specifying a positive altitude will position the anchor above the rooftop,
+/// against the direction of gravity.
+///
+/// This launches an asynchronous operation used to query the Google Cloud
+/// ARCore API. See @c ::ArFuture for information on obtaining results and
+/// cancelling the operation.
+///
+/// You may resolve multiple anchors at a time, but a session cannot
+/// be tracking more than 100 Terrain and Rooftop anchors at time. Attempting to
+/// resolve more than 100 Terrain or Rooftop anchors will result in resolve
+/// calls returning status @c #AR_ERROR_RESOURCE_EXHAUSTED.
+///
+/// Creating a Rooftop anchor requires an active @c ::ArEarth for which the @c
+/// ::ArEarthState is @c #AR_EARTH_STATE_ENABLED and @c ::ArTrackingState is @c
+/// #AR_TRACKING_STATE_TRACKING. If it is not, then this function returns @c
+/// #AR_ERROR_ILLEGAL_STATE. This call also requires a working internet
+/// connection to communicate with the ARCore API on Google Cloud. ARCore will
+/// continue to retry if it is unable to establish a connection to the ARCore
+/// service.
+///
+/// Latitude and longitude are defined by the
+/// <a href="https://en.wikipedia.org/wiki/World_Geodetic_System">WGS84
+/// specification</a>.
+///
+/// The rotation provided by @p eus_quaternion_4 is a rotation with respect to
+/// an east-up-south coordinate frame. An identity rotation will have the anchor
+/// oriented such that X+ points to the east, Y+ points up away from the center
+/// of the earth, and Z+ points to the south.
+///
+/// To create an anchor that has the +Z axis pointing in the same direction as
+/// heading obtained from @c ::ArGeospatialPose, use the following formula:
+///
+/// \code
+/// {qx, qy, qz, qw} = {0, sin((pi - heading * M_PI / 180.0) / 2), 0, cos((pi -
+/// heading * M_PI / 180.0) / 2)}}.
+/// \endcode
+///
+/// @param[in] session          The ARCore session.
+/// @param[in] earth            The @c ::ArEarth handle.
+/// @param[in] latitude         The latitude of the anchor relative to the
+///                             WGS-84 ellipsoid.
+/// @param[in] longitude        The longitude of the anchor relative to the
+///                             WGS-84 ellipsoid.
+/// @param[in] altitude_above_rooftop The altitude of the anchor above the
+///                             Earth's rooftop.
+/// @param[in] eus_quaternion_4 The rotation quaternion as {qx, qy, qx, qw}.
+/// @param[in] context An optional void pointer passed when using a @ref
+///   future_callback "callback".
+/// @param[in] callback A @ref future_callback "callback function".
+/// @param[out] out_future An optional @c ::ArFuture which can be @ref
+///   future_polling "polled".
+/// @return @c #AR_SUCCESS or any of:
+/// - @c #AR_ERROR_ILLEGAL_STATE if @p earth is @c #AR_TRACKING_STATE_STOPPED
+///   and
+///   @c ::ArEarthState is not AR_EARTH_STATE_ENABLED due to @c
+///   #AR_GEOSPATIAL_MODE_DISABLED configured on the @c ::ArSession.
+///   Reacquire @c ::ArEarth if geospatial mode was reenabled.
+/// - @c #AR_ERROR_INVALID_ARGUMENT if @p latitude is outside the allowable
+///   range, or if either @p session, @p earth, or @p eus_quaternion_4 is @c
+///   NULL, or both @p callback and @p out_future are null.
+/// - @c #AR_ERROR_RESOURCE_EXHAUSTED if too many Rooftop and Terrain anchors
+///   are currently held.
+ArStatus ArEarth_resolveAnchorOnRooftopAsync(
+    ArSession *session,
+    ArEarth *earth,
+    double latitude,
+    double longitude,
+    double altitude_above_rooftop,
+    const float *eus_quaternion_4,
+    void *context,
+    ArResolveAnchorOnRooftopCallback callback,
+    ArResolveAnchorOnRooftopFuture **out_future);
 
 /// @ingroup ArVpsAvailabilityFuture
 /// The result of @c ::ArSession_checkVpsAvailabilityAsync, obtained by @c
 /// ::ArVpsAvailabilityFuture_getResult or from an invocation of an @c
-/// #ArCheckVpsAvailabilityCallback.
+/// #ArVpsAvailabilityCallback.
 AR_DEFINE_ENUM(ArVpsAvailability){
     /// The request to the remote service is not yet completed, so the
     /// availability is not yet known.
@@ -5799,68 +7260,59 @@ AR_DEFINE_ENUM(ArVpsAvailability){
 /// It is a best practice to free @c context memory provided to @c
 /// ::ArSession_checkVpsAvailabilityAsync at the end of the callback
 /// implementation.
-typedef void (*ArCheckVpsAvailabilityCallback)(void *context,
-                                               ArVpsAvailability availability);
+typedef void (*ArVpsAvailabilityCallback)(void *context,
+                                          ArVpsAvailability availability);
+
+/// @ingroup ArVpsAvailabilityFuture
+/// Deprecated alias of @c ::ArVpsAvailabilityCallback.
+///
+/// @deprecated Deprecated in release 1.37.0. Use @c ::ArVpsAvailabilityCallback
+/// instead.
+typedef ArVpsAvailabilityCallback ArCheckVpsAvailabilityCallback AR_DEPRECATED(
+    "Deprecated in release 1.37. "
+    "Use ArVpsAvailabilityCallback instead.");
 
 /// @ingroup ArVpsAvailabilityFuture
 /// Handle to an asynchronous operation launched by
 /// @c ::ArSession_checkVpsAvailabilityAsync.
-/// Release with @c ::ArVpsAvailabilityFuture_release.
+/// Release with @c ::ArFuture_release.
 /// (@ref ownership "reference type, long-lived").
 typedef struct ArVpsAvailabilityFuture_ ArVpsAvailabilityFuture;
+
+#ifdef __cplusplus
+/// @ingroup type_conversions
+/// Upcasts to @c ::ArFuture
+inline ArFuture *ArAsFuture(ArVpsAvailabilityFuture *future) {
+  return reinterpret_cast<ArFuture *>(future);
+}
+#endif  // __cplusplus
 
 /// @ingroup ArSession
 /// Gets the availability of the Visual Positioning System (VPS) at a specified
 /// horizontal position. The availability of VPS in a given location helps to
-/// improve the quality of Geospatial localization and tracking accuracy.
+/// improve the quality of Geospatial localization and tracking accuracy. See <a
+/// href="https://developers.google.com/ar/develop/c/geospatial/check-vps-availability">Check
+/// VPS Availability</a> for more details.
 ///
 /// This launches an asynchronous operation used to query the Google Cloud
-/// ARCore API. This may be called without first calling @c ::ArSession_resume
+/// ARCore API. See @c ::ArFuture for information on obtaining results and
+/// cancelling the operation.
+///
+/// This may be called without first calling @c ::ArSession_resume
 /// or @c ::ArSession_configure, for example to present an "Enter AR" button
 /// only when VPS is available.
 ///
-/// The asynchronicity of this operation must be handled in one or
-/// both of the following ways:
-/// - The operation can be continually polled using @p out_future. When the
-///   future is created, its @c #ArFutureState will be set to @c
-///   #AR_FUTURE_STATE_PENDING.
-///   Use @c ::ArVpsAvailabilityFuture_getState to query the state of the
-///   operation. When its state is @c #AR_FUTURE_STATE_DONE, @c
-///   ::ArVpsAvailabilityFuture_getResult can be used to obtain the operation's
-///   result. The future must eventually be released using @c
-///   ::ArVpsAvailabilityFuture_release.
-/// - The operation's result can be reported via a callback. When providing a @p
-///   callback, ARCore will invoke the given function when the operation is
-///   complete, unless the future has been cancelled using @c
-///   ::ArVpsAvailabilityFuture_cancel on @p out_future. This callback will be
-///   invoked on the <a
-///   href="https://developer.android.com/guide/components/processes-and-threads#Threads">main
-///   thread</a>. When providing a callback, you may provide a
-///   @p context, which will be passed as the first parameter to the callback.
-///   It is a best practice to free the memory of @p context at the end of the
-///   callback or when @c ::ArVpsAvailabilityFuture_cancel successfully cancels
-///   the callback.
-///
 /// Your app must be properly set up to communicate with the Google Cloud ARCore
-/// API in order to obtain a result from this call. See <a
-/// href="https://developers.google.com/ar/develop/c/geospatial/check-vps-availability">Check
-/// VPS Availability</a> for more details on setup steps and usage examples.
+/// API in order to obtain a result from this call.
 ///
 /// @param[in] session             The ARCore session.
 /// @param[in] latitude_degrees    The latitude to query, in degrees.
 /// @param[in] longitude_degrees   The longitude to query, in degrees.
-/// @param[in] context An optional void pointer which is passed as the first
-///     parameter to an invocation of @p callback. The app must ensure that the
-///     memory remains valid until the callback has run, or the operation has
-///     been cancelled. This may be null.
-/// @param[in] callback An optional callback function. When the asynchronous
-///     operation is complete this callback will be invoked unless the
-///     operation has been cancelled. This may be null if no callback is
-///     desired, but one of @p callback and @p out_future must be non-null.
-/// @param[out] out_future A optional handler that can be used to poll and
-///     cancel the asynchronous operation. This argument may be null if no
-///     handler is desired, but one of @p callback and @p out_future must be
-///     non-null.
+/// @param[in] context An optional void pointer passed when using a @ref
+///   future_callback "callback".
+/// @param[in] callback A @ref future_callback "callback function".
+/// @param[out] out_future An optional @c ::ArFuture which can be @ref
+///   future_polling "polled".
 /// @return @c #AR_SUCCESS, or any of:
 /// - @c #AR_ERROR_INTERNET_PERMISSION_NOT_GRANTED if the @c INTERNET permission
 ///   has not been granted.
@@ -5871,32 +7323,8 @@ ArStatus ArSession_checkVpsAvailabilityAsync(
     double latitude_degrees,
     double longitude_degrees,
     void *context,
-    ArCheckVpsAvailabilityCallback callback,
+    ArVpsAvailabilityCallback callback,
     ArVpsAvailabilityFuture **out_future);
-
-/// @ingroup ArVpsAvailabilityFuture
-/// The state of an asynchronous operation.
-AR_DEFINE_ENUM(ArFutureState){
-    /// The operation is still pending. The result of the operation isn't
-    /// available yet and any associated callback hasn't yet been dispatched or
-    /// invoked.
-    ///
-    /// Do not use this to check if the operation can be cancelled as the state
-    /// can change from another thread between the call to
-    /// @c ::ArVpsAvailabilityFuture_getState and @c
-    /// ::ArVpsAvailabilityFuture_cancel.
-    AR_FUTURE_STATE_PENDING = 0,
-
-    /// The operation has been cancelled. Any associated callback will never be
-    /// invoked.
-    AR_FUTURE_STATE_CANCELLED = 1,
-
-    /// The operation is complete and the result is available. If a callback was
-    /// associated with this future, it will soon be invoked with the result on
-    /// the main thread, if
-    /// it hasn't been invoked already.
-    AR_FUTURE_STATE_DONE = 2,
-};
 
 /// @ingroup ArVpsAvailabilityFuture
 /// Gets the state of an asynchronous operation.
@@ -5906,12 +7334,12 @@ AR_DEFINE_ENUM(ArFutureState){
 /// @param[out] out_state The state of the operation.
 void ArVpsAvailabilityFuture_getState(const ArSession *session,
                                       const ArVpsAvailabilityFuture *future,
-                                      ArFutureState *out_state);
+                                      ArFutureState *out_state)
+    AR_DEPRECATED("Deprecated in release 1.37. Use ArFuture_getState instead.");
 
 /// @ingroup ArVpsAvailabilityFuture
 /// Returns the result of an asynchronous operation. The returned result is only
-/// valid when @c ::ArVpsAvailabilityFuture_getState returns @c
-/// #AR_FUTURE_STATE_DONE.
+/// valid when @c ::ArFuture_getState returns @c #AR_FUTURE_STATE_DONE.
 ///
 /// @param[in] session The ARCore session.
 /// @param[in] future The handle for the asynchronous operation.
@@ -5934,14 +7362,16 @@ void ArVpsAvailabilityFuture_getResult(
 ///     cancelled the operation, 0 otherwise. This may be null.
 void ArVpsAvailabilityFuture_cancel(const ArSession *session,
                                     ArVpsAvailabilityFuture *future,
-                                    int32_t *out_was_cancelled);
+                                    int32_t *out_was_cancelled)
+    AR_DEPRECATED("Deprecated in release 1.37. Use ArFuture_cancel instead.");
 
 /// @ingroup ArVpsAvailabilityFuture
 /// Releases a reference to a future. This does not mean that the operation will
-/// be terminated - see @c ::ArVpsAvailabilityFuture_cancel.
+/// be terminated - see @c ::ArFuture_cancel.
 ///
 /// This function may safely be called with @c NULL - it will do nothing.
-void ArVpsAvailabilityFuture_release(ArVpsAvailabilityFuture *future);
+void ArVpsAvailabilityFuture_release(ArVpsAvailabilityFuture *future)
+    AR_DEPRECATED("Deprecated in release 1.37. Use ArFuture_release instead.");
 
 // === ArGeospatialPose functions ===
 
@@ -6152,6 +7582,42 @@ void ArGeospatialPose_getOrientationYawAccuracy(
     const ArSession *session,
     const ArGeospatialPose *geospatial_pose,
     double *out_orientation_yaw_accuracy_degrees);
+
+// === ArStreetscapeGeometry functions ===
+
+/// @ingroup ArStreetscapeGeometry
+/// Gets the origin pose of the @p streetscape_geometry. This pose
+/// should be applied to all the points in the geometry from @c
+/// ::ArStreetscapeGeometry_acquireMesh.
+void ArStreetscapeGeometry_getMeshPose(
+    const ArSession *session,
+    const ArStreetscapeGeometry *streetscape_geometry,
+    ArPose *out_pose);
+
+/// @ingroup ArStreetscapeGeometry
+/// Gets the @c ::ArStreetscapeGeometryType corresponding to this geometry.
+void ArStreetscapeGeometry_getType(
+    const ArSession *session,
+    const ArStreetscapeGeometry *streetscape_geometry,
+    ArStreetscapeGeometryType *out_type);
+
+/// @ingroup ArStreetscapeGeometry
+/// Gets the @c ::ArStreetscapeGeometryQuality corresponding to this geometry.
+void ArStreetscapeGeometry_getQuality(
+    const ArSession *session,
+    const ArStreetscapeGeometry *streetscape_geometry,
+    ArStreetscapeGeometryQuality *out_quality);
+
+/// @ingroup ArStreetscapeGeometry
+/// Acquires a polygon @c ::ArMesh that corresponds to this geometry. A @c
+/// ::ArMesh describes the geometry as a collection of polygons which should be
+/// transformed by @c ::ArStreetscapeGeometry_getMeshPose.
+///
+/// @c ::ArMesh must be released by calling @c ::ArMesh_release.
+void ArStreetscapeGeometry_acquireMesh(
+    const ArSession *session,
+    const ArStreetscapeGeometry *streetscape_geometry,
+    ArMesh **out_mesh);
 
 /// @ingroup ArImageMetadata
 /// Defines a rational data type in @c ::ArImageMetadata_const_entry.

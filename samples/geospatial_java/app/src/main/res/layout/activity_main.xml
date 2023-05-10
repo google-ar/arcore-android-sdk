@@ -55,24 +55,27 @@
       android:text="@string/tap_screen_text"
       android:textColor="#ffffff"/>
 
-  <Switch
-      android:id="@+id/terrain_anchor_switch"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_above="@+id/set_anchor_button"
-      android:text="@string/switch_terrain_anchor_mode"
-      android:layout_alignParentRight="true"
-      android:textOff="Off"
-      android:textOn="On" />
-
   <Button
       android:id="@+id/set_anchor_button"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
+      android:layout_above="@+id/streetscape_geometry_switch"
       android:text="@string/button_text_set_anchor"
+      android:drawableRight="@drawable/ic_settings_white"
+      android:layout_alignParentRight="true"
+      android:visibility="invisible"/>
+
+  <Switch
+      android:id="@+id/streetscape_geometry_switch"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:text="@string/switch_render_streetscaope_geometry"
       android:layout_alignParentRight="true"
       android:layout_alignParentBottom="true"
-      android:visibility="invisible"/>
+      android:padding="10dp"
+      android:textOff="Off"
+      android:textOn="On" />
+
   <Button
       android:id="@+id/clear_anchors_button"
       android:layout_width="wrap_content"

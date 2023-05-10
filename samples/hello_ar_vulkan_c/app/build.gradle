@@ -1,0 +1,100 @@
+/*
+ * Copyright 2023 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+apply plugin: 'com.android.application'
+
+/*
+The arcore aar library contains the native shared libraries.  These are
+extracted before building to a temporary directory.
+ */
+def arcore_libpath = "${buildDir}/arcore-native"
+
+// Create a configuration to mark which aars to extract .so files from
+configurations { natives }
+
+android {
+    compileSdkVersion 33
+    defaultConfig {
+        applicationId "com.google.ar.core.examples.c.simplevulkan"
+
+        // "AR Optional" apps must declare minSdkVersion >= 14.
+        // "AR Required" apps must declare minSdkVersion >= 28.
+        minSdkVersion 28
+        targetSdkVersion 33
+        versionCode 1
+        versionName '1.0'
+
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++14", "-Wall"
+                arguments "-DANDROID_STL=c++_static",
+                        "-DARCORE_LIBPATH=${arcore_libpath}/jni",
+                        "-DARCORE_INCLUDE=${project.rootDir}/../../libraries/include",
+                        "-DGLM_INCLUDE=${project.rootDir}/../../third_party/glm"
+            }
+        }
+        ndk {
+            abiFilters "arm64-v8a", "armeabi-v7a", "x86"
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }
+    ndkVersion '25.2.9519653'
+}
+
+dependencies {
+    // ARCore (Google Play Services for AR) library.
+    implementation 'com.google.ar:core:1.37.0'
+    natives 'com.google.ar:core:1.37.0'
+
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'com.google.android.material:material:1.1.0'
+}
+
+// Extracts the shared libraries from aars in the natives configuration.
+// This is done so that NDK builds can access these libraries.
+task extractNativeLibraries() {
+    // Always extract, this insures the native libs are updated if the version changes.
+    outputs.upToDateWhen { false }
+    doFirst {
+        configurations.natives.files.each { f ->
+            copy {
+                from zipTree(f)
+                into arcore_libpath
+                include "jni/**/*"
+            }
+        }
+    }
+}
+
+tasks.whenTaskAdded {
+    task -> if ((task.name.contains("external") || task.name.contains("CMake")) && !task.name.contains("Clean")) {
+        task.dependsOn(extractNativeLibraries)
+    }
+}
+

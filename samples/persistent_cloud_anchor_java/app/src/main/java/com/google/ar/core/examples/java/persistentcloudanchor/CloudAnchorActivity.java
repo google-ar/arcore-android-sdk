@@ -474,9 +474,6 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
       Camera camera = frame.getCamera();
       TrackingState cameraTrackingState = camera.getTrackingState();
 
-      // Notify the cloudAnchorManager of all the updates.
-      cloudAnchorManager.onUpdate();
-
       // Handle user input.
       handleTap(frame, cameraTrackingState);
 
@@ -621,11 +618,11 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
   }
 
   /** Adds a new anchor to the set of resolved anchors. */
-  private void setAnchorAsResolved(Anchor newAnchor) {
+  private void setAnchorAsResolved(String cloudAnchorId, Anchor newAnchor) {
     synchronized (anchorLock) {
-      if (unresolvedAnchorIds.contains(newAnchor.getCloudAnchorId())) {
+      if (unresolvedAnchorIds.contains(cloudAnchorId)) {
         resolvedAnchors.add(newAnchor);
-        unresolvedAnchorIds.remove(newAnchor.getCloudAnchorId());
+        unresolvedAnchorIds.remove(cloudAnchorId);
       }
     }
   }
@@ -663,60 +660,50 @@ public class CloudAnchorActivity extends AppCompatActivity implements GLSurfaceV
   }
 
   /* Listens for a resolved anchor. */
-  private final class ResolveListener implements CloudAnchorManager.CloudAnchorListener {
-
+  private final class ResolveListener implements CloudAnchorManager.CloudAnchorResolveListener {
     @Override
-    public void onComplete(Anchor anchor) {
-      runOnUiThread(
-          () -> {
-            CloudAnchorState state = anchor.getCloudAnchorState();
-            if (state.isError()) {
-              Log.e(TAG, "Error hosting a cloud anchor, state " + state);
-              userMessageText.setText(getString(R.string.resolving_error, state));
-              return;
-            }
-            setAnchorAsResolved(anchor);
-            userMessageText.setText(getString(R.string.resolving_success));
-            synchronized (anchorLock) {
-              if (unresolvedAnchorIds.isEmpty()) {
-                debugText.setText(getString(R.string.debug_resolving_success));
-              } else {
-                Log.i(
-                    TAG,
-                    String.format(
-                        "Attempting to resolve %d anchor(s): %s",
-                        unresolvedAnchorIds.size(), unresolvedAnchorIds));
-                debugText.setText(
-                    getString(R.string.debug_resolving_processing, unresolvedAnchorIds.size()));
-              }
-            }
-          });
+    public void onComplete(String cloudAnchorId, Anchor anchor, CloudAnchorState state) {
+      if (state.isError()) {
+        Log.e(TAG, "Error hosting a cloud anchor, state " + state);
+        userMessageText.setText(getString(R.string.resolving_error, state));
+        return;
+      }
+      setAnchorAsResolved(cloudAnchorId, anchor);
+      userMessageText.setText(getString(R.string.resolving_success));
+      synchronized (anchorLock) {
+        if (unresolvedAnchorIds.isEmpty()) {
+          debugText.setText(getString(R.string.debug_resolving_success));
+        } else {
+          Log.i(
+              TAG,
+              String.format(
+                  "Attempting to resolve %d anchor(s): %s",
+                  unresolvedAnchorIds.size(), unresolvedAnchorIds));
+          debugText.setText(
+              getString(R.string.debug_resolving_processing, unresolvedAnchorIds.size()));
+        }
+      }
     }
   }
 
   /* Listens for a hosted anchor. */
-  private final class HostListener implements CloudAnchorManager.CloudAnchorListener {
+  private final class HostListener implements CloudAnchorManager.CloudAnchorHostListener {
     private String cloudAnchorId;
 
     @Override
-    public void onComplete(Anchor anchor) {
-      runOnUiThread(
-          () -> {
-            CloudAnchorState state = anchor.getCloudAnchorState();
-            if (state.isError()) {
-              Log.e(TAG, "Error hosting a cloud anchor, state " + state);
-              userMessageText.setText(getString(R.string.hosting_error, state));
-              return;
-            }
-            Preconditions.checkState(
-                cloudAnchorId == null, "The cloud anchor ID cannot have been set before.");
-            cloudAnchorId = anchor.getCloudAnchorId();
-            setNewAnchor(anchor);
-            Log.i(TAG, "Anchor " + cloudAnchorId + " created.");
-            userMessageText.setText(getString(R.string.hosting_success));
-            debugText.setText(getString(R.string.debug_hosting_success, cloudAnchorId));
-            saveAnchorWithNickname();
-          });
+    public void onComplete(String cloudId, CloudAnchorState state) {
+      if (state.isError()) {
+        Log.e(TAG, "Error hosting a cloud anchor, state " + state);
+        userMessageText.setText(getString(R.string.hosting_error, state));
+        return;
+      }
+      Preconditions.checkState(
+          cloudAnchorId == null, "The cloud anchor ID cannot have been set before.");
+      cloudAnchorId = cloudId;
+      Log.i(TAG, "Anchor " + cloudAnchorId + " created.");
+      userMessageText.setText(getString(R.string.hosting_success));
+      debugText.setText(getString(R.string.debug_hosting_success, cloudAnchorId));
+      saveAnchorWithNickname();
     }
 
     /** Callback function invoked when the user presses the OK button in the Save Anchor Dialog. */

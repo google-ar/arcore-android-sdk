@@ -22,24 +22,25 @@ import android.location.Location;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.util.Log;
 import android.view.GestureDetector;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.PopupMenu;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.GuardedBy;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.concurrent.futures.CallbackToFutureAdapter;
 import androidx.fragment.app.DialogFragment;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.ar.core.Anchor;
+import com.google.ar.core.Anchor.RooftopAnchorState;
 import com.google.ar.core.Anchor.TerrainAnchorState;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
@@ -53,7 +54,10 @@ import com.google.ar.core.Point;
 import com.google.ar.core.Point.OrientationMode;
 import com.google.ar.core.PointCloud;
 import com.google.ar.core.Pose;
+import com.google.ar.core.ResolveAnchorOnRooftopFuture;
+import com.google.ar.core.ResolveAnchorOnTerrainFuture;
 import com.google.ar.core.Session;
+import com.google.ar.core.StreetscapeGeometry;
 import com.google.ar.core.Trackable;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.VpsAvailability;
@@ -65,9 +69,11 @@ import com.google.ar.core.examples.java.common.helpers.LocationPermissionHelper;
 import com.google.ar.core.examples.java.common.helpers.SnackbarHelper;
 import com.google.ar.core.examples.java.common.helpers.TrackingStateHelper;
 import com.google.ar.core.examples.java.common.samplerender.Framebuffer;
+import com.google.ar.core.examples.java.common.samplerender.IndexBuffer;
 import com.google.ar.core.examples.java.common.samplerender.Mesh;
 import com.google.ar.core.examples.java.common.samplerender.SampleRender;
 import com.google.ar.core.examples.java.common.samplerender.Shader;
+import com.google.ar.core.examples.java.common.samplerender.Shader.BlendFactor;
 import com.google.ar.core.examples.java.common.samplerender.Texture;
 import com.google.ar.core.examples.java.common.samplerender.VertexBuffer;
 import com.google.ar.core.examples.java.common.samplerender.arcore.BackgroundRenderer;
@@ -75,18 +81,16 @@ import com.google.ar.core.examples.java.common.samplerender.arcore.PlaneRenderer
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.FineLocationPermissionNotGrantedException;
 import com.google.ar.core.exceptions.GooglePlayServicesLocationLibraryNotLinkedException;
-import com.google.ar.core.exceptions.ResourceExhaustedException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import com.google.ar.core.exceptions.UnsupportedConfigurationException;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import java.io.IOException;
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -110,6 +114,7 @@ public class GeospatialActivity extends AppCompatActivity
 
   private static final String SHARED_PREFERENCES_SAVED_ANCHORS = "SHARED_PREFERENCES_SAVED_ANCHORS";
   private static final String ALLOW_GEOSPATIAL_ACCESS_KEY = "ALLOW_GEOSPATIAL_ACCESS";
+  private static final String ANCHOR_MODE = "ANCHOR_MODE";
 
   private static final float Z_NEAR = 0.1f;
   private static final float Z_FAR = 1000f;
@@ -126,7 +131,7 @@ public class GeospatialActivity extends AppCompatActivity
   private static final double LOCALIZED_ORIENTATION_YAW_ACCURACY_HYSTERESIS_DEGREES = 10;
 
   private static final int LOCALIZING_TIMEOUT_SECONDS = 180;
-  private static final int MAXIMUM_ANCHORS = 5;
+  private static final int MAXIMUM_ANCHORS = 20;
   private static final long DURATION_FOR_NO_TERRAIN_ANCHOR_RESULT_MS = 10000;
 
   // Rendering. The Renderers are created here, and initialized when the GL surface is created.
@@ -165,14 +170,23 @@ public class GeospatialActivity extends AppCompatActivity
 
   private State state = State.UNINITIALIZED;
 
+  enum AnchorType {
+    // Set WGS84 anchor.
+    GEOSPATIAL,
+    // Set Terrain anchor.
+    TERRAIN,
+    // Set Rooftop anchor.
+    ROOFTOP
+  }
+
+  private AnchorType anchorType = AnchorType.GEOSPATIAL;
+
   private Session session;
   private final SnackbarHelper messageSnackbarHelper = new SnackbarHelper();
   private DisplayRotationHelper displayRotationHelper;
   private final TrackingStateHelper trackingStateHelper = new TrackingStateHelper(this);
   private SampleRender render;
   private SharedPreferences sharedPreferences;
-  private final HashMap<Anchor, TerrainAnchorResolveListener> pendingTerrainAnchors =
-      new HashMap<>();
 
   private String lastStatusText;
   private TextView geospatialPoseTextView;
@@ -180,14 +194,14 @@ public class GeospatialActivity extends AppCompatActivity
   private TextView tapScreenTextView;
   private Button setAnchorButton;
   private Button clearAnchorsButton;
-  private Switch terrainAnchorSwitch;
+  private Switch streetscapeGeometrySwitch;
 
   private PlaneRenderer planeRenderer;
   private BackgroundRenderer backgroundRenderer;
   private Framebuffer virtualSceneFramebuffer;
   private boolean hasSetTextureNames = false;
-  // Set WGS84 anchor or Terrain anchor.
-  private boolean isTerrainAnchorMode = false;
+  // Set rendering Streetscape Geometry.
+  private boolean isRenderStreetscapeGeometry = false;
 
   // Virtual object (ARCore geospatial)
   private Mesh virtualObjectMesh;
@@ -195,7 +209,13 @@ public class GeospatialActivity extends AppCompatActivity
   // Virtual object (ARCore geospatial terrain)
   private Shader terrainAnchorVirtualObjectShader;
 
+  private final Object anchorsLock = new Object();
+
+  @GuardedBy("anchorsLock")
   private final List<Anchor> anchors = new ArrayList<>();
+
+  private final Set<Anchor> terrainAnchors = new HashSet<>();
+  private final Set<Anchor> rooftopAnchors = new HashSet<>();
 
   // Temporary matrix allocated here to reduce number of allocations for each frame.
   private final float[] modelMatrix = new float[16];
@@ -203,6 +223,8 @@ public class GeospatialActivity extends AppCompatActivity
   private final float[] projectionMatrix = new float[16];
   private final float[] modelViewMatrix = new float[16]; // view x model
   private final float[] modelViewProjectionMatrix = new float[16]; // projection x view x model
+
+  private final float[] identityQuaternion = {0, 0, 0, 1};
 
   // Locks needed for synchronization
   private final Object singleTapLock = new Object();
@@ -223,6 +245,14 @@ public class GeospatialActivity extends AppCompatActivity
   // Provides device location.
   private FusedLocationProviderClient fusedLocationClient;
 
+  // Streetscape geometry.
+  private final ArrayList<float[]> wallsColor = new ArrayList<float[]>();
+
+  private Shader streetscapeGeometryTerrainShader;
+  private Shader streetscapeGeometryBuildingShader;
+  // A set of planes representing building outlines and floors.
+  private final Map<StreetscapeGeometry, Mesh> streetscapeGeometryToMeshes = new HashMap<>();
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -236,15 +266,29 @@ public class GeospatialActivity extends AppCompatActivity
     setAnchorButton = findViewById(R.id.set_anchor_button);
     clearAnchorsButton = findViewById(R.id.clear_anchors_button);
 
-    setAnchorButton.setOnClickListener(view -> handleSetAnchorButton());
+    setAnchorButton.setOnClickListener(
+        new View.OnClickListener() {
+          @Override
+          public void onClick(View v) {
+            PopupMenu popup = new PopupMenu(GeospatialActivity.this, v);
+            popup.setOnMenuItemClickListener(GeospatialActivity.this::settingsMenuClick);
+            popup.inflate(R.menu.setting_menu);
+            popup.show();
+            popup
+                .getMenu()
+                .findItem(sharedPreferences.getInt(ANCHOR_MODE, R.id.geospatial))
+                .setChecked(true);
+          }
+        });
+
     clearAnchorsButton.setOnClickListener(view -> handleClearAnchorsButton());
 
-    terrainAnchorSwitch = findViewById(R.id.terrain_anchor_switch);
+    streetscapeGeometrySwitch = findViewById(R.id.streetscape_geometry_switch);
     // Initial terrain anchor mode is DISABLED.
-    terrainAnchorSwitch.setChecked(false);
-    terrainAnchorSwitch.setOnCheckedChangeListener(this::onTerrainAnchorModeChanged);
+    streetscapeGeometrySwitch.setChecked(false);
+    streetscapeGeometrySwitch.setOnCheckedChangeListener(this::onRenderStreetscapeGeometryChanged);
 
-    displayRotationHelper = new DisplayRotationHelper(/*activity=*/ this);
+    displayRotationHelper = new DisplayRotationHelper(/* activity= */ this);
 
     // Set up renderer.
     render = new SampleRender(surfaceView, this, getAssets());
@@ -271,7 +315,7 @@ public class GeospatialActivity extends AppCompatActivity
               }
             });
     surfaceView.setOnTouchListener((v, event) -> gestureDetector.onTouchEvent(event));
-    fusedLocationClient = LocationServices.getFusedLocationProviderClient(/*context=*/ this);
+    fusedLocationClient = LocationServices.getFusedLocationProviderClient(/* context= */ this);
   }
 
   @Override
@@ -291,7 +335,7 @@ public class GeospatialActivity extends AppCompatActivity
   @Override
   protected void onResume() {
     super.onResume();
-    if (sharedPreferences.getBoolean(ALLOW_GEOSPATIAL_ACCESS_KEY, /*defValue=*/ false)) {
+    if (sharedPreferences.getBoolean(ALLOW_GEOSPATIAL_ACCESS_KEY, /* defValue= */ false)) {
       createSession();
     } else {
       showPrivacyNoticeDialog();
@@ -424,24 +468,15 @@ public class GeospatialActivity extends AppCompatActivity
   }
 
   private void checkVpsAvailability(double latitude, double longitude) {
-    ListenableFuture<VpsAvailability> availabilityFuture =
-        checkVpsAvailabilityFuture(latitude, longitude);
-    Futures.addCallback(
-        availabilityFuture,
-        new FutureCallback<VpsAvailability>() {
-          @Override
-          public void onSuccess(VpsAvailability result) {
-            if (result != VpsAvailability.AVAILABLE) {
-              showVpsNotAvailabilityNoticeDialog();
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            Log.e(TAG, "Error checking VPS availability", t);
-          }
-        },
-        getMainExecutor());
+    final VpsAvailabilityFuture future =
+        session.checkVpsAvailabilityAsync(
+            latitude,
+            longitude,
+            availability -> {
+              if (availability != VpsAvailability.AVAILABLE) {
+                showVpsNotAvailabilityNoticeDialog();
+              }
+            });
   }
 
   private void showVpsNotAvailabilityNoticeDialog() {
@@ -505,7 +540,7 @@ public class GeospatialActivity extends AppCompatActivity
     try {
       planeRenderer = new PlaneRenderer(render);
       backgroundRenderer = new BackgroundRenderer(render);
-      virtualSceneFramebuffer = new Framebuffer(render, /*width=*/ 1, /*height=*/ 1);
+      virtualSceneFramebuffer = new Framebuffer(render, /* width= */ 1, /* height= */ 1);
 
       // Virtual object to render (ARCore geospatial)
       Texture virtualObjectTexture =
@@ -521,7 +556,7 @@ public class GeospatialActivity extends AppCompatActivity
                   render,
                   "shaders/ar_unlit_object.vert",
                   "shaders/ar_unlit_object.frag",
-                  /*defines=*/ null)
+                  /* defines= */ null)
               .setTexture("u_Texture", virtualObjectTexture);
 
       // Virtual object to render (Terrain anchor marker)
@@ -536,7 +571,7 @@ public class GeospatialActivity extends AppCompatActivity
                   render,
                   "shaders/ar_unlit_object.vert",
                   "shaders/ar_unlit_object.frag",
-                  /*defines=*/ null)
+                  /* defines= */ null)
               .setTexture("u_Texture", terrainAnchorVirtualObjectTexture);
 
       backgroundRenderer.setUseDepthVisualization(render, false);
@@ -545,17 +580,43 @@ public class GeospatialActivity extends AppCompatActivity
       // Point cloud
       pointCloudShader =
           Shader.createFromAssets(
-                  render, "shaders/point_cloud.vert", "shaders/point_cloud.frag", /*defines=*/ null)
+                  render,
+                  "shaders/point_cloud.vert",
+                  "shaders/point_cloud.frag",
+                  /* defines= */ null)
               .setVec4(
                   "u_Color", new float[] {31.0f / 255.0f, 188.0f / 255.0f, 210.0f / 255.0f, 1.0f})
               .setFloat("u_PointSize", 5.0f);
       // four entries per vertex: X, Y, Z, confidence
       pointCloudVertexBuffer =
-          new VertexBuffer(render, /*numberOfEntriesPerVertex=*/ 4, /*entries=*/ null);
+          new VertexBuffer(render, /* numberOfEntriesPerVertex= */ 4, /* entries= */ null);
       final VertexBuffer[] pointCloudVertexBuffers = {pointCloudVertexBuffer};
       pointCloudMesh =
           new Mesh(
-              render, Mesh.PrimitiveMode.POINTS, /*indexBuffer=*/ null, pointCloudVertexBuffers);
+              render, Mesh.PrimitiveMode.POINTS, /* indexBuffer= */ null, pointCloudVertexBuffers);
+
+      streetscapeGeometryBuildingShader =
+          Shader.createFromAssets(
+                  render,
+                  "shaders/streetscape_geometry.vert",
+                  "shaders/streetscape_geometry.frag",
+                  /* defines= */ null)
+              .setBlend(
+                  BlendFactor.DST_ALPHA, // RGB (src)
+                  BlendFactor.ONE); // ALPHA (dest)
+
+      streetscapeGeometryTerrainShader =
+          Shader.createFromAssets(
+                  render,
+                  "shaders/streetscape_geometry.vert",
+                  "shaders/streetscape_geometry.frag",
+                  /* defines= */ null)
+              .setBlend(
+                  BlendFactor.DST_ALPHA, // RGB (src)
+                  BlendFactor.ONE); // ALPHA (dest)
+      wallsColor.add(new float[] {0.5f, 0.0f, 0.5f, 0.3f});
+      wallsColor.add(new float[] {0.5f, 0.5f, 0.0f, 0.3f});
+      wallsColor.add(new float[] {0.0f, 0.5f, 0.5f, 0.3f});
     } catch (IOException e) {
       Log.e(TAG, "Failed to read a required asset file", e);
       messageSnackbarHelper.showError(this, "Failed to read a required asset file: " + e);
@@ -588,6 +649,7 @@ public class GeospatialActivity extends AppCompatActivity
     // Notify ARCore session that the view size changed so that the perspective matrix and
     // the video background can be properly adjusted.
     displayRotationHelper.updateSessionIfNeeded(session);
+    updateStreetscapeGeometries(session.getAllTrackables(StreetscapeGeometry.class));
 
     // Obtain the current frame from ARSession. When the configuration is set to
     // UpdateMode.BLOCKING (it is by default), this will throttle the rendering to the
@@ -636,24 +698,7 @@ public class GeospatialActivity extends AppCompatActivity
         message = getResources().getString(R.string.status_localize_timeout);
         break;
       case LOCALIZED:
-        if (pendingTerrainAnchors.size() > 0) {
-          // If there is a terrain anchor, show terrain anchor state.
-          for (Map.Entry<Anchor, TerrainAnchorResolveListener> entry :
-              pendingTerrainAnchors.entrySet()) {
-            Anchor anchor = entry.getKey();
-            TerrainAnchorResolveListener listener = entry.getValue();
-            if (anchor.getTerrainAnchorState() != TerrainAnchorState.TASK_IN_PROGRESS) {
-              listener.onTaskComplete(anchor);
-              pendingTerrainAnchors.remove(anchor);
-            }
-            if (deadlineForMessageMillis > 0
-                && SystemClock.uptimeMillis() > deadlineForMessageMillis) {
-              listener.onDeadlineExceeded();
-              deadlineForMessageMillis = 0;
-              pendingTerrainAnchors.remove(anchor);
-            }
-          }
-        } else if (lastStatusText.equals(getResources().getString(R.string.status_localize_hint))) {
+        if (lastStatusText.equals(getResources().getString(R.string.status_localize_hint))) {
           message = getResources().getString(R.string.status_localize_complete);
         }
         break;
@@ -666,6 +711,15 @@ public class GeospatialActivity extends AppCompatActivity
             statusTextView.setVisibility(View.VISIBLE);
             statusTextView.setText(lastStatusText);
           });
+    }
+    synchronized (anchorsLock) {
+      if (anchors.size() >= MAXIMUM_ANCHORS) {
+        runOnUiThread(
+            () -> {
+              setAnchorButton.setVisibility(View.INVISIBLE);
+              tapScreenTextView.setVisibility(View.INVISIBLE);
+            });
+      }
     }
 
     // Handle user input.
@@ -713,42 +767,128 @@ public class GeospatialActivity extends AppCompatActivity
 
     // Visualize anchors created by touch.
     render.clear(virtualSceneFramebuffer, 0f, 0f, 0f, 0f);
-    for (Anchor anchor : anchors) {
-      // Get the current pose of an Anchor in world space. The Anchor pose is updated
-      // during calls to session.update() as ARCore refines its estimate of the world.
 
-      // Only render resolved Terrain anchors and Geospatial anchors.
-      if (anchor.getTerrainAnchorState() != TerrainAnchorState.SUCCESS
-          && anchor.getTerrainAnchorState() != TerrainAnchorState.NONE) {
-        continue;
+    // -- Draw Streetscape Geometries.
+    if (isRenderStreetscapeGeometry) {
+      int index = 0;
+      for (Map.Entry<StreetscapeGeometry, Mesh> set : streetscapeGeometryToMeshes.entrySet()) {
+        StreetscapeGeometry streetscapeGeometry = set.getKey();
+        if (streetscapeGeometry.getTrackingState() != TrackingState.TRACKING) {
+          continue;
+        }
+        Mesh mesh = set.getValue();
+        Pose pose = streetscapeGeometry.getMeshPose();
+        pose.toMatrix(modelMatrix, 0);
+
+        // Calculate model/view/projection matrices
+        Matrix.multiplyMM(modelViewMatrix, 0, viewMatrix, 0, modelMatrix, 0);
+        Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0);
+
+        if (streetscapeGeometry.getType() == StreetscapeGeometry.Type.BUILDING) {
+          float[] color = wallsColor.get(index % wallsColor.size());
+          index += 1;
+          streetscapeGeometryBuildingShader
+              .setVec4(
+                  "u_Color",
+                  new float[] {/* r= */ color[0], /* g= */ color[1], /* b= */ color[2], color[3]})
+              .setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
+          render.draw(mesh, streetscapeGeometryBuildingShader);
+        } else if (streetscapeGeometry.getType() == StreetscapeGeometry.Type.TERRAIN) {
+          streetscapeGeometryTerrainShader
+              .setVec4("u_Color", new float[] {/* r= */ 0f, /* g= */ .5f, /* b= */ 0f, 0.3f})
+              .setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
+          render.draw(mesh, streetscapeGeometryTerrainShader);
+        }
       }
-      anchor.getPose().toMatrix(modelMatrix, 0);
+    }
+    render.clear(virtualSceneFramebuffer, 0f, 0f, 0f, 0f);
+    synchronized (anchorsLock) {
+      for (Anchor anchor : anchors) {
+        // Get the current pose of an Anchor in world space. The Anchor pose is updated
+        // during calls to session.update() as ARCore refines its estimate of the world.
+        // Only render resolved Terrain & Rooftop anchors and Geospatial anchors.
+        if (anchor.getTrackingState() != TrackingState.TRACKING) {
+          continue;
+        }
+        anchor.getPose().toMatrix(modelMatrix, 0);
+        float[] scaleMatrix = new float[16];
+        Matrix.setIdentityM(scaleMatrix, 0);
+        float scale = getScale(anchor.getPose(), camera.getDisplayOrientedPose());
+        scaleMatrix[0] = scale;
+        scaleMatrix[5] = scale;
+        scaleMatrix[10] = scale;
+        Matrix.multiplyMM(modelMatrix, 0, modelMatrix, 0, scaleMatrix, 0);
+        // Rotate the virtual object 180 degrees around the Y axis to make the object face the GL
+        // camera -Z axis, since camera Z axis faces toward users.
+        float[] rotationMatrix = new float[16];
+        Matrix.setRotateM(rotationMatrix, 0, 180, 0.0f, 1.0f, 0.0f);
+        float[] rotationModelMatrix = new float[16];
+        Matrix.multiplyMM(rotationModelMatrix, 0, modelMatrix, 0, rotationMatrix, 0);
+        // Calculate model/view/projection matrices
+        Matrix.multiplyMM(modelViewMatrix, 0, viewMatrix, 0, rotationModelMatrix, 0);
+        Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0);
 
-      // Rotate the virtual object 180 degrees around the Y axis to make the object face the GL
-      // camera -Z axis, since camera Z axis faces toward users.
-      float[] rotationMatrix = new float[16];
-      Matrix.setRotateM(rotationMatrix, 0, 180, 0.0f, 1.0f, 0.0f);
-      float[] rotationModelMatrix = new float[16];
-      Matrix.multiplyMM(rotationModelMatrix, 0, modelMatrix, 0, rotationMatrix, 0);
-      // Calculate model/view/projection matrices
-      Matrix.multiplyMM(modelViewMatrix, 0, viewMatrix, 0, rotationModelMatrix, 0);
-      Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0);
-      // Update shader properties and draw
-      if (anchor.getTerrainAnchorState() == TerrainAnchorState.SUCCESS) {
-        terrainAnchorVirtualObjectShader.setMat4(
-            "u_ModelViewProjection", modelViewProjectionMatrix);
+        // Update shader properties and draw
+        if (terrainAnchors.contains(anchor) || rooftopAnchors.contains(anchor)) {
+          terrainAnchorVirtualObjectShader.setMat4(
+              "u_ModelViewProjection", modelViewProjectionMatrix);
 
-        render.draw(virtualObjectMesh, terrainAnchorVirtualObjectShader, virtualSceneFramebuffer);
-      } else {
-        geospatialAnchorVirtualObjectShader.setMat4(
-            "u_ModelViewProjection", modelViewProjectionMatrix);
-        render.draw(
-            virtualObjectMesh, geospatialAnchorVirtualObjectShader, virtualSceneFramebuffer);
+          render.draw(virtualObjectMesh, terrainAnchorVirtualObjectShader, virtualSceneFramebuffer);
+        } else {
+          geospatialAnchorVirtualObjectShader.setMat4(
+              "u_ModelViewProjection", modelViewProjectionMatrix);
+          render.draw(
+              virtualObjectMesh, geospatialAnchorVirtualObjectShader, virtualSceneFramebuffer);
+        }
+      }
+      if (anchors.size() > 0) {
+        String anchorMessage =
+            getResources()
+                .getQuantityString(
+                    R.plurals.status_anchors_set, anchors.size(), anchors.size(), MAXIMUM_ANCHORS);
+        runOnUiThread(
+            () -> {
+              statusTextView.setVisibility(View.VISIBLE);
+              statusTextView.setText(anchorMessage);
+            });
       }
     }
 
     // Compose the virtual scene with the background.
     backgroundRenderer.drawVirtualScene(render, virtualSceneFramebuffer, Z_NEAR, Z_FAR);
+  }
+
+  /**
+   * Updates all the StreetscapeGeometries. Existing StreetscapeGeometries will have pose updated,
+   * and non-existing StreetscapeGeometries will be removed from the scene.
+   */
+  private void updateStreetscapeGeometries(Collection<StreetscapeGeometry> streetscapeGeometries) {
+    for (StreetscapeGeometry streetscapeGeometry : streetscapeGeometries) {
+      // If the Streetscape Geometry node is already added to the scene, then we'll simply update
+      // the pose.
+      if (streetscapeGeometryToMeshes.containsKey(streetscapeGeometry)) {
+      } else {
+        // Otherwise, we create a StreetscapeGeometry mesh and add it to the scene.
+        Mesh mesh = getSampleRenderMesh(streetscapeGeometry);
+        streetscapeGeometryToMeshes.put(streetscapeGeometry, mesh);
+      }
+    }
+  }
+
+  private Mesh getSampleRenderMesh(StreetscapeGeometry streetscapeGeometry) {
+    FloatBuffer streetscapeGeometryBuffer = streetscapeGeometry.getMesh().getVertexList();
+    streetscapeGeometryBuffer.rewind();
+    VertexBuffer meshVertexBuffer =
+        new VertexBuffer(
+            render, /* numberOfEntriesPerVertex= */ 3, /* entries= */ streetscapeGeometryBuffer);
+    IndexBuffer meshIndexBuffer =
+        new IndexBuffer(render, streetscapeGeometry.getMesh().getIndexList());
+    final VertexBuffer[] meshVertexBuffers = {meshVertexBuffer};
+    return new Mesh(
+        render,
+        Mesh.PrimitiveMode.TRIANGLES,
+        /* indexBuffer= */ meshIndexBuffer,
+        meshVertexBuffers);
   }
 
   /** Configures the session with feature settings. */
@@ -760,7 +900,10 @@ public class GeospatialActivity extends AppCompatActivity
     }
 
     Config config = session.getConfig();
-    config.setGeospatialMode(Config.GeospatialMode.ENABLED);
+    config =
+        config
+            .setGeospatialMode(Config.GeospatialMode.ENABLED)
+            .setStreetscapeGeometryMode(Config.StreetscapeGeometryMode.ENABLED);
     session.configure(config);
     state = State.PRETRACKING;
     localizingStartTimestamp = System.currentTimeMillis();
@@ -812,18 +955,21 @@ public class GeospatialActivity extends AppCompatActivity
         && geospatialPose.getOrientationYawAccuracy()
             <= LOCALIZING_ORIENTATION_YAW_ACCURACY_THRESHOLD_DEGREES) {
       state = State.LOCALIZED;
-      if (anchors.isEmpty()) {
-        createAnchorFromSharedPreferences(earth);
-      }
-      if (anchors.size() < MAXIMUM_ANCHORS) {
-        runOnUiThread(
-            () -> {
-              setAnchorButton.setVisibility(View.VISIBLE);
-              tapScreenTextView.setVisibility(View.VISIBLE);
-              if (anchors.size() > 0) {
-                clearAnchorsButton.setVisibility(View.VISIBLE);
-              }
-            });
+      synchronized (anchorsLock) {
+        final int anchorNum = anchors.size();
+        if (anchorNum == 0) {
+          createAnchorFromSharedPreferences(earth);
+        }
+        if (anchorNum < MAXIMUM_ANCHORS) {
+          runOnUiThread(
+              () -> {
+                setAnchorButton.setVisibility(View.VISIBLE);
+                tapScreenTextView.setVisibility(View.VISIBLE);
+                if (anchorNum > 0) {
+                  clearAnchorsButton.setVisibility(View.VISIBLE);
+                }
+              });
+        }
       }
       return;
     }
@@ -889,20 +1035,44 @@ public class GeospatialActivity extends AppCompatActivity
         });
   }
 
+  // Return the scale in range [1, 2] after mapping a distance between camera and anchor to [2, 20].
+  private float getScale(Pose anchorPose, Pose cameraPose) {
+    double distance =
+        Math.sqrt(
+            Math.pow(anchorPose.tx() - cameraPose.tx(), 2.0)
+                + Math.pow(anchorPose.ty() - cameraPose.ty(), 2.0)
+                + Math.pow(anchorPose.tz() - cameraPose.tz(), 2.0));
+    double mapDistance = Math.min(Math.max(2, distance), 20);
+    return (float) (mapDistance - 2) / (20 - 2) + 1;
+  }
+
   /**
    * Handles the button that creates an anchor.
    *
    * <p>Ensure Earth is in the proper state, then create the anchor. Persist the parameters used to
    * create the anchors so that the anchors will be loaded next time the app is launched.
    */
-  private void handleSetAnchorButton() {
-    Earth earth = session.getEarth();
-    if (earth == null || earth.getTrackingState() != TrackingState.TRACKING) {
-      return;
-    }
+  private void handleSetAnchorButton() {}
 
-    GeospatialPose geospatialPose = earth.getCameraGeospatialPose();
-    createAnchorWithGeospatialPose(earth, geospatialPose);
+  /** Menu button to choose anchor type. */
+  protected boolean settingsMenuClick(MenuItem item) {
+    int itemId = item.getItemId();
+    if (itemId == R.id.anchor_reset) {
+      return true;
+    }
+    item.setChecked(!item.isChecked());
+    sharedPreferences.edit().putInt(ANCHOR_MODE, itemId).commit();
+    if (itemId == R.id.geospatial) {
+      anchorType = AnchorType.GEOSPATIAL;
+      return true;
+    } else if (itemId == R.id.terrain) {
+      anchorType = AnchorType.TERRAIN;
+      return true;
+    } else if (itemId == R.id.rooftop) {
+      anchorType = AnchorType.ROOFTOP;
+      return true;
+    }
+    return false;
   }
 
   /** Creates anchor with the provided GeospatialPose, either from camera or HitResult. */
@@ -911,20 +1081,19 @@ public class GeospatialActivity extends AppCompatActivity
     double longitude = geospatialPose.getLongitude();
     double altitude = geospatialPose.getAltitude();
     float[] quaternion = geospatialPose.getEastUpSouthQuaternion();
-    if (isTerrainAnchorMode) {
-      createTerrainAnchor(earth, latitude, longitude, quaternion);
-      storeAnchorParameters(latitude, longitude, 0, quaternion);
-    } else {
-      createAnchor(earth, latitude, longitude, altitude, quaternion);
-      storeAnchorParameters(latitude, longitude, altitude, quaternion);
-      String message =
-          getResources()
-              .getQuantityString(R.plurals.status_anchors_set, anchors.size(), anchors.size());
-      runOnUiThread(
-          () -> {
-            statusTextView.setVisibility(View.VISIBLE);
-            statusTextView.setText(message);
-          });
+    switch (anchorType) {
+      case TERRAIN:
+        createTerrainAnchor(earth, latitude, longitude, identityQuaternion);
+        storeAnchorParameters(latitude, longitude, 0, identityQuaternion);
+        break;
+      case GEOSPATIAL:
+        createAnchor(earth, latitude, longitude, altitude, quaternion);
+        storeAnchorParameters(latitude, longitude, altitude, quaternion);
+        break;
+      case ROOFTOP:
+        createRooftopAnchor(earth, latitude, longitude, identityQuaternion);
+        storeAnchorParameters(latitude, longitude, 0, identityQuaternion);
+        break;
     }
     runOnUiThread(
         () -> {
@@ -936,19 +1105,21 @@ public class GeospatialActivity extends AppCompatActivity
   }
 
   private void handleClearAnchorsButton() {
-    clearedAnchorsAmount = anchors.size();
-    String message =
-        getResources()
-            .getQuantityString(
-                R.plurals.status_anchors_cleared, clearedAnchorsAmount, clearedAnchorsAmount);
+    synchronized (anchorsLock) {
+      clearedAnchorsAmount = anchors.size();
+      String message =
+          getResources()
+              .getQuantityString(
+                  R.plurals.status_anchors_cleared, clearedAnchorsAmount, clearedAnchorsAmount);
 
-    statusTextView.setVisibility(View.VISIBLE);
-    statusTextView.setText(message);
+      statusTextView.setVisibility(View.VISIBLE);
+      statusTextView.setText(message);
 
-    for (Anchor anchor : anchors) {
-      anchor.detach();
+      for (Anchor anchor : anchors) {
+        anchor.detach();
+      }
+      anchors.clear();
     }
-    anchors.clear();
     clearAnchorsFromSharedPreferences();
     clearAnchorsButton.setVisibility(View.INVISIBLE);
     setAnchorButton.setVisibility(View.VISIBLE);
@@ -967,48 +1138,59 @@ public class GeospatialActivity extends AppCompatActivity
             quaternion[1],
             quaternion[2],
             quaternion[3]);
-    anchors.add(anchor);
-    if (anchors.size() >= MAXIMUM_ANCHORS) {
-      runOnUiThread(
-          () -> {
-            setAnchorButton.setVisibility(View.INVISIBLE);
-            tapScreenTextView.setVisibility(View.INVISIBLE);
-          });
+    synchronized (anchorsLock) {
+      anchors.add(anchor);
     }
   }
 
   /** Create a terrain anchor at a specific geodetic location using a EUS quaternion. */
   private void createTerrainAnchor(
       Earth earth, double latitude, double longitude, float[] quaternion) {
-    Anchor anchor = null;
-    try {
-      anchor =
-          earth.resolveAnchorOnTerrain(
-              latitude,
-              longitude,
-              /* altitudeAboveTerrain= */ 0.0f,
-              quaternion[0],
-              quaternion[1],
-              quaternion[2],
-              quaternion[3]);
-      anchors.add(anchor);
-      if (anchors.size() >= MAXIMUM_ANCHORS) {
-        runOnUiThread(
-            () -> {
-              setAnchorButton.setVisibility(View.INVISIBLE);
-              tapScreenTextView.setVisibility(View.INVISIBLE);
+    final ResolveAnchorOnTerrainFuture future =
+        earth.resolveAnchorOnTerrainAsync(
+            latitude,
+            longitude,
+            /* altitudeAboveTerrain= */ 0.0f,
+            quaternion[0],
+            quaternion[1],
+            quaternion[2],
+            quaternion[3],
+            (anchor, state) -> {
+              if (state == TerrainAnchorState.SUCCESS) {
+                synchronized (anchorsLock) {
+                  anchors.add(anchor);
+                  terrainAnchors.add(anchor);
+                }
+              } else {
+                statusTextView.setVisibility(View.VISIBLE);
+                statusTextView.setText(getString(R.string.status_terrain_anchor, state));
+              }
             });
-      }
-    } catch (ResourceExhaustedException e) {
-      messageSnackbarHelper.showMessageWithDismiss(
-          this, getResources().getString(R.string.terrain_anchor_resource_exhausted));
-      Log.d(TAG, "Exception creating terrain anchor", e);
-    }
-    deadlineForMessageMillis =
-        SystemClock.uptimeMillis() + DURATION_FOR_NO_TERRAIN_ANCHOR_RESULT_MS;
-    if (anchor != null) {
-      pendingTerrainAnchors.put(anchor, new TerrainAnchorResolveListener());
-    }
+  }
+
+  /** Create a rooftop anchor at a specific geodetic location using a EUS quaternion. */
+  private void createRooftopAnchor(
+      Earth earth, double latitude, double longitude, float[] quaternion) {
+    final ResolveAnchorOnRooftopFuture future =
+        earth.resolveAnchorOnRooftopAsync(
+            latitude,
+            longitude,
+            /* altitudeAboveRooftop= */ 0.0f,
+            quaternion[0],
+            quaternion[1],
+            quaternion[2],
+            quaternion[3],
+            (anchor, state) -> {
+              if (state == RooftopAnchorState.SUCCESS) {
+                synchronized (anchorsLock) {
+                  anchors.add(anchor);
+                  rooftopAnchors.add(anchor);
+                }
+              } else {
+                statusTextView.setVisibility(View.VISIBLE);
+                statusTextView.setText(getString(R.string.status_rooftop_anchor, state));
+              }
+            });
   }
 
   /**
@@ -1021,10 +1203,21 @@ public class GeospatialActivity extends AppCompatActivity
     HashSet<String> newAnchorParameterSet = new HashSet<>(anchorParameterSet);
 
     SharedPreferences.Editor editor = sharedPreferences.edit();
-    String terrain = isTerrainAnchorMode ? "Terrain" : "";
+    String type = "";
+    switch (anchorType) {
+      case TERRAIN:
+        type = "Terrain";
+        break;
+      case ROOFTOP:
+        type = "Rooftop";
+        break;
+      default:
+        type = "";
+        break;
+    }
     newAnchorParameterSet.add(
         String.format(
-            terrain + "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f",
+            type + "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f",
             latitude,
             longitude,
             altitude,
@@ -1051,9 +1244,13 @@ public class GeospatialActivity extends AppCompatActivity
     }
 
     for (String anchorParameters : anchorParameterSet) {
-      boolean isTerrain = anchorParameters.contains("Terrain");
-      if (isTerrain) {
+      AnchorType type = AnchorType.GEOSPATIAL;
+      if (anchorParameters.contains("Terrain")) {
+        type = AnchorType.TERRAIN;
         anchorParameters = anchorParameters.replace("Terrain", "");
+      } else if (anchorParameters.contains("Rooftop")) {
+        type = AnchorType.ROOFTOP;
+        anchorParameters = anchorParameters.replace("Rooftop", "");
       }
       String[] parameters = anchorParameters.split(",");
       if (parameters.length != 7) {
@@ -1071,10 +1268,16 @@ public class GeospatialActivity extends AppCompatActivity
             Float.parseFloat(parameters[5]),
             Float.parseFloat(parameters[6])
           };
-      if (isTerrain) {
-        createTerrainAnchor(earth, latitude, longitude, quaternion);
-      } else {
-        createAnchor(earth, latitude, longitude, altitude, quaternion);
+      switch (type) {
+        case TERRAIN:
+          createTerrainAnchor(earth, latitude, longitude, quaternion);
+          break;
+        case ROOFTOP:
+          createRooftopAnchor(earth, latitude, longitude, quaternion);
+          break;
+        default:
+          createAnchor(earth, latitude, longitude, altitude, quaternion);
+          break;
       }
     }
 
@@ -1094,11 +1297,11 @@ public class GeospatialActivity extends AppCompatActivity
     dialog.dismiss();
   }
 
-  private void onTerrainAnchorModeChanged(CompoundButton button, boolean isChecked) {
+  private void onRenderStreetscapeGeometryChanged(CompoundButton button, boolean isChecked) {
     if (session == null) {
       return;
     }
-    isTerrainAnchorMode = isChecked;
+    isRenderStreetscapeGeometry = isChecked;
   }
 
   /**
@@ -1113,11 +1316,13 @@ public class GeospatialActivity extends AppCompatActivity
     // Handle taps. Handling only one tap per frame, as taps are usually low frequency
     // compared to frame rate.
     synchronized (singleTapLock) {
-      if (queuedSingleTap == null
-          || anchors.size() >= MAXIMUM_ANCHORS
-          || cameraTrackingState != TrackingState.TRACKING) {
-        queuedSingleTap = null;
-        return;
+      synchronized (anchorsLock) {
+        if (queuedSingleTap == null
+            || anchors.size() >= MAXIMUM_ANCHORS
+            || cameraTrackingState != TrackingState.TRACKING) {
+          queuedSingleTap = null;
+          return;
+        }
       }
       Earth earth = session.getEarth();
       if (earth == null || earth.getTrackingState() != TrackingState.TRACKING) {
@@ -1138,8 +1343,13 @@ public class GeospatialActivity extends AppCompatActivity
   }
 
   /** Returns {@code true} if and only if the hit can be used to create an Anchor reliably. */
-  private static boolean shouldCreateAnchorWithHit(HitResult hit) {
+  private boolean shouldCreateAnchorWithHit(HitResult hit) {
     Trackable trackable = hit.getTrackable();
+    if (isRenderStreetscapeGeometry) {
+      if (trackable instanceof StreetscapeGeometry) {
+        return true;
+      }
+    }
     if (trackable instanceof Plane) {
       // Check if the hit was within the plane's polygon.
       return ((Plane) trackable).isPoseInPolygon(hit.getHitPose());
@@ -1150,42 +1360,4 @@ public class GeospatialActivity extends AppCompatActivity
     return false;
   }
 
-  /** Listener for the results of a resolving terrain anchor operation. */
-  private final class TerrainAnchorResolveListener {
-    public void onTaskComplete(Anchor anchor) {
-      TerrainAnchorState state = anchor.getTerrainAnchorState();
-      runOnUiThread(
-          () -> {
-            statusTextView.setVisibility(View.VISIBLE);
-            statusTextView.setText(getString(R.string.status_terrain_anchor, state));
-          });
-    }
-
-    public void onDeadlineExceeded() {
-      runOnUiThread(
-          () -> {
-            statusTextView.setVisibility(View.VISIBLE);
-            statusTextView.setText(getResources().getString(R.string.terrain_anchor_no_result_yet));
-          });
-      deadlineForMessageMillis = 0;
-    }
-  }
-
-  // Wrapper for checkVpsAvailability. Do not block on this future on the Main thread; deadlock will
-  // result.
-  private ListenableFuture<VpsAvailability> checkVpsAvailabilityFuture(
-      double latitude, double longitude) {
-    return CallbackToFutureAdapter.getFuture(
-        completer -> {
-          final VpsAvailabilityFuture future =
-              session.checkVpsAvailabilityAsync(
-                  latitude, longitude, availability -> completer.set(availability));
-          completer.addCancellationListener(
-              () -> {
-                boolean cancel = future.cancel();
-              },
-              Runnable::run);
-          return "checkVpsAvailabilityFuture";
-        });
-  }
 }
