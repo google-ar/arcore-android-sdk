@@ -308,7 +308,7 @@ void VulkanHandler::RenderFromHardwareBuffer(int current_frame,
       .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
   };
 
-  VkWriteDescriptorSet descriptor_writes[1];
+  VkWriteDescriptorSet descriptor_writes[1] = {};
 
   descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   descriptor_writes[0].dstSet = descriptor_sets_[current_frame];
