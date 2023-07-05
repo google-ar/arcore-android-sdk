@@ -147,10 +147,10 @@ void VulkanHandler::RenderFromHardwareBuffer(int current_frame,
 
   AHardwareBuffer_Desc buffer_desc = {};
 
-  if (__builtin_available(android 26, *)) {
+  if (__builtin_available(android 27, *)) {
     AHardwareBuffer_describe(hardware_buffer, &buffer_desc);
   } else {
-    LOGE("Android API 26+ Required.");
+    LOGE("Android API 27+ Required.");
     exit(0);
   }
 

@@ -34,6 +34,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.ar.core.Anchor;
 import com.google.ar.core.ArCoreApk;
+import com.google.ar.core.ArCoreApk.Availability;
 import com.google.ar.core.Camera;
 import com.google.ar.core.Config;
 import com.google.ar.core.Config.InstantPlacementMode;
@@ -181,10 +182,10 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
     surfaceView = findViewById(R.id.surfaceview);
-    displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
+    displayRotationHelper = new DisplayRotationHelper(/* context= */ this);
 
     // Set up touch listener.
-    tapHelper = new TapHelper(/*context=*/ this);
+    tapHelper = new TapHelper(/* context= */ this);
     surfaceView.setOnTouchListener(tapHelper);
 
     // Set up renderer.
@@ -241,12 +242,18 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       Exception exception = null;
       String message = null;
       try {
-        switch (ArCoreApk.getInstance().requestInstall(this, !installRequested)) {
-          case INSTALL_REQUESTED:
-            installRequested = true;
-            return;
-          case INSTALLED:
-            break;
+        // Always check the latest availability.
+        Availability availability = ArCoreApk.getInstance().checkAvailability(this);
+
+        // In all other cases, try to install ARCore and handle installation failures.
+        if (availability != Availability.SUPPORTED_INSTALLED) {
+          switch (ArCoreApk.getInstance().requestInstall(this, !installRequested)) {
+            case INSTALL_REQUESTED:
+              installRequested = true;
+              return;
+            case INSTALLED:
+              break;
+          }
         }
 
         // ARCore requires camera permissions to operate. If we did not yet obtain runtime
@@ -344,7 +351,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     try {
       planeRenderer = new PlaneRenderer(render);
       backgroundRenderer = new BackgroundRenderer(render);
-      virtualSceneFramebuffer = new Framebuffer(render, /*width=*/ 1, /*height=*/ 1);
+      virtualSceneFramebuffer = new Framebuffer(render, /* width= */ 1, /* height= */ 1);
 
       cubemapFilter =
           new SpecularCubemapFilter(
@@ -355,7 +362,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
               render,
               Texture.Target.TEXTURE_2D,
               Texture.WrapMode.CLAMP_TO_EDGE,
-              /*useMipmaps=*/ false);
+              /* useMipmaps= */ false);
       // The dfg.raw file is a raw half-float texture with two channels.
       final int dfgResolution = 64;
       final int dfgChannels = 2;
@@ -371,11 +378,11 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       GLError.maybeThrowGLException("Failed to bind DFG texture", "glBindTexture");
       GLES30.glTexImage2D(
           GLES30.GL_TEXTURE_2D,
-          /*level=*/ 0,
+          /* level= */ 0,
           GLES30.GL_RG16F,
-          /*width=*/ dfgResolution,
-          /*height=*/ dfgResolution,
-          /*border=*/ 0,
+          /* width= */ dfgResolution,
+          /* height= */ dfgResolution,
+          /* border= */ 0,
           GLES30.GL_RG,
           GLES30.GL_HALF_FLOAT,
           buffer);
@@ -384,17 +391,20 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       // Point cloud
       pointCloudShader =
           Shader.createFromAssets(
-                  render, "shaders/point_cloud.vert", "shaders/point_cloud.frag", /*defines=*/ null)
+                  render,
+                  "shaders/point_cloud.vert",
+                  "shaders/point_cloud.frag",
+                  /* defines= */ null)
               .setVec4(
                   "u_Color", new float[] {31.0f / 255.0f, 188.0f / 255.0f, 210.0f / 255.0f, 1.0f})
               .setFloat("u_PointSize", 5.0f);
       // four entries per vertex: X, Y, Z, confidence
       pointCloudVertexBuffer =
-          new VertexBuffer(render, /*numberOfEntriesPerVertex=*/ 4, /*entries=*/ null);
+          new VertexBuffer(render, /* numberOfEntriesPerVertex= */ 4, /* entries= */ null);
       final VertexBuffer[] pointCloudVertexBuffers = {pointCloudVertexBuffer};
       pointCloudMesh =
           new Mesh(
-              render, Mesh.PrimitiveMode.POINTS, /*indexBuffer=*/ null, pointCloudVertexBuffers);
+              render, Mesh.PrimitiveMode.POINTS, /* indexBuffer= */ null, pointCloudVertexBuffers);
 
       // Virtual object to render (ARCore pawn)
       virtualObjectAlbedoTexture =
@@ -422,7 +432,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
                   render,
                   "shaders/environmental_hdr.vert",
                   "shaders/environmental_hdr.frag",
-                  /*defines=*/ new HashMap<String, String>() {
+                  /* defines= */ new HashMap<String, String>() {
                     {
                       put(
                           "NUMBER_OF_MIPMAP_LEVELS",

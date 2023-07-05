@@ -95,6 +95,7 @@
 /// Note: There is no runtime checking that casts are correct. When downcasting
 /// @c ::ArTrackable, call @c ::ArTrackable_getType beforehand to figure out the
 /// correct cast.
+#endif  // __cplusplus
 
 /// @defgroup ArAnchor ArAnchor
 /// Describes a fixed location and orientation in the real world, representing
@@ -107,7 +108,6 @@
 /// Augmented Faces supports front-facing (selfie) camera only, and does not
 /// support attaching anchors nor raycast hit testing. Calling
 /// @c ::ArTrackable_acquireNewAnchor will return @c #AR_ERROR_ILLEGAL_STATE.
-#endif  // __cplusplus
 
 /// @defgroup ArAugmentedImage ArAugmentedImage
 /// An image being detected and tracked by ARCore.
@@ -265,7 +265,7 @@
 /// ::ArEarth_getCameraGeospatialPose.
 ///
 
-/// @defgroup ArSemantics ArSemantics
+/// @defgroup ArSemanticLabel ArSemanticLabel
 /// Scene Semantics API. See the
 /// <a href="https://developers.google.com/ar/develop/c/scene-semantics">Scene
 /// Semantics Developer Guide</a> for more information.
@@ -1480,7 +1480,7 @@ AR_DEFINE_ENUM(ArSemanticMode){
     AR_SEMANTIC_MODE_ENABLED = 1,
 };
 
-/// @ingroup ArSemantics
+/// @ingroup ArSemanticLabel
 /// Defines the labels the Scene Semantics API is able to detect and maps
 /// human-readable names to per-pixel semantic labels. See the
 /// <a href="https://developers.google.com/ar/develop/c/scene-semantics">Scene
