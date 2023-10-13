@@ -743,9 +743,9 @@ VkDescriptorPool VulkanHandler::CreateDescriptorPool(VkDevice logical_device,
 
   VkDescriptorPoolCreateInfo pool_info{
       .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+      .maxSets = static_cast<uint32_t>(max_frames_in_flight),
       .poolSizeCount = 1,
       .pPoolSizes = &pool_size,
-      .maxSets = static_cast<uint32_t>(max_frames_in_flight),
   };
 
   CALL_VK(vkCreateDescriptorPool(logical_device, &pool_info, nullptr,
@@ -1225,11 +1225,14 @@ void VulkanHandler::TransitionImageLayout(VkImage image,
       .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
       .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
       .image = image,
-      .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-      .subresourceRange.baseMipLevel = 0,
-      .subresourceRange.levelCount = 1,
-      .subresourceRange.baseArrayLayer = 0,
-      .subresourceRange.layerCount = 1,
+      .subresourceRange =
+          {
+              .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+              .baseMipLevel = 0,
+              .levelCount = 1,
+              .baseArrayLayer = 0,
+              .layerCount = 1,
+          },
   };
 
   VkPipelineStageFlags source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;

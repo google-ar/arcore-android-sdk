@@ -1344,7 +1344,7 @@ AR_DEFINE_ENUM(ArFocusMode){/// Focus is fixed.
 /// configuration.
 ///
 /// Attempting to use @c ::ArSession_configure to configure a @c
-/// ::ArImageStabilizationMode mode on a device that that isn't supported, @c
+/// ::ArImageStabilizationMode mode on a device that isn't supported, @c
 /// ::ArSession_configure will return #AR_ERROR_UNSUPPORTED_CONFIGURATION.
 ///
 /// The default value is #AR_IMAGE_STABILIZATION_MODE_OFF. Use
@@ -6572,13 +6572,13 @@ void ArHitResult_getDistance(const ArSession *session,
 /// @ingroup ArHitResult
 /// Returns the pose of the intersection between a ray and detected real-world
 /// geometry. The position is the location in space where the ray intersected
-/// the geometry. The orientation is a best effort to face the user's device,
+/// the geometry. The orientation is a best effort to face the ray origin,
 /// and its exact definition differs depending on the Trackable that was hit.
 ///
 /// @c ::ArPlane : X+ is perpendicular to the cast ray and parallel to the
 /// plane, Y+ points along the plane normal (up, for @c
 /// #AR_PLANE_HORIZONTAL_UPWARD_FACING planes), and Z+ is parallel to the plane,
-/// pointing roughly toward the user's device.
+/// pointing roughly toward the ray origin.
 ///
 /// @c ::ArPoint :
 /// Attempt to estimate the normal of the surface centered around the hit test.
@@ -6588,11 +6588,11 @@ void ArHitResult_getDistance(const ArSession *session,
 /// @c #AR_POINT_ORIENTATION_ESTIMATED_SURFACE_NORMAL, then X+ is perpendicular
 /// to the cast ray and parallel to the physical surface centered around the hit
 /// test, Y+ points along the estimated surface normal, and Z+ points roughly
-/// toward the user's device. If
+/// toward the ray origin. If
 /// @c ::ArPoint_getOrientationMode returns
 /// @c #AR_POINT_ORIENTATION_INITIALIZED_TO_IDENTITY, then X+ is perpendicular
-/// to the cast ray and points right from the perspective of the user's device,
-/// Y+ points up, and Z+ points roughly toward the user's device.
+/// to the cast ray and points right from the perspective of the ray origin,
+/// Y+ points up, and Z+ points roughly toward the ray origin.
 ///
 /// If you wish to retain the location of this pose beyond the duration of a
 /// single frame, create an anchor using @c ::ArHitResult_acquireNewAnchor to
