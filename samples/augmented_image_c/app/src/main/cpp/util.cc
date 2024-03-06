@@ -256,7 +256,7 @@ bool LoadImageFromAssetManager(const std::string& path, int* out_width,
         ANDROID_BITMAP_RESULT_SUCCESS);
 
   // Copy jvm_buffer_address to pixel_buffer_address
-  int32_t total_size_in_byte = bitmap_info.stride * bitmap_info.width;
+  int32_t total_size_in_byte = bitmap_info.stride * bitmap_info.height;
   *out_pixel_buffer = new uint8_t[total_size_in_byte];
   memcpy(*out_pixel_buffer, jvm_buffer, total_size_in_byte);
 
