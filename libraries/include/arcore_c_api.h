@@ -1938,6 +1938,41 @@ AR_DEFINE_ENUM(ArFutureState){
     AR_FUTURE_STATE_DONE = 2,
 };
 
+// Describe the Geospatial anchor type. Do not use. For internal use only.
+AR_DEFINE_ENUM(ArGeospatialAnchorType){
+    AR_GEOSPATIAL_ANCHOR_TYPE_UNKNOWN = 0,
+    // Anchor with altitude relative to WGS84 Earth ellipsoid's mean sea level.
+    AR_GEOSPATIAL_ANCHOR_TYPE_WGS84 = 1,
+    // Anchor with altitude relative to ground floors or ground terrain.
+    AR_GEOSPATIAL_ANCHOR_TYPE_TERRAIN = 2,
+    // Anchor with altitude relative to building rooftops.
+    AR_GEOSPATIAL_ANCHOR_TYPE_ROOFTOP = 3,
+};
+
+// Describe the Geospatial Creator Platform. Do not use. For internal use only.
+AR_DEFINE_ENUM(ArGeospatialCreatorPlatform){
+    // The platform cannot be determined, because the client did not explicitly
+    // report this field. This is the default value.
+    AR_GEOSPATIAL_CREATOR_PLATFORM_UNKNOWN = 0,
+
+    // Geospatial Creator is available on the platform, but was not used for
+    // this AR application.
+    AR_GEOSPATIAL_CREATOR_PLATFORM_DISABLED = 1,
+
+    // Geospatial Creator was used, but the platform is not defined in an enum.
+    // This is useful for implementing backwards compatibility for 3rd party
+    // partners, though subsequent ARCore releases should have an appropriate
+    // enum value exposed.
+    AR_GEOSPATIAL_CREATOR_PLATFORM_OTHER = 2,
+
+    // Geospatial Creator for the ARCore Extensions SDK was used to build this
+    // this AR application.
+    AR_GEOSPATIAL_CREATOR_PLATFORM_ARCORE_EXTENSIONS_UNITY = 3,
+
+    // Geospatial Creator for Adobe Aero was used to build this AR application.
+    AR_GEOSPATIAL_CREATOR_PLATFORM_ADOBE_AERO = 4,
+};
+
 /// @ingroup ArHostCloudAnchorFuture
 /// Handle to an asynchronous operation launched by
 /// @c ::ArSession_hostCloudAnchorAsync. See the <a
@@ -4842,10 +4877,11 @@ void ArTrackDataList_acquireItem(const ArSession *session,
 /// Attempts to acquire a depth image that corresponds to the current frame.
 ///
 /// The depth image has a single 16-bit plane at index 0, stored in
-/// little-endian format. Each pixel contains the distance in millimeters to the
-/// camera plane. Currently, the three most significant bits are always set to
-/// 000. The remaining thirteen bits express values from 0 to 8191, representing
-/// depth in millimeters. To extract distance from a depth map, see <a
+/// little-endian format. Each pixel contains the distance in millimeters along
+/// the camera principal axis. Currently, the three most significant bits are
+/// always set to 000. The remaining thirteen bits express values from 0 to
+/// 8191, representing depth in millimeters. To extract distance from a depth
+/// map, see <a
 /// href="https://developers.google.com/ar/develop/c/depth/developer-guide#extract-distance">the
 /// Depth API developer guide</a>.
 ///
@@ -4919,8 +4955,8 @@ ArStatus ArFrame_acquireDepthImage(const ArSession *session,
 /// href="https://developer.android.com/reference/android/hardware/HardwareBuffer#D_16">
 /// HardwareBuffer.D_16</a>, which is a single 16-bit plane at index 0,
 /// stored in little-endian format. Each pixel contains the distance in
-/// millimeters to the camera plane, with the representable depth range between
-/// 0 millimeters and 65535 millimeters, or about 65 meters.
+/// millimeters along the camera principal axis, with the representable depth
+/// range between 0 millimeters and 65535 millimeters, or about 65 meters.
 ///
 /// To extract distance from a depth map, see <a
 /// href="https://developers.google.com/ar/develop/c/depth/developer-guide#extract-distance">the
@@ -4995,10 +5031,11 @@ ArStatus ArFrame_acquireDepthImage16Bits(const ArSession *session,
 /// @c ::ArFrame_acquireRawDepthConfidenceImage).
 ///
 /// The depth image has a single 16-bit plane at index 0, stored in
-/// little-endian format. Each pixel contains the distance in millimeters to the
-/// camera plane. Currently, the three most significant bits are always set to
-/// 000. The remaining thirteen bits express values from 0 to 8191, representing
-/// depth in millimeters. To extract distance from a depth map, see <a
+/// little-endian format. Each pixel contains the distance in millimeters along
+/// the camera principal axis. Currently, the three most significant bits are
+/// always set to 000. The remaining thirteen bits express values from 0 to
+/// 8191, representing depth in millimeters. To extract distance from a depth
+/// map, see <a
 /// href="https://developers.google.com/ar/develop/c/depth/developer-guide#extract-distance">the
 /// Depth API developer guide</a>.
 ///
@@ -5087,8 +5124,8 @@ ArStatus ArFrame_acquireRawDepthImage(const ArSession *session,
 /// href="https://developer.android.com/reference/android/hardware/HardwareBuffer#D_16">
 /// HardwareBuffer.D_16</a>, which is a single 16-bit plane at index 0,
 /// stored in little-endian format. Each pixel contains the distance in
-/// millimeters to the camera plane, with the representable depth range between
-/// 0 millimeters and 65535 millimeters, or about 65 meters.
+/// millimeters along the camera principal axis, with the representable depth
+/// range between 0 millimeters and 65535 millimeters, or about 65 meters.
 ///
 /// To extract distance from a depth map, see <a
 /// href="https://developers.google.com/ar/develop/c/depth/developer-guide#extract-distance">the

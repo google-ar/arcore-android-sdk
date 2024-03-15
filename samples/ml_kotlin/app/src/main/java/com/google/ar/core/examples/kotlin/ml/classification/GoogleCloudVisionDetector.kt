@@ -29,7 +29,7 @@ import com.google.ar.core.examples.kotlin.ml.classification.utils.VertexUtils.to
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -61,13 +61,13 @@ class GoogleCloudVisionDetector(val activity: MainActivity, val apiKey: String) 
       httpClient.newCall(
         Request.Builder()
           .url("https://vision.googleapis.com/v1/images:annotate?key=$apiKey")
-          .post(RequestBody.create(MediaType.parse("text/json"), body.toString()))
+          .post(RequestBody.create("text/json".toMediaType(), body.toString()))
           .build()
       )
 
     // Execute Google Cloud Vision request and parse response body.
     req.execute().use { response ->
-      val responseBody = response.body()?.string()
+      val responseBody = response.body?.string()
       if (responseBody == null) {
         Log.e(TAG, "Failed to parse result body.")
         return emptyList()
@@ -81,31 +81,37 @@ class GoogleCloudVisionDetector(val activity: MainActivity, val apiKey: String) 
       // https://cloud.google.com/vision/docs/reference/rest/v1/AnnotateImageResponse#LocalizedObjectAnnotation
       val localisedObjectAnnotationsList =
         responseObject.getAsJsonArray("localizedObjectAnnotations") ?: return emptyList()
-      return localisedObjectAnnotationsList.map { it.asJsonObject }.map { annotation ->
-        // https://cloud.google.com/vision/docs/reference/rest/v1/projects.locations.products.referenceImages#BoundingPoly
-        val boundingPoly = annotation.get("boundingPoly").asJsonObject
-        val centerCoordinateNormalized =
-          VertexUtils.calculateCenterOfPoly(boundingPolyToCoordinateList(boundingPoly))
-        val centerCoordinateAbsolute =
-          centerCoordinateNormalized.toAbsoluteCoordinates(rotatedImage.width, rotatedImage.height)
-        val rotatedCoordinates =
-          centerCoordinateAbsolute.rotateCoordinates(
-            rotatedImage.width,
-            rotatedImage.height,
-            imageRotation
+      return localisedObjectAnnotationsList
+        .map { it.asJsonObject }
+        .map { annotation ->
+          // https://cloud.google.com/vision/docs/reference/rest/v1/projects.locations.products.referenceImages#BoundingPoly
+          val boundingPoly = annotation.get("boundingPoly").asJsonObject
+          val centerCoordinateNormalized =
+            VertexUtils.calculateCenterOfPoly(boundingPolyToCoordinateList(boundingPoly))
+          val centerCoordinateAbsolute =
+            centerCoordinateNormalized.toAbsoluteCoordinates(
+              rotatedImage.width,
+              rotatedImage.height
+            )
+          val rotatedCoordinates =
+            centerCoordinateAbsolute.rotateCoordinates(
+              rotatedImage.width,
+              rotatedImage.height,
+              imageRotation
+            )
+          DetectedObjectResult(
+            confidence = annotation.get("score").asFloat,
+            label = annotation.get("name").asString,
+            centerCoordinate = rotatedCoordinates
           )
-        DetectedObjectResult(
-          confidence = annotation.get("score").asFloat,
-          label = annotation.get("name").asString,
-          centerCoordinate = rotatedCoordinates
-        )
-      }
+        }
     }
   }
 
   /**
    * Creates an
    * [`images.annotate` request body](https://cloud.google.com/vision/docs/reference/rest/v1/images/annotate#request-body)
+   *
    * @param image a [ByteArray] representation of the image to upload to Google Cloud Vision API.
    */
   fun createRequestBody(image: ByteArray): JsonObject {
@@ -141,8 +147,12 @@ class GoogleCloudVisionDetector(val activity: MainActivity, val apiKey: String) 
    * to [List<PointF>].
    */
   fun boundingPolyToCoordinateList(boundingPoly: JsonObject): List<PointF> {
-    return boundingPoly.get("normalizedVertices").asJsonArray.map { it.asJsonObject }.mapNotNull {
-      if (it["x"] == null || it["y"] == null) null else PointF(it["x"].asFloat, it["y"].asFloat)
-    }
+    return boundingPoly
+      .get("normalizedVertices")
+      .asJsonArray
+      .map { it.asJsonObject }
+      .mapNotNull {
+        if (it["x"] == null || it["y"] == null) null else PointF(it["x"].asFloat, it["y"].asFloat)
+      }
   }
 }
