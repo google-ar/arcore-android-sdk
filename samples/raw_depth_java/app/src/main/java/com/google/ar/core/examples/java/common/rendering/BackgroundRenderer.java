@@ -310,7 +310,7 @@ public class BackgroundRenderer {
    * (-1, -1) ------ (1, -1)
    * Ensure triangles are front-facing, to support glCullFace().
    * This quad will be drawn using GL_TRIANGLE_STRIP which draws two
-   * triangles: v0->v1->v2, then v2->v1->v3.
+   * triangles: v0->v1->v2, then v1->v2->v3.
    */
   private static final float[] QUAD_COORDS =
       new float[] {
