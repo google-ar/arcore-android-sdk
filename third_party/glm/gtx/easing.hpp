@@ -9,7 +9,7 @@
 ///
 /// Include <glm/gtx/easing.hpp> to use the features of this extension.
 ///
-/// Easing functions for animations and transitons
+/// Easing functions for animations and transitions
 /// All functions take a parameter x in the range [0.0,1.0]
 ///
 /// Based on the AHEasing project of Warren Moore (https://github.com/warrenm/AHEasing)
@@ -21,12 +21,10 @@
 #include "../gtc/constants.hpp"
 #include "../detail/qualifier.hpp"
 
-#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
-#	ifndef GLM_ENABLE_EXPERIMENTAL
-#		pragma message("GLM: GLM_GTX_easing is an experimental extension and may change in the future. Use  before including it, if you really want to use it.")
-#	else
-#		pragma message("GLM: GLM_GTX_easing extension included")
-#	endif
+#ifndef GLM_ENABLE_EXPERIMENTAL
+#	error "GLM: GLM_GTX_easing is an experimental extension and may change in the future. Use #define GLM_ENABLE_EXPERIMENTAL before including it, if you really want to use it."
+#elif GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
+#	pragma message("GLM: GLM_GTX_easing extension included")
 #endif
 
 namespace glm{

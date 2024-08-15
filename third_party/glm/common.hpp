@@ -51,7 +51,7 @@ namespace glm
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/sign.xml">GLSL sign man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.3 Common Functions</a>
 	template<length_t L, typename T, qualifier Q>
-	GLM_FUNC_DECL vec<L, T, Q> sign(vec<L, T, Q> const& x);
+	GLM_FUNC_DECL GLM_CONSTEXPR vec<L, T, Q> sign(vec<L, T, Q> const& x);
 
 	/// Returns a value equal to the nearest integer that is less then or equal to x.
 	///
@@ -291,7 +291,7 @@ namespace glm
 	/// @tparam genTypeU Floating point or boolean scalar or vector. It can't be a vector if it is the length of genTypeT.
 	///
 	/// @code
-	/// #include <glm/glm.hpp>
+	/// #include "third_party/glm/latest/glm/glm.hpp"
 	/// ...
 	/// float a;
 	/// bool b;
@@ -306,13 +306,13 @@ namespace glm
 	/// glm::vec4 u = glm::mix(g, h, r); // Interpolations can be perform per component with a vector for the last parameter.
 	/// @endcode
 	template<typename genTypeT, typename genTypeU>
-	GLM_FUNC_DECL genTypeT mix(genTypeT x, genTypeT y, genTypeU a);
+	GLM_FUNC_DECL GLM_CONSTEXPR genTypeT mix(genTypeT x, genTypeT y, genTypeU a);
 
 	template<length_t L, typename T, typename U, qualifier Q>
-	GLM_FUNC_DECL vec<L, T, Q> mix(vec<L, T, Q> const& x, vec<L, T, Q> const& y, vec<L, U, Q> const& a);
+	GLM_FUNC_DECL GLM_CONSTEXPR vec<L, T, Q> mix(vec<L, T, Q> const& x, vec<L, T, Q> const& y, vec<L, U, Q> const& a);
 
 	template<length_t L, typename T, typename U, qualifier Q>
-	GLM_FUNC_DECL vec<L, T, Q> mix(vec<L, T, Q> const& x, vec<L, T, Q> const& y, U a);
+	GLM_FUNC_DECL GLM_CONSTEXPR vec<L, T, Q> mix(vec<L, T, Q> const& x, vec<L, T, Q> const& y, U a);
 
 	/// Returns 0.0 if x < edge, otherwise it returns 1.0 for each component of a genType.
 	///
@@ -404,7 +404,7 @@ namespace glm
 	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/floatBitsToInt.xml">GLSL floatBitsToInt man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.3 Common Functions</a>
-	GLM_FUNC_DECL int floatBitsToInt(float const& v);
+	GLM_FUNC_DECL int floatBitsToInt(float v);
 
 	/// Returns a signed integer value representing
 	/// the encoding of a floating-point value. The floatingpoint
@@ -424,7 +424,7 @@ namespace glm
 	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/floatBitsToUint.xml">GLSL floatBitsToUint man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.3 Common Functions</a>
-	GLM_FUNC_DECL uint floatBitsToUint(float const& v);
+	GLM_FUNC_DECL uint floatBitsToUint(float v);
 
 	/// Returns a unsigned integer value representing
 	/// the encoding of a floating-point value. The floatingpoint
@@ -446,7 +446,7 @@ namespace glm
 	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/intBitsToFloat.xml">GLSL intBitsToFloat man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.3 Common Functions</a>
-	GLM_FUNC_DECL float intBitsToFloat(int const& v);
+	GLM_FUNC_DECL float intBitsToFloat(int v);
 
 	/// Returns a floating-point value corresponding to a signed
 	/// integer encoding of a floating-point value.
@@ -470,7 +470,7 @@ namespace glm
 	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/uintBitsToFloat.xml">GLSL uintBitsToFloat man page</a>
 	/// @see <a href="http://www.opengl.org/registry/doc/GLSLangSpec.4.20.8.pdf">GLSL 4.20.8 specification, section 8.3 Common Functions</a>
-	GLM_FUNC_DECL float uintBitsToFloat(uint const& v);
+	GLM_FUNC_DECL float uintBitsToFloat(uint v);
 
 	/// Returns a floating-point value corresponding to a
 	/// unsigned integer encoding of a floating-point value.

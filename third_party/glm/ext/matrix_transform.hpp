@@ -47,8 +47,8 @@ namespace glm
 	/// @tparam Q A value from qualifier enum
 	///
 	/// @code
-	/// #include <glm/glm.hpp>
-	/// #include <glm/gtc/matrix_transform.hpp>
+	/// #include "third_party/glm/latest/glm/glm.hpp"
+	/// #include "third_party/glm/latest/glm/gtc/matrix_transform.hpp"
 	/// ...
 	/// glm::mat4 m = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f));
 	/// // m[0][0] == 1.0f, m[0][1] == 0.0f, m[0][2] == 0.0f, m[0][3] == 0.0f
@@ -61,7 +61,7 @@ namespace glm
 	/// @see - translate(vec<3, T, Q> const& v)
 	/// @see <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/glTranslate.xml">glTranslate man page</a>
 	template<typename T, qualifier Q>
-	GLM_FUNC_DECL mat<4, 4, T, Q> translate(
+	GLM_FUNC_DECL GLM_CONSTEXPR mat<4, 4, T, Q> translate(
 		mat<4, 4, T, Q> const& m, vec<3, T, Q> const& v);
 
 	/// Builds a rotation 4 * 4 matrix created from an axis vector and an angle.
@@ -95,7 +95,34 @@ namespace glm
 	GLM_FUNC_DECL mat<4, 4, T, Q> scale(
 		mat<4, 4, T, Q> const& m, vec<3, T, Q> const& v);
 
-	/// Build a right handed look at view matrix.
+    /// Builds a scale 4 * 4 matrix created from point referent 3 shearers.
+    ///
+    /// @param m Input matrix multiplied by this shear matrix.
+    /// @param p Point of shearing as reference.
+    /// @param l_x Ratio of matrix.x projection in YZ plane relative to the y-axis/z-axis.
+    /// @param l_y Ratio of matrix.y projection in XZ plane relative to the x-axis/z-axis.
+    /// @param l_z Ratio of matrix.z projection in XY plane relative to the x-axis/y-axis.
+    ///
+    /// as example:
+    ///                                         [1   , l_xy, l_xz, -(l_xy+l_xz) * p_x] [x]  T
+    ///   [x`, y`, z`, w`] = [x`, y`, z`, w`] * [l_yx, 1   , l_yz, -(l_yx+l_yz) * p_y] [y]
+    ///                                         [l_zx, l_zy, 1   , -(l_zx+l_zy) * p_z] [z]
+    ///                                         [0   , 0   , 0   , 1                 ] [w]
+    ///
+    /// @tparam T A floating-point shear type
+    /// @tparam Q A value from qualifier enum
+    ///
+    /// @see - shear(mat<4, 4, T, Q> const& m, T x, T y, T z)
+    /// @see - shear(vec<3, T, Q> const& p)
+    /// @see - shear(vec<2, T, Q> const& l_x)
+    /// @see - shear(vec<2, T, Q> const& l_y)
+    /// @see - shear(vec<2, T, Q> const& l_z)
+    /// @see no resource...
+    template <typename T, qualifier Q>
+    GLM_FUNC_QUALIFIER mat<4, 4, T, Q> shear(
+        mat<4, 4, T, Q> const &m, vec<3, T, Q> const& p, vec<2, T, Q> const &l_x, vec<2, T, Q> const &l_y, vec<2, T, Q> const &l_z);
+
+    /// Build a right handed look at view matrix.
 	///
 	/// @param eye Position of the camera
 	/// @param center Position where the camera is looking at

@@ -92,6 +92,11 @@ public final class SnackbarHelper {
     maxLines = lines;
   }
 
+  /** Returns whether the snackbar is currently being shown with an indefinite duration. */
+  public boolean isDurationIndefinite() {
+    return isShowing() && messageSnackbar.getDuration() == Snackbar.LENGTH_INDEFINITE;
+  }
+
   /**
    * Sets the view that will be used to find a suitable parent view to hold the Snackbar view.
    *

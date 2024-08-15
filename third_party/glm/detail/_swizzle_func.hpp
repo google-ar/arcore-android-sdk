@@ -1,40 +1,40 @@
 #pragma once
 
 #define GLM_SWIZZLE_GEN_VEC2_ENTRY(T, P, CONST, A, B)	\
-	vec<2, T, Q> A ## B() CONST							\
+	GLM_FUNC_QUALIFIER vec<2, T, Q> A ## B() CONST							\
 	{													\
 		return vec<2, T, Q>(this->A, this->B);			\
 	}
 
 #define GLM_SWIZZLE_GEN_VEC3_ENTRY(T, P, CONST, A, B, C)		\
-	vec<3, T, Q> A ## B ## C() CONST							\
+	GLM_FUNC_QUALIFIER vec<3, T, Q> A ## B ## C() CONST							\
 	{															\
 		return vec<3, T, Q>(this->A, this->B, this->C);			\
 	}
 
 #define GLM_SWIZZLE_GEN_VEC4_ENTRY(T, P, CONST, A, B, C, D)					\
-	vec<4, T, Q> A ## B ## C ## D() CONST									\
+	GLM_FUNC_QUALIFIER vec<4, T, Q> A ## B ## C ## D() CONST									\
 	{																		\
 		return vec<4, T, Q>(this->A, this->B, this->C, this->D);			\
 	}
 
 #define GLM_SWIZZLE_GEN_VEC2_ENTRY_DEF(T, P, L, CONST, A, B)	\
 	template<typename T>										\
-	vec<L, T, Q> vec<L, T, Q>::A ## B() CONST					\
+	GLM_FUNC_QUALIFIER vec<L, T, Q> vec<L, T, Q>::A ## B() CONST					\
 	{															\
 		return vec<2, T, Q>(this->A, this->B);					\
 	}
 
 #define GLM_SWIZZLE_GEN_VEC3_ENTRY_DEF(T, P, L, CONST, A, B, C)		\
 	template<typename T>											\
-	vec<3, T, Q> vec<L, T, Q>::A ## B ## C() CONST					\
+	GLM_FUNC_QUALIFIER vec<3, T, Q> vec<L, T, Q>::A ## B ## C() CONST					\
 	{																\
 		return vec<3, T, Q>(this->A, this->B, this->C);				\
 	}
 
 #define GLM_SWIZZLE_GEN_VEC4_ENTRY_DEF(T, P, L, CONST, A, B, C, D)		\
 	template<typename T>												\
-	vec<4, T, Q> vec<L, T, Q>::A ## B ## C ## D() CONST					\
+	GLM_FUNC_QUALIFIER vec<4, T, Q> vec<L, T, Q>::A ## B ## C ## D() CONST					\
 	{																	\
 		return vec<4, T, Q>(this->A, this->B, this->C, this->D);		\
 	}

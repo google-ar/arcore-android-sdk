@@ -6,7 +6,7 @@
 // http://www.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf
 
 namespace glm{
-namespace gtc
+namespace detail
 {
 	template<typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER vec<4, T, Q> grad4(T const& j, vec<4, T, Q> const& ip)
@@ -17,7 +17,7 @@ namespace gtc
 		pXYZ = pXYZ + (vec<3, T, Q>(s) * T(2) - T(1)) * s.w;
 		return vec<4, T, Q>(pXYZ, pW);
 	}
-}//namespace gtc
+}//namespace detail
 
 	// Classic Perlin noise
 	template<typename T, qualifier Q>
@@ -781,11 +781,11 @@ namespace gtc
 		// 7*7*6 = 294, which is close to the ring size 17*17 = 289.
 		vec<4, T, Q> ip = vec<4, T, Q>(T(1) / T(294), T(1) / T(49), T(1) / T(7), T(0));
 
-		vec<4, T, Q> p0 = gtc::grad4(j0,   ip);
-		vec<4, T, Q> p1 = gtc::grad4(j1.x, ip);
-		vec<4, T, Q> p2 = gtc::grad4(j1.y, ip);
-		vec<4, T, Q> p3 = gtc::grad4(j1.z, ip);
-		vec<4, T, Q> p4 = gtc::grad4(j1.w, ip);
+		vec<4, T, Q> p0 = detail::grad4(j0,   ip);
+		vec<4, T, Q> p1 = detail::grad4(j1.x, ip);
+		vec<4, T, Q> p2 = detail::grad4(j1.y, ip);
+		vec<4, T, Q> p3 = detail::grad4(j1.z, ip);
+		vec<4, T, Q> p4 = detail::grad4(j1.w, ip);
 
 		// Normalise gradients
 		vec<4, T, Q> norm = detail::taylorInvSqrt(vec<4, T, Q>(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));

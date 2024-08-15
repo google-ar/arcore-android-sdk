@@ -712,14 +712,11 @@ GLM_FUNC_QUALIFIER void glm_mat4_inverse(glm_vec4 const in[4], glm_vec4 out[4])
 	__m128 Row1 = _mm_shuffle_ps(Inv2, Inv3, _MM_SHUFFLE(0, 0, 0, 0));
 	__m128 Row2 = _mm_shuffle_ps(Row0, Row1, _MM_SHUFFLE(2, 0, 2, 0));
 
-        //	valType Determinant = m[0][0] * Inverse[0][0]
-        //						+ m[0][1] *
-        //Inverse[1][0]
-        //						+ m[0][2] *
-        //Inverse[2][0]
-        //						+ m[0][3] *
-        //Inverse[3][0];
-        __m128 Det0 = glm_vec4_dot(in[0], Row2);
+	//	valType Determinant = m[0][0] * Inverse[0][0]
+	//						+ m[0][1] * Inverse[1][0]
+	//						+ m[0][2] * Inverse[2][0]
+	//						+ m[0][3] * Inverse[3][0];
+	__m128 Det0 = glm_vec4_dot(in[0], Row2);
 	__m128 Rcp0 = _mm_div_ps(_mm_set1_ps(1.0f), Det0);
 	//__m128 Rcp0 = _mm_rcp_ps(Det0);
 
@@ -936,14 +933,11 @@ GLM_FUNC_QUALIFIER void glm_mat4_inverse_lowp(glm_vec4 const in[4], glm_vec4 out
 	__m128 Row1 = _mm_shuffle_ps(Inv2, Inv3, _MM_SHUFFLE(0, 0, 0, 0));
 	__m128 Row2 = _mm_shuffle_ps(Row0, Row1, _MM_SHUFFLE(2, 0, 2, 0));
 
-        //	valType Determinant = m[0][0] * Inverse[0][0]
-        //						+ m[0][1] *
-        //Inverse[1][0]
-        //						+ m[0][2] *
-        //Inverse[2][0]
-        //						+ m[0][3] *
-        //Inverse[3][0];
-        __m128 Det0 = glm_vec4_dot(in[0], Row2);
+	//	valType Determinant = m[0][0] * Inverse[0][0]
+	//						+ m[0][1] * Inverse[1][0]
+	//						+ m[0][2] * Inverse[2][0]
+	//						+ m[0][3] * Inverse[3][0];
+	__m128 Det0 = glm_vec4_dot(in[0], Row2);
 	__m128 Rcp0 = _mm_rcp_ps(Det0);
 	//__m128 Rcp0 = _mm_div_ps(one, Det0);
 	//	Inverse /= Determinant;
@@ -953,78 +947,74 @@ GLM_FUNC_QUALIFIER void glm_mat4_inverse_lowp(glm_vec4 const in[4], glm_vec4 out
 	out[3] = _mm_mul_ps(Inv3, Rcp0);
 }
 /*
-GLM_FUNC_QUALIFIER void glm_mat4_rotate(__m128 const in[4], float Angle, float
-const v[3], __m128 out[4])
+GLM_FUNC_QUALIFIER void glm_mat4_rotate(__m128 const in[4], float Angle, float const v[3], __m128 out[4])
 {
-        float a = glm::radians(Angle);
-        float c = cos(a);
-        float s = sin(a);
+	float a = glm::radians(Angle);
+	float c = cos(a);
+	float s = sin(a);
 
-        glm::vec4 AxisA(v[0], v[1], v[2], float(0));
-        __m128 AxisB = _mm_set_ps(AxisA.w, AxisA.z, AxisA.y, AxisA.x);
-        __m128 AxisC = detail::sse_nrm_ps(AxisB);
+	glm::vec4 AxisA(v[0], v[1], v[2], float(0));
+	__m128 AxisB = _mm_set_ps(AxisA.w, AxisA.z, AxisA.y, AxisA.x);
+	__m128 AxisC = detail::sse_nrm_ps(AxisB);
 
-        __m128 Cos0 = _mm_set_ss(c);
-        __m128 CosA = _mm_shuffle_ps(Cos0, Cos0, _MM_SHUFFLE(0, 0, 0, 0));
-        __m128 Sin0 = _mm_set_ss(s);
-        __m128 SinA = _mm_shuffle_ps(Sin0, Sin0, _MM_SHUFFLE(0, 0, 0, 0));
+	__m128 Cos0 = _mm_set_ss(c);
+	__m128 CosA = _mm_shuffle_ps(Cos0, Cos0, _MM_SHUFFLE(0, 0, 0, 0));
+	__m128 Sin0 = _mm_set_ss(s);
+	__m128 SinA = _mm_shuffle_ps(Sin0, Sin0, _MM_SHUFFLE(0, 0, 0, 0));
 
-        // vec<3, T, Q> temp = (valType(1) - c) * axis;
-        __m128 Temp0 = _mm_sub_ps(one, CosA);
-        __m128 Temp1 = _mm_mul_ps(Temp0, AxisC);
+	// vec<3, T, Q> temp = (valType(1) - c) * axis;
+	__m128 Temp0 = _mm_sub_ps(one, CosA);
+	__m128 Temp1 = _mm_mul_ps(Temp0, AxisC);
 
-        //Rotate[0][0] = c + temp[0] * axis[0];
-        //Rotate[0][1] = 0 + temp[0] * axis[1] + s * axis[2];
-        //Rotate[0][2] = 0 + temp[0] * axis[2] - s * axis[1];
-        __m128 Axis0 = _mm_shuffle_ps(AxisC, AxisC, _MM_SHUFFLE(0, 0, 0, 0));
-        __m128 TmpA0 = _mm_mul_ps(Axis0, AxisC);
-        __m128 CosA0 = _mm_shuffle_ps(Cos0, Cos0, _MM_SHUFFLE(1, 1, 1, 0));
-        __m128 TmpA1 = _mm_add_ps(CosA0, TmpA0);
-        __m128 SinA0 = SinA;//_mm_set_ps(0.0f, s, -s, 0.0f);
-        __m128 TmpA2 = _mm_shuffle_ps(AxisC, AxisC, _MM_SHUFFLE(3, 1, 2, 3));
-        __m128 TmpA3 = _mm_mul_ps(SinA0, TmpA2);
-        __m128 TmpA4 = _mm_add_ps(TmpA1, TmpA3);
+	//Rotate[0][0] = c + temp[0] * axis[0];
+	//Rotate[0][1] = 0 + temp[0] * axis[1] + s * axis[2];
+	//Rotate[0][2] = 0 + temp[0] * axis[2] - s * axis[1];
+	__m128 Axis0 = _mm_shuffle_ps(AxisC, AxisC, _MM_SHUFFLE(0, 0, 0, 0));
+	__m128 TmpA0 = _mm_mul_ps(Axis0, AxisC);
+	__m128 CosA0 = _mm_shuffle_ps(Cos0, Cos0, _MM_SHUFFLE(1, 1, 1, 0));
+	__m128 TmpA1 = _mm_add_ps(CosA0, TmpA0);
+	__m128 SinA0 = SinA;//_mm_set_ps(0.0f, s, -s, 0.0f);
+	__m128 TmpA2 = _mm_shuffle_ps(AxisC, AxisC, _MM_SHUFFLE(3, 1, 2, 3));
+	__m128 TmpA3 = _mm_mul_ps(SinA0, TmpA2);
+	__m128 TmpA4 = _mm_add_ps(TmpA1, TmpA3);
 
-        //Rotate[1][0] = 0 + temp[1] * axis[0] - s * axis[2];
-        //Rotate[1][1] = c + temp[1] * axis[1];
-        //Rotate[1][2] = 0 + temp[1] * axis[2] + s * axis[0];
-        __m128 Axis1 = _mm_shuffle_ps(AxisC, AxisC, _MM_SHUFFLE(1, 1, 1, 1));
-        __m128 TmpB0 = _mm_mul_ps(Axis1, AxisC);
-        __m128 CosA1 = _mm_shuffle_ps(Cos0, Cos0, _MM_SHUFFLE(1, 1, 0, 1));
-        __m128 TmpB1 = _mm_add_ps(CosA1, TmpB0);
-        __m128 SinB0 = SinA;//_mm_set_ps(-s, 0.0f, s, 0.0f);
-        __m128 TmpB2 = _mm_shuffle_ps(AxisC, AxisC, _MM_SHUFFLE(3, 0, 3, 2));
-        __m128 TmpB3 = _mm_mul_ps(SinA0, TmpB2);
-        __m128 TmpB4 = _mm_add_ps(TmpB1, TmpB3);
+	//Rotate[1][0] = 0 + temp[1] * axis[0] - s * axis[2];
+	//Rotate[1][1] = c + temp[1] * axis[1];
+	//Rotate[1][2] = 0 + temp[1] * axis[2] + s * axis[0];
+	__m128 Axis1 = _mm_shuffle_ps(AxisC, AxisC, _MM_SHUFFLE(1, 1, 1, 1));
+	__m128 TmpB0 = _mm_mul_ps(Axis1, AxisC);
+	__m128 CosA1 = _mm_shuffle_ps(Cos0, Cos0, _MM_SHUFFLE(1, 1, 0, 1));
+	__m128 TmpB1 = _mm_add_ps(CosA1, TmpB0);
+	__m128 SinB0 = SinA;//_mm_set_ps(-s, 0.0f, s, 0.0f);
+	__m128 TmpB2 = _mm_shuffle_ps(AxisC, AxisC, _MM_SHUFFLE(3, 0, 3, 2));
+	__m128 TmpB3 = _mm_mul_ps(SinA0, TmpB2);
+	__m128 TmpB4 = _mm_add_ps(TmpB1, TmpB3);
 
-        //Rotate[2][0] = 0 + temp[2] * axis[0] + s * axis[1];
-        //Rotate[2][1] = 0 + temp[2] * axis[1] - s * axis[0];
-        //Rotate[2][2] = c + temp[2] * axis[2];
-        __m128 Axis2 = _mm_shuffle_ps(AxisC, AxisC, _MM_SHUFFLE(2, 2, 2, 2));
-        __m128 TmpC0 = _mm_mul_ps(Axis2, AxisC);
-        __m128 CosA2 = _mm_shuffle_ps(Cos0, Cos0, _MM_SHUFFLE(1, 0, 1, 1));
-        __m128 TmpC1 = _mm_add_ps(CosA2, TmpC0);
-        __m128 SinC0 = SinA;//_mm_set_ps(s, -s, 0.0f, 0.0f);
-        __m128 TmpC2 = _mm_shuffle_ps(AxisC, AxisC, _MM_SHUFFLE(3, 3, 0, 1));
-        __m128 TmpC3 = _mm_mul_ps(SinA0, TmpC2);
-        __m128 TmpC4 = _mm_add_ps(TmpC1, TmpC3);
+	//Rotate[2][0] = 0 + temp[2] * axis[0] + s * axis[1];
+	//Rotate[2][1] = 0 + temp[2] * axis[1] - s * axis[0];
+	//Rotate[2][2] = c + temp[2] * axis[2];
+	__m128 Axis2 = _mm_shuffle_ps(AxisC, AxisC, _MM_SHUFFLE(2, 2, 2, 2));
+	__m128 TmpC0 = _mm_mul_ps(Axis2, AxisC);
+	__m128 CosA2 = _mm_shuffle_ps(Cos0, Cos0, _MM_SHUFFLE(1, 0, 1, 1));
+	__m128 TmpC1 = _mm_add_ps(CosA2, TmpC0);
+	__m128 SinC0 = SinA;//_mm_set_ps(s, -s, 0.0f, 0.0f);
+	__m128 TmpC2 = _mm_shuffle_ps(AxisC, AxisC, _MM_SHUFFLE(3, 3, 0, 1));
+	__m128 TmpC3 = _mm_mul_ps(SinA0, TmpC2);
+	__m128 TmpC4 = _mm_add_ps(TmpC1, TmpC3);
 
-        __m128 Result[4];
-        Result[0] = TmpA4;
-        Result[1] = TmpB4;
-        Result[2] = TmpC4;
-        Result[3] = _mm_set_ps(1, 0, 0, 0);
+	__m128 Result[4];
+	Result[0] = TmpA4;
+	Result[1] = TmpB4;
+	Result[2] = TmpC4;
+	Result[3] = _mm_set_ps(1, 0, 0, 0);
 
-        //mat<4, 4, valType> Result;
-        //Result[0] = m[0] * Rotate[0][0] + m[1] * Rotate[0][1] + m[2] *
-Rotate[0][2];
-        //Result[1] = m[0] * Rotate[1][0] + m[1] * Rotate[1][1] + m[2] *
-Rotate[1][2];
-        //Result[2] = m[0] * Rotate[2][0] + m[1] * Rotate[2][1] + m[2] *
-Rotate[2][2];
-        //Result[3] = m[3];
-        //return Result;
-        sse_mul_ps(in, Result, out);
+	//mat<4, 4, valType> Result;
+	//Result[0] = m[0] * Rotate[0][0] + m[1] * Rotate[0][1] + m[2] * Rotate[0][2];
+	//Result[1] = m[0] * Rotate[1][0] + m[1] * Rotate[1][1] + m[2] * Rotate[1][2];
+	//Result[2] = m[0] * Rotate[2][0] + m[1] * Rotate[2][1] + m[2] * Rotate[2][2];
+	//Result[3] = m[3];
+	//return Result;
+	sse_mul_ps(in, Result, out);
 }
 */
 GLM_FUNC_QUALIFIER void glm_mat4_outerProduct(__m128 const& c, __m128 const& r, __m128 out[4])

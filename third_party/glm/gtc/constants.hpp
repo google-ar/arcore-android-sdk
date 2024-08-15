@@ -13,7 +13,7 @@
 #pragma once
 
 // Dependencies
-#include "../ext/scalar_constants.hpp"  // IWYU pragma: export
+#include "../ext/scalar_constants.hpp"
 
 #if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
 #	pragma message("GLM: GLM_GTC_constants extension included")
@@ -38,6 +38,11 @@ namespace glm
 	/// @see gtc_constants
 	template<typename genType>
 	GLM_FUNC_DECL GLM_CONSTEXPR genType two_pi();
+
+	/// Return unit-circle circumference, or pi * 2.
+	/// @see gtc_constants
+	template<typename genType>
+	GLM_FUNC_DECL GLM_CONSTEXPR genType tau();
 
 	/// Return square root of pi.
 	/// @see gtc_constants

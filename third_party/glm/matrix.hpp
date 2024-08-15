@@ -97,7 +97,7 @@ namespace detail
 	 ///
 	 /// @tparam C Integer between 1 and 4 included that qualify the number a column
 	 /// @tparam R Integer between 1 and 4 included that qualify the number a row
-	 /// @tparam T Floating-point or signed integer scalar types
+	 /// @tparam T Floating-point scalar types
 	 /// @tparam Q Value from qualifier enum
 	 ///
 	 /// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/matrixCompMult.xml">GLSL matrixCompMult man page</a>
@@ -111,7 +111,7 @@ namespace detail
 	///
 	/// @tparam C Integer between 1 and 4 included that qualify the number a column
 	/// @tparam R Integer between 1 and 4 included that qualify the number a row
-	/// @tparam T Floating-point or signed integer scalar types
+	/// @tparam T Floating-point scalar types
 	/// @tparam Q Value from qualifier enum
 	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/outerProduct.xml">GLSL outerProduct man page</a>
@@ -123,7 +123,7 @@ namespace detail
 	///
 	/// @tparam C Integer between 1 and 4 included that qualify the number a column
 	/// @tparam R Integer between 1 and 4 included that qualify the number a row
-	/// @tparam T Floating-point or signed integer scalar types
+	/// @tparam T Floating-point scalar types
 	/// @tparam Q Value from qualifier enum
 	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/transpose.xml">GLSL transpose man page</a>
@@ -135,7 +135,7 @@ namespace detail
 	///
 	/// @tparam C Integer between 1 and 4 included that qualify the number a column
 	/// @tparam R Integer between 1 and 4 included that qualify the number a row
-	/// @tparam T Floating-point or signed integer scalar types
+	/// @tparam T Floating-point scalar types
 	/// @tparam Q Value from qualifier enum
 	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/determinant.xml">GLSL determinant man page</a>
@@ -147,7 +147,7 @@ namespace detail
 	///
 	/// @tparam C Integer between 1 and 4 included that qualify the number a column
 	/// @tparam R Integer between 1 and 4 included that qualify the number a row
-	/// @tparam T Floating-point or signed integer scalar types
+	/// @tparam T Floating-point scalar types
 	/// @tparam Q Value from qualifier enum
 	///
 	/// @see <a href="http://www.opengl.org/sdk/docs/manglsl/xhtml/inverse.xml">GLSL inverse man page</a>

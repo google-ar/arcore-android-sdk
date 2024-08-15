@@ -9,19 +9,17 @@
 ///
 /// Include <glm/gtx/associated_min_max.hpp> to use the features of this extension.
 ///
-/// @brief Min and max functions that return associated values not the compared onces.
+/// @brief Min and max functions that return associated values not the compared ones.
 
 #pragma once
 
 // Dependency:
 #include "../glm.hpp"
 
-#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
-#	ifndef GLM_ENABLE_EXPERIMENTAL
-#		pragma message("GLM: GLM_GTX_associated_min_max is an experimental extension and may change in the future. Use  before including it, if you really want to use it.")
-#	else
-#		pragma message("GLM: GLM_GTX_associated_min_max extension included")
-#	endif
+#ifndef GLM_ENABLE_EXPERIMENTAL
+#	error "GLM: GLM_GTX_associated_min_max is an experimental extension and may change in the future. Use #define GLM_ENABLE_EXPERIMENTAL before including it, if you really want to use it."
+#elif GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
+#	pragma message("GLM: GLM_GTX_associated_min_max extension included")
 #endif
 
 namespace glm
@@ -31,13 +29,13 @@ namespace glm
 
 	/// Minimum comparison between 2 variables and returns 2 associated variable values
 	/// @see gtx_associated_min_max
-	template<typename T, typename U, qualifier Q>
+	template<typename T, typename U>
 	GLM_FUNC_DECL U associatedMin(T x, U a, T y, U b);
 
 	/// Minimum comparison between 2 variables and returns 2 associated variable values
 	/// @see gtx_associated_min_max
 	template<length_t L, typename T, typename U, qualifier Q>
-	GLM_FUNC_DECL vec<2, U, Q> associatedMin(
+	GLM_FUNC_DECL vec<L, U, Q> associatedMin(
 		vec<L, T, Q> const& x, vec<L, U, Q> const& a,
 		vec<L, T, Q> const& y, vec<L, U, Q> const& b);
 
@@ -115,7 +113,7 @@ namespace glm
 	/// Maximum comparison between 2 variables and returns 2 associated variable values
 	/// @see gtx_associated_min_max
 	template<length_t L, typename T, typename U, qualifier Q>
-	GLM_FUNC_DECL vec<2, U, Q> associatedMax(
+	GLM_FUNC_DECL vec<L, U, Q> associatedMax(
 		vec<L, T, Q> const& x, vec<L, U, Q> const& a,
 		vec<L, T, Q> const& y, vec<L, U, Q> const& b);
 

@@ -14,10 +14,10 @@ namespace detail
 			// SSE2 STATS: 11 shuffle, 8 mul, 8 add
 			// SSE4 STATS: 3 shuffle, 4 mul, 4 dpps
 
-			__m128 const mul0 = _mm_mul_ps(q1.Data, _mm_shuffle_ps(q2.Data, q2.Data, _MM_SHUFFLE(0, 1, 2, 3)));
-			__m128 const mul1 = _mm_mul_ps(q1.Data, _mm_shuffle_ps(q2.Data, q2.Data, _MM_SHUFFLE(1, 0, 3, 2)));
-			__m128 const mul2 = _mm_mul_ps(q1.Data, _mm_shuffle_ps(q2.Data, q2.Data, _MM_SHUFFLE(2, 3, 0, 1)));
-			__m128 const mul3 = _mm_mul_ps(q1.Data, q2.Data);
+			__m128 const mul0 = _mm_mul_ps(q1.data, _mm_shuffle_ps(q2.data, q2.data, _MM_SHUFFLE(0, 1, 2, 3)));
+			__m128 const mul1 = _mm_mul_ps(q1.data, _mm_shuffle_ps(q2.data, q2.data, _MM_SHUFFLE(1, 0, 3, 2)));
+			__m128 const mul2 = _mm_mul_ps(q1.data, _mm_shuffle_ps(q2.data, q2.data, _MM_SHUFFLE(2, 3, 0, 1)));
+			__m128 const mul3 = _mm_mul_ps(q1.data, q2.data);
 
 #			if GLM_ARCH & GLM_ARCH_SSE41_BIT
 				__m128 const add0 = _mm_dp_ps(mul0, _mm_set_ps(1.0f, -1.0f,  1.0f,  1.0f), 0xff);
@@ -89,7 +89,7 @@ namespace detail
 	{
 		static qua<float, Q> call(qua<float, Q> const& q, qua<float, Q> const& p)
 		{
-			vec<4, float, Q> Result;
+			qua<float, Q> Result;
 			Result.data = _mm_sub_ps(q.data, p.data);
 			return Result;
 		}
@@ -161,28 +161,48 @@ namespace detail
 	{
 		static vec<4, float, Q> call(qua<float, Q> const& q, vec<4, float, Q> const& v)
 		{
-			__m128 const q_wwww = _mm_shuffle_ps(q.data, q.data, _MM_SHUFFLE(3, 3, 3, 3));
-			__m128 const q_swp0 = _mm_shuffle_ps(q.data, q.data, _MM_SHUFFLE(3, 0, 2, 1));
-			__m128 const q_swp1 = _mm_shuffle_ps(q.data, q.data, _MM_SHUFFLE(3, 1, 0, 2));
-			__m128 const v_swp0 = _mm_shuffle_ps(v.data, v.data, _MM_SHUFFLE(3, 0, 2, 1));
-			__m128 const v_swp1 = _mm_shuffle_ps(v.data, v.data, _MM_SHUFFLE(3, 1, 0, 2));
+#			ifdef GLM_FORCE_QUAT_DATA_WXYZ
+				__m128 const q_wwww = _mm_shuffle_ps(q.data, q.data, _MM_SHUFFLE(0, 0, 0, 0));
+				__m128 const q_swp0 = _mm_shuffle_ps(q.data, q.data, _MM_SHUFFLE(0, 1, 3, 2));
+				__m128 const q_swp1 = _mm_shuffle_ps(q.data, q.data, _MM_SHUFFLE(0, 2, 1, 3));
+				__m128 const v_swp0 = _mm_shuffle_ps(v.data, v.data, _MM_SHUFFLE(3, 0, 2, 1));
+				__m128 const v_swp1 = _mm_shuffle_ps(v.data, v.data, _MM_SHUFFLE(3, 1, 0, 2));
 
-			__m128 uv      = _mm_sub_ps(_mm_mul_ps(q_swp0, v_swp1), _mm_mul_ps(q_swp1, v_swp0));
-			__m128 uv_swp0 = _mm_shuffle_ps(uv, uv, _MM_SHUFFLE(3, 0, 2, 1));
-			__m128 uv_swp1 = _mm_shuffle_ps(uv, uv, _MM_SHUFFLE(3, 1, 0, 2));
-			__m128 uuv     = _mm_sub_ps(_mm_mul_ps(q_swp0, uv_swp1), _mm_mul_ps(q_swp1, uv_swp0));
+				__m128 uv = _mm_sub_ps(_mm_mul_ps(q_swp0, v_swp1), _mm_mul_ps(q_swp1, v_swp0));
+				__m128 uv_swp0 = _mm_shuffle_ps(uv, uv, _MM_SHUFFLE(3, 0, 2, 1));
+				__m128 uv_swp1 = _mm_shuffle_ps(uv, uv, _MM_SHUFFLE(3, 1, 0, 2));
+				__m128 uuv = _mm_sub_ps(_mm_mul_ps(q_swp0, uv_swp1), _mm_mul_ps(q_swp1, uv_swp0));
 
-			__m128 const two = _mm_set1_ps(2.0f);
-			uv  = _mm_mul_ps(uv, _mm_mul_ps(q_wwww, two));
-			uuv = _mm_mul_ps(uuv, two);
+				__m128 const two = _mm_set1_ps(2.0f);
+				uv = _mm_mul_ps(uv, _mm_mul_ps(q_wwww, two));
+				uuv = _mm_mul_ps(uuv, two);
 
-			vec<4, float, Q> Result;
-			Result.data = _mm_add_ps(v.Data, _mm_add_ps(uv, uuv));
-			return Result;
+				vec<4, float, Q> Result;
+				Result.data = _mm_add_ps(v.data, _mm_add_ps(uv, uuv));
+				return Result;
+#			else
+				__m128 const q_wwww = _mm_shuffle_ps(q.data, q.data, _MM_SHUFFLE(3, 3, 3, 3));
+				__m128 const q_swp0 = _mm_shuffle_ps(q.data, q.data, _MM_SHUFFLE(3, 0, 2, 1));
+				__m128 const q_swp1 = _mm_shuffle_ps(q.data, q.data, _MM_SHUFFLE(3, 1, 0, 2));
+				__m128 const v_swp0 = _mm_shuffle_ps(v.data, v.data, _MM_SHUFFLE(3, 0, 2, 1));
+				__m128 const v_swp1 = _mm_shuffle_ps(v.data, v.data, _MM_SHUFFLE(3, 1, 0, 2));
+
+				__m128 uv      = _mm_sub_ps(_mm_mul_ps(q_swp0, v_swp1), _mm_mul_ps(q_swp1, v_swp0));
+				__m128 uv_swp0 = _mm_shuffle_ps(uv, uv, _MM_SHUFFLE(3, 0, 2, 1));
+				__m128 uv_swp1 = _mm_shuffle_ps(uv, uv, _MM_SHUFFLE(3, 1, 0, 2));
+				__m128 uuv     = _mm_sub_ps(_mm_mul_ps(q_swp0, uv_swp1), _mm_mul_ps(q_swp1, uv_swp0));
+
+				__m128 const two = _mm_set1_ps(2.0f);
+				uv  = _mm_mul_ps(uv, _mm_mul_ps(q_wwww, two));
+				uuv = _mm_mul_ps(uuv, two);
+
+				vec<4, float, Q> Result;
+				Result.data = _mm_add_ps(v.data, _mm_add_ps(uv, uuv));
+				return Result;
+#			endif
 		}
 	};
 }//namespace detail
 }//namespace glm
 
 #endif//GLM_ARCH & GLM_ARCH_SSE2_BIT
-

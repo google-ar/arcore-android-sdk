@@ -3,14 +3,14 @@
 namespace glm{
 
 // Min comparison between 2 variables
-template<typename T, typename U, qualifier Q>
+template<typename T, typename U>
 GLM_FUNC_QUALIFIER U associatedMin(T x, U a, T y, U b)
 {
 	return x < y ? a : b;
 }
 
 template<length_t L, typename T, typename U, qualifier Q>
-GLM_FUNC_QUALIFIER vec<2, U, Q> associatedMin
+GLM_FUNC_QUALIFIER vec<L, U, Q> associatedMin
 (
 	vec<L, T, Q> const& x, vec<L, U, Q> const& a,
 	vec<L, T, Q> const& y, vec<L, U, Q> const& b
@@ -169,7 +169,7 @@ GLM_FUNC_QUALIFIER U associatedMax(T x, U a, T y, U b)
 
 // Max comparison between 2 variables
 template<length_t L, typename T, typename U, qualifier Q>
-GLM_FUNC_QUALIFIER vec<2, U, Q> associatedMax
+GLM_FUNC_QUALIFIER vec<L, U, Q> associatedMax
 (
 	vec<L, T, Q> const& x, vec<L, U, Q> const& a,
 	vec<L, T, Q> const& y, vec<L, U, Q> const& b

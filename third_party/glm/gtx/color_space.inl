@@ -1,5 +1,8 @@
 /// @ref gtx_color_space
 
+#include "third_party/glm/latest/glm/ext/scalar_relational.hpp"
+#include "third_party/glm/latest/glm/ext/scalar_constants.hpp"
+
 namespace glm
 {
 	template<typename T, qualifier Q>
@@ -8,7 +11,7 @@ namespace glm
 		vec<3, T, Q> hsv = hsvColor;
 		vec<3, T, Q> rgbColor;
 
-		if(hsv.y == static_cast<T>(0))
+		if(equal(hsv.y, static_cast<T>(0), epsilon<T>()))
 			// achromatic (grey)
 			rgbColor = vec<3, T, Q>(hsv.z);
 		else
@@ -63,21 +66,21 @@ namespace glm
 	GLM_FUNC_QUALIFIER vec<3, T, Q> hsvColor(const vec<3, T, Q>& rgbColor)
 	{
 		vec<3, T, Q> hsv = rgbColor;
-		float Min   = min(min(rgbColor.r, rgbColor.g), rgbColor.b);
-		float Max   = max(max(rgbColor.r, rgbColor.g), rgbColor.b);
-		float Delta = Max - Min;
+		T Min   = min(min(rgbColor.r, rgbColor.g), rgbColor.b);
+		T Max   = max(max(rgbColor.r, rgbColor.g), rgbColor.b);
+		T Delta = Max - Min;
 
 		hsv.z = Max;
 
-		if(Max != static_cast<T>(0))
+		if(!equal(Max, static_cast<T>(0), epsilon<T>()))
 		{
 			hsv.y = Delta / hsv.z;
 			T h = static_cast<T>(0);
 
-			if(rgbColor.r == Max)
+			if(equal(rgbColor.r, Max, epsilon<T>()))
 				// between yellow & magenta
 				h = static_cast<T>(0) + T(60) * (rgbColor.g - rgbColor.b) / Delta;
-			else if(rgbColor.g == Max)
+			else if(equal(rgbColor.g, Max, epsilon<T>()))
 				// between cyan & yellow
 				h = static_cast<T>(120) + T(60) * (rgbColor.b - rgbColor.r) / Delta;
 			else

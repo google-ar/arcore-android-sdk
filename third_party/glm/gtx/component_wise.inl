@@ -1,6 +1,8 @@
 /// @ref gtx_component_wise
 
+#include "../ext/scalar_common.hpp"
 #include <limits>
+#include <cmath>
 
 namespace glm{
 namespace detail
@@ -122,6 +124,24 @@ namespace detail
 		T Result(v[0]);
 		for(length_t i = 1, n = v.length(); i < n; ++i)
 			Result = max(Result, v[i]);
+		return Result;
+	}
+
+    template<length_t L, typename T, qualifier Q>
+	GLM_FUNC_QUALIFIER T fcompMin(vec<L, T, Q> const& v)
+	{
+		T Result(v[0]);
+		for(length_t i = 1, n = v.length(); i < n; ++i)
+			Result = fmin(Result, v[i]);
+		return Result;
+	}
+
+	template<length_t L, typename T, qualifier Q>
+	GLM_FUNC_QUALIFIER T fcompMax(vec<L, T, Q> const& v)
+	{
+		T Result(v[0]);
+		for(length_t i = 1, n = v.length(); i < n; ++i)
+			Result = fmax(Result, v[i]);
 		return Result;
 	}
 }//namespace glm

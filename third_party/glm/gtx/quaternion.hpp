@@ -9,7 +9,7 @@
 ///
 /// Include <glm/gtx/quaternion.hpp> to use the features of this extension.
 ///
-/// Extented quaternion types and functions
+/// Extended quaternion types and functions
 
 #pragma once
 
@@ -20,12 +20,10 @@
 #include "../ext/quaternion_exponential.hpp"
 #include "../gtx/norm.hpp"
 
-#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
-#	ifndef GLM_ENABLE_EXPERIMENTAL
-#		pragma message("GLM: GLM_GTX_quaternion is an experimental extension and may change in the future. Use  before including it, if you really want to use it.")
-#	else
-#		pragma message("GLM: GLM_GTX_quaternion extension included")
-#	endif
+#ifndef GLM_ENABLE_EXPERIMENTAL
+#	error "GLM: GLM_GTX_quaternion is an experimental extension and may change in the future. Use #define GLM_ENABLE_EXPERIMENTAL before including it, if you really want to use it."
+#elif GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
+#	pragma message("GLM: GLM_GTX_quaternion extension included")
 #endif
 
 namespace glm
@@ -43,7 +41,7 @@ namespace glm
 	///
 	/// @see gtx_quaternion
 	template<typename T, qualifier Q>
-	GLM_FUNC_DECL vec<3, T, Q> cross(
+	GLM_FUNC_DECL GLM_CONSTEXPR vec<3, T, Q> cross(
 		qua<T, Q> const& q,
 		vec<3, T, Q> const& v);
 
@@ -51,7 +49,7 @@ namespace glm
 	///
 	/// @see gtx_quaternion
 	template<typename T, qualifier Q>
-	GLM_FUNC_DECL vec<3, T, Q> cross(
+	GLM_FUNC_DECL GLM_CONSTEXPR vec<3, T, Q> cross(
 		vec<3, T, Q> const& v,
 		qua<T, Q> const& q);
 
@@ -110,28 +108,28 @@ namespace glm
 	///
 	/// @see gtx_quaternion
 	template<typename T, qualifier Q>
-	GLM_FUNC_DECL mat<3, 3, T, Q> toMat3(
+	GLM_FUNC_QUALIFIER mat<3, 3, T, Q> toMat3(
 		qua<T, Q> const& x){return mat3_cast(x);}
 
 	/// Converts a quaternion to a 4 * 4 matrix.
 	///
 	/// @see gtx_quaternion
 	template<typename T, qualifier Q>
-	GLM_FUNC_DECL mat<4, 4, T, Q> toMat4(
+	GLM_FUNC_QUALIFIER mat<4, 4, T, Q> toMat4(
 		qua<T, Q> const& x){return mat4_cast(x);}
 
 	/// Converts a 3 * 3 matrix to a quaternion.
 	///
 	/// @see gtx_quaternion
 	template<typename T, qualifier Q>
-	GLM_FUNC_DECL qua<T, Q> toQuat(
+	GLM_FUNC_QUALIFIER qua<T, Q> toQuat(
 		mat<3, 3, T, Q> const& x){return quat_cast(x);}
 
 	/// Converts a 4 * 4 matrix to a quaternion.
 	///
 	/// @see gtx_quaternion
 	template<typename T, qualifier Q>
-	GLM_FUNC_DECL qua<T, Q> toQuat(
+	GLM_FUNC_QUALIFIER qua<T, Q> toQuat(
 		mat<4, 4, T, Q> const& x){return quat_cast(x);}
 
 	/// Quaternion interpolation using the rotation short path.

@@ -333,10 +333,10 @@ public class HelloSemanticsActivity extends AppCompatActivity implements SampleR
         message = TrackingStateHelper.getTrackingFailureReasonString(camera);
       }
     }
-    if (message == null) {
-      messageSnackbarHelper.hide(this);
-    } else {
+    if (message != null && !message.isEmpty()) {
       messageSnackbarHelper.showMessage(this, message);
+    } else if (messageSnackbarHelper.isDurationIndefinite()) {
+      messageSnackbarHelper.hide(this);
     }
 
     // -- Draw background

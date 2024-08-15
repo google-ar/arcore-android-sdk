@@ -112,7 +112,7 @@ namespace glm
 	template<typename genType>
 	GLM_FUNC_QUALIFIER genType fastExp2(genType x)
 	{
-		return fastExp(0.69314718055994530941723212145818f * x);
+		return fastExp(static_cast<genType>(0.69314718055994530941723212145818) * x);
 	}
 
 	template<length_t L, typename T, qualifier Q>
@@ -125,7 +125,7 @@ namespace glm
 	template<typename genType>
 	GLM_FUNC_QUALIFIER genType fastLog2(genType x)
 	{
-		return fastLog(x) / 0.69314718055994530941723212145818f;
+		return fastLog(x) / static_cast<genType>(0.69314718055994530941723212145818);
 	}
 
 	template<length_t L, typename T, qualifier Q>

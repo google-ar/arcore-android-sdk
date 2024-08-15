@@ -9,10 +9,42 @@ namespace detail
 	{
 		GLM_FUNC_QUALIFIER static mat<C, R, T, Q> call(mat<C, R, T, Q> const& x, mat<C, R, T, Q> const& y)
 		{
-			mat<C, R, T, Q> Result;
+			mat<C, R, T, Q> Result(1);
 			for(length_t i = 0; i < Result.length(); ++i)
 				Result[i] = x[i] * y[i];
 			return Result;
+		}
+	};
+
+	template<length_t C, length_t R, typename T, qualifier Q, bool IsFloat, bool Aligned>
+	struct compute_matrixCompMult_type {
+		GLM_FUNC_QUALIFIER static mat<C, R, T, Q> call(mat<C, R, T, Q> const& x, mat<C, R, T, Q> const& y)
+		{
+			GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559 || GLM_CONFIG_UNRESTRICTED_GENTYPE, 
+				"'matrixCompMult' only accept floating-point inputs, include <glm/ext/matrix_integer.hpp> to discard this restriction.");
+			return detail::compute_matrixCompMult<C, R, T, Q, detail::is_aligned<Q>::value>::call(x, y);
+		}
+	};
+
+	template<length_t DA, length_t DB, typename T, qualifier Q>
+	struct compute_outerProduct {
+		GLM_FUNC_QUALIFIER static typename detail::outerProduct_trait<DA, DB, T, Q>::type call(vec<DA, T, Q> const& c, vec<DB, T, Q> const& r)
+		{
+			typename detail::outerProduct_trait<DA, DB, T, Q>::type m(0);
+			for(length_t i = 0; i < m.length(); ++i)
+				m[i] = c * r[i];
+			return m;
+		}
+	};
+
+	template<length_t DA, length_t DB, typename T, qualifier Q, bool IsFloat>
+	struct compute_outerProduct_type {
+		GLM_FUNC_QUALIFIER static typename detail::outerProduct_trait<DA, DB, T, Q>::type call(vec<DA, T, Q> const& c, vec<DB, T, Q> const& r)
+		{
+			GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559 || GLM_CONFIG_UNRESTRICTED_GENTYPE,
+				"'outerProduct' only accept floating-point inputs, include <glm/ext/matrix_integer.hpp> to discard this restriction.");
+
+			return detail::compute_outerProduct<DA, DB, T, Q>::call(c, r);
 		}
 	};
 
@@ -24,7 +56,7 @@ namespace detail
 	{
 		GLM_FUNC_QUALIFIER static mat<2, 2, T, Q> call(mat<2, 2, T, Q> const& m)
 		{
-			mat<2, 2, T, Q> Result;
+			mat<2, 2, T, Q> Result(1);
 			Result[0][0] = m[0][0];
 			Result[0][1] = m[1][0];
 			Result[1][0] = m[0][1];
@@ -38,7 +70,7 @@ namespace detail
 	{
 		GLM_FUNC_QUALIFIER static mat<3, 2, T, Q> call(mat<2, 3, T, Q> const& m)
 		{
-			mat<3,2, T, Q> Result;
+			mat<3,2, T, Q> Result(1);
 			Result[0][0] = m[0][0];
 			Result[0][1] = m[1][0];
 			Result[1][0] = m[0][1];
@@ -54,7 +86,7 @@ namespace detail
 	{
 		GLM_FUNC_QUALIFIER static mat<4, 2, T, Q> call(mat<2, 4, T, Q> const& m)
 		{
-			mat<4, 2, T, Q> Result;
+			mat<4, 2, T, Q> Result(1);
 			Result[0][0] = m[0][0];
 			Result[0][1] = m[1][0];
 			Result[1][0] = m[0][1];
@@ -72,7 +104,7 @@ namespace detail
 	{
 		GLM_FUNC_QUALIFIER static mat<2, 3, T, Q> call(mat<3, 2, T, Q> const& m)
 		{
-			mat<2, 3, T, Q> Result;
+			mat<2, 3, T, Q> Result(1);
 			Result[0][0] = m[0][0];
 			Result[0][1] = m[1][0];
 			Result[0][2] = m[2][0];
@@ -88,7 +120,7 @@ namespace detail
 	{
 		GLM_FUNC_QUALIFIER static mat<3, 3, T, Q> call(mat<3, 3, T, Q> const& m)
 		{
-			mat<3, 3, T, Q> Result;
+			mat<3, 3, T, Q> Result(1);
 			Result[0][0] = m[0][0];
 			Result[0][1] = m[1][0];
 			Result[0][2] = m[2][0];
@@ -109,7 +141,7 @@ namespace detail
 	{
 		GLM_FUNC_QUALIFIER static mat<4, 3, T, Q> call(mat<3, 4, T, Q> const& m)
 		{
-			mat<4, 3, T, Q> Result;
+			mat<4, 3, T, Q> Result(1);
 			Result[0][0] = m[0][0];
 			Result[0][1] = m[1][0];
 			Result[0][2] = m[2][0];
@@ -131,7 +163,7 @@ namespace detail
 	{
 		GLM_FUNC_QUALIFIER static mat<2, 4, T, Q> call(mat<4, 2, T, Q> const& m)
 		{
-			mat<2, 4, T, Q> Result;
+			mat<2, 4, T, Q> Result(1);
 			Result[0][0] = m[0][0];
 			Result[0][1] = m[1][0];
 			Result[0][2] = m[2][0];
@@ -149,7 +181,7 @@ namespace detail
 	{
 		GLM_FUNC_QUALIFIER static mat<3, 4, T, Q> call(mat<4, 3, T, Q> const& m)
 		{
-			mat<3, 4, T, Q> Result;
+			mat<3, 4, T, Q> Result(1);
 			Result[0][0] = m[0][0];
 			Result[0][1] = m[1][0];
 			Result[0][2] = m[2][0];
@@ -171,7 +203,7 @@ namespace detail
 	{
 		GLM_FUNC_QUALIFIER static mat<4, 4, T, Q> call(mat<4, 4, T, Q> const& m)
 		{
-			mat<4, 4, T, Q> Result;
+			mat<4, 4, T, Q> Result(1);
 			Result[0][0] = m[0][0];
 			Result[0][1] = m[1][0];
 			Result[0][2] = m[2][0];
@@ -192,6 +224,16 @@ namespace detail
 			Result[3][2] = m[2][3];
 			Result[3][3] = m[3][3];
 			return Result;
+		}
+	};
+
+	template<length_t C, length_t R, typename T, qualifier Q, bool IsFloat, bool Aligned>
+	struct compute_transpose_type {
+		GLM_FUNC_QUALIFIER static mat<R, C, T, Q> call(mat<C, R, T, Q> const& m)
+		{
+			GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559 || GLM_CONFIG_UNRESTRICTED_GENTYPE, 
+				"'transpose' only accept floating-point inputs, include <glm/ext/matrix_integer.hpp> to discard this restriction.");
+			return detail::compute_transpose<C, R, T, Q, detail::is_aligned<Q>::value>::call(m);
 		}
 	};
 
@@ -240,6 +282,17 @@ namespace detail
 			return
 				m[0][0] * DetCof[0] + m[0][1] * DetCof[1] +
 				m[0][2] * DetCof[2] + m[0][3] * DetCof[3];
+		}
+	};
+
+	template<length_t C, length_t R, typename T, qualifier Q, bool IsFloat, bool Aligned>
+	struct compute_determinant_type{
+	
+		GLM_FUNC_QUALIFIER static T call(mat<C, R, T, Q> const& m)
+		{
+			GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559 || GLM_CONFIG_UNRESTRICTED_GENTYPE, 
+				"'determinant' only accept floating-point inputs, include <glm/ext/matrix_integer.hpp> to discard this restriction.");
+			return detail::compute_determinant<C, R, T, Q, detail::is_aligned<Q>::value>::call(m);
 		}
 	};
 
@@ -355,33 +408,25 @@ namespace detail
 	template<length_t C, length_t R, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER mat<C, R, T, Q> matrixCompMult(mat<C, R, T, Q> const& x, mat<C, R, T, Q> const& y)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559 || GLM_CONFIG_UNRESTRICTED_GENTYPE, "'matrixCompMult' only accept floating-point inputs");
-		return detail::compute_matrixCompMult<C, R, T, Q, detail::is_aligned<Q>::value>::call(x, y);
+		return detail::compute_matrixCompMult_type<C, R, T, Q, std::numeric_limits<T>::is_iec559, detail::is_aligned<Q>::value>::call(x, y);
 	}
 
 	template<length_t DA, length_t DB, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER typename detail::outerProduct_trait<DA, DB, T, Q>::type outerProduct(vec<DA, T, Q> const& c, vec<DB, T, Q> const& r)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559 || GLM_CONFIG_UNRESTRICTED_GENTYPE, "'outerProduct' only accept floating-point inputs");
-
-		typename detail::outerProduct_trait<DA, DB, T, Q>::type m;
-		for(length_t i = 0; i < m.length(); ++i)
-			m[i] = c * r[i];
-		return m;
+		return detail::compute_outerProduct_type<DA, DB, T, Q, std::numeric_limits<T>::is_iec559>::call(c, r);
 	}
 
 	template<length_t C, length_t R, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER typename mat<C, R, T, Q>::transpose_type transpose(mat<C, R, T, Q> const& m)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559 || GLM_CONFIG_UNRESTRICTED_GENTYPE, "'transpose' only accept floating-point inputs");
-		return detail::compute_transpose<C, R, T, Q, detail::is_aligned<Q>::value>::call(m);
+		return detail::compute_transpose_type<C, R, T, Q, std::numeric_limits<T>::is_iec559, detail::is_aligned<Q>::value>::call(m);
 	}
 
 	template<length_t C, length_t R, typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER T determinant(mat<C, R, T, Q> const& m)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_iec559 || GLM_CONFIG_UNRESTRICTED_GENTYPE, "'determinant' only accept floating-point inputs");
-		return detail::compute_determinant<C, R, T, Q, detail::is_aligned<Q>::value>::call(m);
+		return detail::compute_determinant_type<C, R, T, Q, std::numeric_limits<T>::is_iec559, detail::is_aligned<Q>::value>::call(m);
 	}
 
 	template<length_t C, length_t R, typename T, qualifier Q>

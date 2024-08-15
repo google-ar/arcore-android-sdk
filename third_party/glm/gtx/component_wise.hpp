@@ -18,12 +18,10 @@
 #include "../detail/setup.hpp"
 #include "../detail/qualifier.hpp"
 
-#if GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
-#	ifndef GLM_ENABLE_EXPERIMENTAL
-#		pragma message("GLM: GLM_GTX_component_wise is an experimental extension and may change in the future. Use  before including it, if you really want to use it.")
-#	else
-#		pragma message("GLM: GLM_GTX_component_wise extension included")
-#	endif
+#ifndef GLM_ENABLE_EXPERIMENTAL
+#	error "GLM: GLM_GTX_component_wise is an experimental extension and may change in the future. Use #define GLM_ENABLE_EXPERIMENTAL before including it, if you really want to use it."
+#elif GLM_MESSAGES == GLM_ENABLE && !defined(GLM_EXT_INCLUDED)
+#	pragma message("GLM: GLM_GTX_component_wise extension included")
 #endif
 
 namespace glm
@@ -62,6 +60,16 @@ namespace glm
 	/// @see gtx_component_wise
 	template<typename genType>
 	GLM_FUNC_DECL typename genType::value_type compMax(genType const& v);
+
+    /// Find the minimum float between single vector components.
+	/// @see gtx_component_wise
+	template<typename genType>
+	GLM_FUNC_DECL typename genType::value_type fcompMin(genType const& v);
+
+	/// Find the maximum float between single vector components.
+	/// @see gtx_component_wise
+	template<typename genType>
+	GLM_FUNC_DECL typename genType::value_type fcompMax(genType const& v);
 
 	/// @}
 }//namespace glm

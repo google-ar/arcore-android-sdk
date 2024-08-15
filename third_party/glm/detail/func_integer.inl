@@ -9,9 +9,11 @@
 
 #if !GLM_HAS_EXTENDED_INTEGER_TYPE
 #	if GLM_COMPILER & GLM_COMPILER_GCC
+#		pragma GCC diagnostic push
 #		pragma GCC diagnostic ignored "-Wlong-long"
 #	endif
 #	if (GLM_COMPILER & GLM_COMPILER_CLANG)
+#		pragma clang diagnostic push
 #		pragma clang diagnostic ignored "-Wc++11-long-long"
 #	endif
 #endif
@@ -270,9 +272,14 @@ namespace detail
 	{
 		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_integer, "'bitfieldInsert' only accept integer values");
 
-		T const Mask = static_cast<T>(detail::mask(Bits) << Offset);
+		T const Mask = detail::mask(static_cast<T>(Bits)) << Offset;
 		return (Base & ~Mask) | ((Insert << static_cast<T>(Offset)) & Mask);
 	}
+
+#if GLM_COMPILER & GLM_COMPILER_VC
+#	pragma warning(push)
+#	pragma warning(disable : 4309)
+#endif
 
 	// bitfieldReverse
 	template<typename genIUType>
@@ -298,6 +305,10 @@ namespace detail
 		return x;
 	}
 
+#		if GLM_COMPILER & GLM_COMPILER_VC
+#			pragma warning(pop)
+#		endif
+
 	// bitCount
 	template<typename genIUType>
 	GLM_FUNC_QUALIFIER int bitCount(genIUType x)
@@ -317,7 +328,7 @@ namespace detail
 #			pragma warning(disable : 4310) //cast truncates constant value
 #		endif
 
-		vec<L, typename detail::make_unsigned<T>::type, Q> x(*reinterpret_cast<vec<L, typename detail::make_unsigned<T>::type, Q> const *>(&v));
+		vec<L, typename detail::make_unsigned<T>::type, Q> x(v);
 		x = detail::compute_bitfieldBitCountStep<L, typename detail::make_unsigned<T>::type, Q, detail::is_aligned<Q>::value, sizeof(T) * 8>=  2>::call(x, typename detail::make_unsigned<T>::type(0x5555555555555555ull), typename detail::make_unsigned<T>::type( 1));
 		x = detail::compute_bitfieldBitCountStep<L, typename detail::make_unsigned<T>::type, Q, detail::is_aligned<Q>::value, sizeof(T) * 8>=  4>::call(x, typename detail::make_unsigned<T>::type(0x3333333333333333ull), typename detail::make_unsigned<T>::type( 2));
 		x = detail::compute_bitfieldBitCountStep<L, typename detail::make_unsigned<T>::type, Q, detail::is_aligned<Q>::value, sizeof(T) * 8>=  8>::call(x, typename detail::make_unsigned<T>::type(0x0F0F0F0F0F0F0F0Full), typename detail::make_unsigned<T>::type( 4));
@@ -362,9 +373,18 @@ namespace detail
 	{
 		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_integer, "'findMSB' only accept integer values");
 
-		return detail::compute_findMSB_vec<L, T, Q, sizeof(T) * 8>::call(v);
+		return detail::compute_findMSB_vec<L, T, Q, static_cast<int>(sizeof(T) * 8)>::call(v);
 	}
 }//namespace glm
+
+#if !GLM_HAS_EXTENDED_INTEGER_TYPE
+#	if GLM_COMPILER & GLM_COMPILER_GCC
+#		pragma GCC diagnostic pop
+#	endif
+#	if (GLM_COMPILER & GLM_COMPILER_CLANG)
+#		pragma clang diagnostic pop
+#	endif
+#endif
 
 #if GLM_CONFIG_SIMD == GLM_ENABLE
 #	include "func_integer_simd.inl"

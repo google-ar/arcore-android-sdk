@@ -1332,6 +1332,15 @@ AR_DEFINE_ENUM(ArFocusMode){/// Focus is fixed.
                             AR_FOCUS_MODE_AUTO = 1};
 
 /// @ingroup ArConfig
+/// Selects the desired behavior of the camera flash subsystem. See the <a
+/// href="https://developers.google.com/ar/develop/camera/flash/c">documentation
+/// page</a> for more information on using the device's flash.
+AR_DEFINE_ENUM(ArFlashMode){/// Flash is off.
+                            AR_FLASH_MODE_OFF = 0,
+                            /// Flash is on.
+                            AR_FLASH_MODE_TORCH = 2};
+
+/// @ingroup ArConfig
 /// Describes the behavior of the Electronic Image Stabilization (EIS) API. When
 /// enabled, EIS smoothes the camera feed and helps correct video shakes in the
 /// camera preview. See the <a
@@ -2503,6 +2512,33 @@ void ArConfig_setFocusMode(const ArSession *session,
 void ArConfig_getFocusMode(const ArSession *session,
                            ArConfig *config,
                            ArFocusMode *focus_mode);
+
+/// @ingroup ArConfig
+/// Gets the current camera flash mode set on this config object.
+///
+/// @param[in]    session          The ARCore session.
+/// @param[in]    config           The configuration object.
+/// @param[inout] out_flash_mode   The current camera flash mode.
+void ArConfig_getFlashMode(const ArSession *session,
+                           const ArConfig *config,
+                           ArFlashMode *out_flash_mode);
+
+/// @ingroup ArConfig
+/// Sets the camera flash mode.
+///
+/// See @c ::ArFlashMode for available options. The default flash
+/// mode is @c #AR_FLASH_MODE_OFF. Note, on devices where camera flash hardware
+/// is not supported, calling this function will do nothing.
+/// See the <a
+/// href="https://developers.google.com/ar/develop/camera/flash/c">documentation
+/// page</a> for more information on how to query device flash capability.
+///
+/// @param[in]   session      The ARCore session.
+/// @param[in]   config       The configuration object.
+/// @param[in]   flash_mode   The desired camera flash mode.
+void ArConfig_setFlashMode(const ArSession *session,
+                           ArConfig *config,
+                           ArFlashMode flash_mode);
 
 /// @ingroup ArConfig
 /// Gets the camera image stabilization mode set on this config
@@ -7675,7 +7711,7 @@ typedef struct ArImageMetadata_const_entry {
   /// The tag identifying the entry.
   uint32_t tag;
   /// The data type of this metadata entry. Determines which data pointer in the
-  /// @c union below is valid.
+  /// @c union below is valid. See @c ACAMERA_TYPE_* enum values in the NDK.
   uint8_t type;
   /// Count of elements (NOT count of bytes) in this metadata entry.
   uint32_t count;
@@ -7728,7 +7764,7 @@ void ArImageMetadata_getAllKeys(const ArSession *session,
 /// Get a metadata entry for the provided @c ::ArImageMetadata and tag.
 ///
 /// The returned @p out_metadata_entry remains valid until the provided @p
-/// image_metadata is released via @c ::ArFrame_acquireImageMetadata.
+/// image_metadata is released via @c ::ArImageMetadata_release.
 ///
 /// @param[in]  session             The ARCore session.
 /// @param[in]  image_metadata      @c ::ArImageMetadata struct obtained from

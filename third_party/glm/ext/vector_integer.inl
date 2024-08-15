@@ -32,7 +32,7 @@ namespace glm
 	{
 		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_integer, "'isMultiple' only accept integer inputs");
 
-		return (Value % Multiple) == vec<L, T, Q>(0);
+		return equal(Value % Multiple, vec<L, T, Q>(0));
 	}
 
 	template<length_t L, typename T, qualifier Q>
@@ -40,7 +40,7 @@ namespace glm
 	{
 		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_integer, "'isMultiple' only accept integer inputs");
 
-		return (Value % Multiple) == vec<L, T, Q>(0);
+		return equal(Value % Multiple, vec<L, T, Q>(0));
 	}
 
 	template<length_t L, typename T, qualifier Q>

@@ -8,8 +8,8 @@ namespace detail
 	struct _swizzle_base0
 	{
 	protected:
-		GLM_FUNC_QUALIFIER T& elem(size_t i){ return (reinterpret_cast<T*>(_buffer))[i]; }
-		GLM_FUNC_QUALIFIER T const& elem(size_t i) const{ return (reinterpret_cast<const T*>(_buffer))[i]; }
+		GLM_FUNC_QUALIFIER T& elem(int i){ return (reinterpret_cast<T*>(_buffer))[i]; }
+		GLM_FUNC_QUALIFIER T const& elem(int i) const{ return (reinterpret_cast<const T*>(_buffer))[i]; }
 
 		// Use an opaque buffer to *ensure* the compiler doesn't call a constructor.
 		// The size 1 buffer is assumed to aligned to the actual members so that the
@@ -113,12 +113,12 @@ namespace detail
 			_apply_op(that, op_div());
 		}
 
-		GLM_FUNC_QUALIFIER T& operator[](size_t i)
+		GLM_FUNC_QUALIFIER T& operator[](int i)
 		{
 			const int offset_dst[4] = { E0, E1, E2, E3 };
 			return this->elem(offset_dst[i]);
 		}
-		GLM_FUNC_QUALIFIER T operator[](size_t i) const
+		GLM_FUNC_QUALIFIER T operator[](int i) const
 		{
 			const int offset_dst[4] = { E0, E1, E2, E3 };
 			return this->elem(offset_dst[i]);
@@ -147,7 +147,7 @@ namespace detail
 
 		GLM_FUNC_QUALIFIER _swizzle_base2& operator= (Stub const&) { return *this; }
 
-		GLM_FUNC_QUALIFIER T operator[]  (size_t i) const
+		GLM_FUNC_QUALIFIER T operator[]  (int i) const
 		{
 			const int offset_dst[4] = { E0, E1, E2, E3 };
 			return this->elem(offset_dst[i]);

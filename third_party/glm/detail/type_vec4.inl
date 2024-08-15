@@ -129,16 +129,18 @@ namespace detail
 
 	// -- Implicit basic constructors --
 
-#	if GLM_CONFIG_DEFAULTED_FUNCTIONS == GLM_DISABLE
+#	if GLM_CONFIG_DEFAULTED_DEFAULT_CTOR == GLM_DISABLE
 		template<typename T, qualifier Q>
-		GLM_FUNC_QUALIFIER GLM_CONSTEXPR vec<4, T, Q>::vec()
+		GLM_DEFAULTED_DEFAULT_CTOR_QUALIFIER GLM_CONSTEXPR vec<4, T, Q>::vec()
 #			if GLM_CONFIG_CTOR_INIT != GLM_CTOR_INIT_DISABLE
 				: x(0), y(0), z(0), w(0)
 #			endif
 		{}
+#	endif
 
+#	if GLM_CONFIG_DEFAULTED_FUNCTIONS == GLM_DISABLE
 		template<typename T, qualifier Q>
-		GLM_FUNC_QUALIFIER GLM_CONSTEXPR vec<4, T, Q>::vec(vec<4, T, Q> const& v)
+		GLM_DEFAULTED_FUNC_QUALIFIER GLM_CONSTEXPR vec<4, T, Q>::vec(vec<4, T, Q> const& v)
 			: x(v.x), y(v.y), z(v.z), w(v.w)
 		{}
 #	endif
@@ -476,7 +478,7 @@ namespace detail
 	template<typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER GLM_CONSTEXPR T& vec<4, T, Q>::operator[](typename vec<4, T, Q>::length_type i)
 	{
-		assert(i >= 0 && i < this->length());
+		GLM_ASSERT_LENGTH(i, this->length());
 		switch(i)
 		{
 		default:
@@ -494,7 +496,7 @@ namespace detail
 	template<typename T, qualifier Q>
 	GLM_FUNC_QUALIFIER GLM_CONSTEXPR T const& vec<4, T, Q>::operator[](typename vec<4, T, Q>::length_type i) const
 	{
-		assert(i >= 0 && i < this->length());
+		GLM_ASSERT_LENGTH(i, this->length());
 		switch(i)
 		{
 		default:
@@ -513,7 +515,7 @@ namespace detail
 
 #	if GLM_CONFIG_DEFAULTED_FUNCTIONS == GLM_DISABLE
 		template<typename T, qualifier Q>
-		GLM_FUNC_QUALIFIER GLM_CONSTEXPR vec<4, T, Q>& vec<4, T, Q>::operator=(vec<4, T, Q> const& v)
+		GLM_DEFAULTED_FUNC_QUALIFIER GLM_CONSTEXPR vec<4, T, Q>& vec<4, T, Q>::operator=(vec<4, T, Q> const& v)
 		{
 			this->x = v.x;
 			this->y = v.y;
@@ -801,7 +803,7 @@ namespace detail
 	// -- Binary arithmetic operators --
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER GLM_CONSTEXPR vec<4, T, Q> operator+(vec<4, T, Q> const& v, T const & scalar)
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR vec<4, T, Q> operator+(vec<4, T, Q> const& v, T scalar)
 	{
 		return vec<4, T, Q>(v) += scalar;
 	}
@@ -831,7 +833,7 @@ namespace detail
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER GLM_CONSTEXPR vec<4, T, Q> operator-(vec<4, T, Q> const& v, T const & scalar)
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR vec<4, T, Q> operator-(vec<4, T, Q> const& v, T scalar)
 	{
 		return vec<4, T, Q>(v) -= scalar;
 	}
@@ -861,7 +863,7 @@ namespace detail
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER GLM_CONSTEXPR vec<4, T, Q> operator*(vec<4, T, Q> const& v, T const & scalar)
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR vec<4, T, Q> operator*(vec<4, T, Q> const& v, T scalar)
 	{
 		return vec<4, T, Q>(v) *= scalar;
 	}
@@ -891,7 +893,7 @@ namespace detail
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER GLM_CONSTEXPR vec<4, T, Q> operator/(vec<4, T, Q> const& v, T const & scalar)
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR vec<4, T, Q> operator/(vec<4, T, Q> const& v, T scalar)
 	{
 		return vec<4, T, Q>(v) /= scalar;
 	}

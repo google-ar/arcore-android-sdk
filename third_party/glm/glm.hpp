@@ -1,6 +1,11 @@
 /// @ref core
 /// @file glm/glm.hpp
 ///
+/// @mainpage OpenGL Mathematics (GLM)
+/// - Website: <a href="https://glm.g-truc.net">glm.g-truc.net</a>
+/// - <a href="modules.html">GLM API documentation</a>
+/// - <a href="https://github.com/g-truc/glm/blob/master/manual.md">GLM Manual</a>
+///
 /// @defgroup core Core features
 ///
 /// @brief Features that implement in C++ the GLSL specification as closely as possible.
@@ -95,10 +100,6 @@
 /// at once by including <glm/ext.hpp>. Otherwise, each extension needs to be
 /// included  a specific file.
 ///
-/// @mainpage OpenGL Mathematics (GLM)
-/// - Website: <a href="https://glm.g-truc.net">glm.g-truc.net</a>
-/// - <a href="modules.html">GLM API documentation</a>
-/// - <a href="https://github.com/g-truc/glm/blob/master/manual.md">GLM Manual</a>
 
 #include "detail/_fixes.hpp"
 
@@ -111,26 +112,26 @@
 #include <cfloat>
 #include <limits>
 #include <cassert>
-#include "fwd.hpp"                // IWYU pragma: export
+#include "fwd.hpp"
 
-#include "vec2.hpp"               // IWYU pragma: export
-#include "vec3.hpp"               // IWYU pragma: export
-#include "vec4.hpp"               // IWYU pragma: export
-#include "mat2x2.hpp"             // IWYU pragma: export
-#include "mat2x3.hpp"             // IWYU pragma: export
-#include "mat2x4.hpp"             // IWYU pragma: export
-#include "mat3x2.hpp"             // IWYU pragma: export
-#include "mat3x3.hpp"             // IWYU pragma: export
-#include "mat3x4.hpp"             // IWYU pragma: export
-#include "mat4x2.hpp"             // IWYU pragma: export
-#include "mat4x3.hpp"             // IWYU pragma: export
-#include "mat4x4.hpp"             // IWYU pragma: export
+#include "vec2.hpp"
+#include "vec3.hpp"
+#include "vec4.hpp"
+#include "mat2x2.hpp"
+#include "mat2x3.hpp"
+#include "mat2x4.hpp"
+#include "mat3x2.hpp"
+#include "mat3x3.hpp"
+#include "mat3x4.hpp"
+#include "mat4x2.hpp"
+#include "mat4x3.hpp"
+#include "mat4x4.hpp"
 
-#include "trigonometric.hpp"      // IWYU pragma: export
-#include "exponential.hpp"        // IWYU pragma: export
-#include "common.hpp"             // IWYU pragma: export
-#include "packing.hpp"            // IWYU pragma: export
-#include "geometric.hpp"          // IWYU pragma: export
-#include "matrix.hpp"             // IWYU pragma: export
-#include "vector_relational.hpp"  // IWYU pragma: export
-#include "integer.hpp"            // IWYU pragma: export
+#include "trigonometric.hpp"
+#include "exponential.hpp"
+#include "common.hpp"
+#include "packing.hpp"
+#include "geometric.hpp"
+#include "matrix.hpp"
+#include "vector_relational.hpp"
+#include "integer.hpp"

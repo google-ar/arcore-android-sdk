@@ -6,30 +6,29 @@
 
 This project isn't limited to *GLSL* features. An extension system, based on the *GLSL* extension conventions, provides extended capabilities: matrix transformations, quaternions, data packing, random numbers, noise, etc...
 
-This library works perfectly with *[OpenGL](https://www.opengl.org)* but it also ensures interoperability with other third party libraries and SDK. It is a good candidate for software rendering (raytracing / rasterisation), image processing, physic simulations and any development context that requires a simple and convenient mathematics library.
+This library works perfectly with *[OpenGL](https://www.opengl.org)* but it also ensures interoperability with other third party libraries and SDK. It is a good candidate for software rendering (raytracing / rasterisation), image processing, physics simulations and any development context that requires a simple and convenient mathematics library.
 
 *GLM* is written in C++98 but can take advantage of C++11 when supported by the compiler. It is a platform independent library with no dependence and it officially supports the following compilers:
-- [Apple Clang 6.0](https://developer.apple.com/library/mac/documentation/CompilerTools/Conceptual/LLVMCompilerOverview/index.html) and higher
-- [GCC](http://gcc.gnu.org/) 4.7 and higher
-- [Intel C++ Composer](https://software.intel.com/en-us/intel-compilers) XE 2013 and higher
-- [LLVM](http://llvm.org/) 3.4 and higher
-- [Visual C++](http://www.visualstudio.com/) 2013 and higher
-- [CUDA](https://developer.nvidia.com/about-cuda) 9.0 and higher (experimental)
-- [SYCL](https://www.khronos.org/sycl/) (experimental: only [ComputeCpp](https://codeplay.com/products/computesuite/computecpp) implementation has been tested).
+- [*GCC*](http://gcc.gnu.org/) 4.7 and higher
+- [*Intel C++ Compose*](https://software.intel.com/en-us/intel-compilers) XE 2013 and higher
+- [*Clang*](http://llvm.org/) 3.4 and higher
+- [*Apple Clang 6.0*](https://developer.apple.com/library/mac/documentation/CompilerTools/Conceptual/LLVMCompilerOverview/index.html) and higher
+- [*Visual C++*](http://www.visualstudio.com/) 2013 and higher
+- [*CUDA*](https://developer.nvidia.com/about-cuda) 9.0 and higher (experimental)
 - Any C++11 compiler
 
-For more information about *GLM*, please have a look at the [manual](manual.md) and the [API reference documentation](http://glm.g-truc.net/0.9.8/api/index.html).
+For more information about *GLM*, please have a look at the [manual](manual.md) and the [API reference documentation](http://glm.g-truc.net/0.9.9/api/modules.html).
 The source code and the documentation are licensed under either the [Happy Bunny License (Modified MIT) or the MIT License](manual.md#section0).
 
-Thanks for contributing to the project by [submitting issues](https://github.com/g-truc/glm/issues) for bug reports and feature requests. Any feedback is welcome at [glm@g-truc.net](mailto://glm@g-truc.net).
+Thanks for contributing to the project by [submitting pull requests](https://github.com/g-truc/glm/pulls).
 
 ```cpp
-#include <glm/vec3.hpp> // glm::vec3
-#include <glm/vec4.hpp> // glm::vec4
-#include <glm/mat4x4.hpp> // glm::mat4
-#include <glm/ext/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale
-#include <glm/ext/matrix_clip_space.hpp> // glm::perspective
-#include <glm/ext/constants.hpp> // glm::pi
+#include "third_party/glm/latest/glm/vec3.hpp" // glm::vec3
+#include "third_party/glm/latest/glm/vec4.hpp" // glm::vec4
+#include "third_party/glm/latest/glm/mat4x4.hpp" // glm::mat4
+#include "third_party/glm/latest/glm/ext/matrix_transform.hpp" // glm::translate, glm::rotate, glm::scale
+#include "third_party/glm/latest/glm/ext/matrix_clip_space.hpp" // glm::perspective
+#include "third_party/glm/latest/glm/ext/scalar_constants.hpp" // glm::pi
 
 glm::mat4 camera(float Translate, glm::vec2 const& Rotate)
 {
@@ -46,166 +45,258 @@ glm::mat4 camera(float Translate, glm::vec2 const& Rotate)
 
 ## Project Health
 
-| Service | System | Compiler | Status |
-| ------- | ------ | -------- | ------ |
-| [Travis CI](https://travis-ci.org/g-truc/glm)| MacOSX, Linux 64 bits | Clang 3.6, Clang 5.0, GCC 4.9, GCC 7.3 | [![Travis CI](https://travis-ci.org/g-truc/glm.svg?branch=master)](https://travis-ci.org/g-truc/glm)
-| [AppVeyor](https://ci.appveyor.com/project/Groovounet/glm)| Windows 32 and 64 | Visual Studio 2013, Visual Studio 2015, Visual Studio 2017 | [![AppVeyor](https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true)](https://ci.appveyor.com/project/Groovounet/glm)
+| Service | Status |
+| ------- | ------ |
+| [GitHub actions](https://github.com/g-truc/glm/actions)| [![.github/workflows/ci.yml](https://github.com/g-truc/glm/actions/workflows/ci.yml/badge.svg)](https://github.com/g-truc/glm/actions/workflows/ci.yml)
+
+## Build and Install
+
+```shell
+cd /path/to/glm
+cmake \
+    -DGLM_BUILD_TESTS=OFF \
+    -DBUILD_SHARED_LIBS=OFF \
+    -B build .
+cmake --build build -- all
+cmake --build build -- install
+```
+
+Passing `-DBUILD_SHARED_LIBS=ON` to build shared library
+
+And then in your `CMakeLists.txt`:
+
+```cmake
+find_package(glm CONFIG REQUIRED)
+target_link_libraries(main PRIVATE glm::glm)
+```
+
+If your perfer to use header-only version of GLM
+
+```cmake
+find_package(glm CONFIG REQUIRED)
+target_link_libraries(main PRIVATE glm::glm-header-only)
+```
+
+## Vcpkg
+
+```shell
+vcpkg install glm
+```
+
+## CMake using FetchContent
+You can add glm to your CMake project to be built together.
+
+Add to the `CMakeLists.txt` file:
+```cmake
+cmake_minimum_required(VERSION 3.11) # FetchContent is new in version 3.11.
+
+include(FetchContent)
+
+FetchContent_Declare(
+	glm
+	GIT_REPOSITORY	https://github.com/g-truc/glm.git
+	GIT_TAG 	bf71a834948186f4097caa076cd2663c69a10e1e #refs/tags/0.9.9.8
+)
+
+FetchContent_MakeAvailable(glm)
+
+target_link_libraries(main PRIVATE glm::glm)
+```
 
 ## Release notes
 
-### [GLM 0.9.9.8](https://github.com/g-truc/glm/releases/tag/0.9.9.8) - 2020-04-13
+### [GLM 1.0.1](https://github.com/g-truc/glm/releases/tag/1.0.1) - 2024-02-26
+
 #### Features:
-- Added GLM_EXT_vector_intX* and GLM_EXT_vector_uintX* extensions
-- Added GLM_EXT_matrix_intX* and GLM_EXT_matrix_uintX* extensions
+- Added C++17 [[nodiscard]] support
 
 #### Improvements:
-- Added clamp, repeat, mirrorClamp and mirrorRepeat function to GLM_EXT_scalar_commond and GLM_EXT_vector_commond extensions with tests
+- Enables only warnings as errors while building unit tests
+- Added aligned_*vec3 simd support #1245
 
 #### Fixes:
-- Fixed unnecessary warnings from matrix_projection.inl #995
-- Fixed quaternion slerp overload which interpolates with extra spins #996
-- Fixed for glm::length using arch64 #992
-- Fixed singularity check for quatLookAt #770
+- Fixed C++ language auto detection build, disable C++98 warnings with Clang #1235, #1231
+- Fixed `GTX_color_space` missing <glm/ext/scalar_constants.hpp> include #1233 #1238
+- Fixed `EXT_matrix_transform` `shear` implementation #1140 #1182
+- Fixed `smoothstep` SIMD implementation #1222
+
+### [GLM 1.0.0](https://github.com/g-truc/glm/releases/tag/1.0.0) - 2024-01-24
+#### Features:
+- Added *GLM_EXT_scalar_reciprocal* with tests
+- Added *GLM_EXT_vector_reciprocal* with tests
+- Added `glm::iround` and `glm::uround` to *GLM_EXT_scalar_common* and *GLM_EXT_vector_common*
+- Added *GLM_EXT_matrix_integer* with tests
+- Added Github Actions
+- Added GLM_FORCE_UNRESTRICTED_FLOAT to prevent static asserts when using other scalar types with function expecting floats. 
+
+#### Improvements:
+- Added `constexpr` qualifier for `cross` product #1040
+- Added `constexpr` qualifier for `dot` product #1040
+
+#### Fixes:
+- Fixed incorrect assertion for `glm::min` and `glm::max` #1009
+- Fixed quaternion orientation in `glm::decompose` #1012
+- Fixed singularity in quaternion to euler angle roll conversion #1019
+- Fixed `quat` `glm::pow` handling of small magnitude quaternions #1022
+- Fixed `glm::fastNormalize` build error #1033
+- Fixed `glm::isMultiple` build error #1034
+- Fixed `glm::adjugate` calculation #1035
+- Fixed `glm::angle` discards the sign of result for angles in range (2*pi-1, 2*pi) #1038
+- Removed ban on using `glm::string_cast` with *CUDA* host code #1041
+
+### [GLM 0.9.9.8](https://github.com/g-truc/glm/releases/tag/0.9.9.8) - 2020-04-13
+#### Features:
+- Added *GLM_EXT_vector_intX* and *GLM_EXT_vector_uintX* extensions
+- Added *GLM_EXT_matrix_intX* and *GLM_EXT_matrix_uintX* extensions
+
+#### Improvements:
+- Added `glm::clamp`, `glm::repeat`, `glm::mirrorClamp` and `glm::mirrorRepeat` function to `GLM_EXT_scalar_commond` and `GLM_EXT_vector_commond` extensions with tests
+
+#### Fixes:
+- Fixed unnecessary warnings from `matrix_projection.inl` #995
+- Fixed quaternion `glm::slerp` overload which interpolates with extra spins #996
+- Fixed for `glm::length` using arch64 #992
+- Fixed singularity check for `glm::quatLookAt` #770
 
 ### [GLM 0.9.9.7](https://github.com/g-truc/glm/releases/tag/0.9.9.7) - 2020-01-05
 #### Improvements:
-- Improved Neon support with more functions optimized #950
-- Added CMake GLM interface #963
-- Added fma implementation based on std::fma #969
+- Improved *Neon* support with more functions optimized #950
+- Added *CMake* *GLM* interface #963
+- Added `glm::fma` implementation based on `std::fma` #969
 - Added missing quat constexpr #955
-- Added GLM_FORCE_QUAT_DATA_WXYZ to store quat data as w,x,y,z instead of x,y,z,w #983
+- Added `GLM_FORCE_QUAT_DATA_WXYZ` to store quat data as w,x,y,z instead of x,y,z,w #983
 
 #### Fixes:
-- Fixed equal ULP variation when using negative sign #965
+- Fixed equal *ULP* variation when using negative sign #965
 - Fixed for intersection ray/plane and added related tests #953
 - Fixed ARM 64bit detection #949
-- Fixed GLM_EXT_matrix_clip_space warnings #980
+- Fixed *GLM_EXT_matrix_clip_space* warnings #980
 - Fixed Wimplicit-int-float-conversion warnings with clang 10+ #986
-- Fixed EXT_matrix_clip_space perspectiveFov
+- Fixed *GLM_EXT_matrix_clip_space* `perspectiveFov`
 
 ### [GLM 0.9.9.6](https://github.com/g-truc/glm/releases/tag/0.9.9.6) - 2019-09-08
 #### Features:
-- Added Neon support #945
-- Added SYCL support #914
-- Added EXT_scalar_integer extension with power of two and multiple scalar functions
-- Added EXT_vector_integer extension with power of two and multiple vector functions
+- Added *Neon* support #945
+- Added *SYCL* support #914
+- Added *GLM_EXT_scalar_integer* extension with power of two and multiple scalar functions
+- Added *GLM_EXT_vector_integer* extension with power of two and multiple vector functions
 
 #### Improvements:
-- Added Visual C++ 2019 detection
-- Added Visual C++ 2017 15.8 and 15.9 detection
-- Added missing genType check for bitCount and bitfieldReverse #893
+- Added *Visual C++ 2019* detection
+- Added *Visual C++ 2017* 15.8 and 15.9 detection
+- Added missing genType check for `glm::bitCount` and `glm::bitfieldReverse` #893
 
 #### Fixes:
 - Fixed for g++6 where -std=c++1z sets __cplusplus to 201500 instead of 201402 #921
 - Fixed hash hashes qua instead of tquat #919
-- Fixed .natvis as structs renamed #915
-- Fixed ldexp and frexp declaration #895
+- Fixed `.natvis` as structs renamed #915
+- Fixed `glm::ldexp` and `glm::frexp` declaration #895
 - Fixed missing const to quaternion conversion operators #890
-- Fixed EXT_scalar_ulp and EXT_vector_ulp API coding style
-- Fixed quaternion componant order: w, {x, y, z} #916
-- Fixed GLM_HAS_CXX11_STL broken on Clang with Linux #926
-- Fixed Clang or GCC build due to wrong GLM_HAS_IF_CONSTEXPR definition #907
-- Fixed CUDA 9 build #910
+- Fixed *GLM_EXT_scalar_ulp* and *GLM_EXT_vector_ulp* API coding style
+- Fixed quaternion componant order: `w, {x, y, z}` #916
+- Fixed `GLM_HAS_CXX11_STL` broken on Clang with Linux #926
+- Fixed *Clang* or *GCC* build due to wrong `GLM_HAS_IF_CONSTEXPR` definition #907
+- Fixed *CUDA* 9 build #910
 
 #### Deprecation:
  - Removed CMake install and uninstall scripts
 
 ### [GLM 0.9.9.5](https://github.com/g-truc/glm/releases/tag/0.9.9.5) - 2019-04-01
 #### Fixes:
-- Fixed build errors when defining GLM_ENABLE_EXPERIMENTAL #884 #883
-- Fixed 'if constexpr' warning #887
-- Fixed missing declarations for frexp and ldexp #886
+- Fixed build errors when defining `GLM_ENABLE_EXPERIMENTAL` #884 #883
+- Fixed `if constexpr` warning #887
+- Fixed missing declarations for `glm::frexp` and `glm::ldexp` #886
 
 ### [GLM 0.9.9.4](https://github.com/g-truc/glm/releases/tag/0.9.9.4) - 2019-03-19
 #### Features:
-- Added mix implementation for matrices in EXT_matrix_common #842
-- Added BUILD_SHARED_LIBS and BUILD_STATIC_LIBS build options #871
+- Added `glm::mix` implementation for matrices in *GLM_EXT_matrix_common/ #842
+- Added *CMake* `BUILD_SHARED_LIBS` and `BUILD_STATIC_LIBS` build options #871
 
 #### Improvements:
 - Added GLM_FORCE_INTRINSICS to enable SIMD instruction code path. By default, it's disabled allowing constexpr support by default. #865
 - Optimized inverseTransform #867
 
 #### Fixes:
-- Fixed in mat4x3 conversion #829
-- Fixed constexpr issue on GCC #832 #865
-- Fixed mix implementation to improve GLSL conformance #866
-- Fixed int8 being defined as unsigned char with some compiler #839
-- Fixed vec1 include #856
-- Ignore .vscode #848
+- Fixed in `glm::mat4x3` conversion #829
+- Fixed `constexpr` issue on GCC #832 #865
+- Fixed `glm::mix` implementation to improve GLSL conformance #866
+- Fixed `glm::int8` being defined as unsigned char with some compiler #839
+- Fixed `glm::vec1` include #856
+- Ignore `.vscode` #848
 
 ### [GLM 0.9.9.3](https://github.com/g-truc/glm/releases/tag/0.9.9.3) - 2018-10-31
 #### Features:
-- Added equal and notEqual overload with max ULPs parameters for scalar numbers #121
-- Added GLM_FORCE_SILENT_WARNINGS to silent GLM warnings when using language extensions but using W4 or Wpedantic warnings #814 #775
-- Added adjugate functions to GTX_matrix_operation #151
-- Added GLM_FORCE_ALIGNED_GENTYPES to enable aligned types and SIMD instruction are not enabled. This disable constexpr #816
+- Added `glm::equal` and `glm::notEqual` overload with max ULPs parameters for scalar numbers #121
+- Added `GLM_FORCE_SILENT_WARNINGS` to silent *GLM* warnings when using language extensions but using W4 or Wpedantic warnings #814 #775
+- Added adjugate functions to `GLM_GTX_matrix_operation` #151
+- Added `GLM_FORCE_ALIGNED_GENTYPES` to enable aligned types and SIMD instruction are not enabled. This disable `constexpr` #816
 
 #### Improvements:
 - Added constant time ULP distance between float #121
-- Added GLM_FORCE_SILENT_WARNINGS to suppress GLM warnings #822
+- Added `GLM_FORCE_SILENT_WARNINGS` to suppress *GLM* warnings #822
 
 #### Fixes:
-- Fixed simplex noise build with double #734
-- Fixed bitfieldInsert according to GLSL spec #818
-- Fixed refract for negative 'k' #808
+- Fixed `glm::simplex` noise build with double #734
+- Fixed `glm::bitfieldInsert` according to GLSL spec #818
+- Fixed `glm::refract` for negative 'k' #808
 
 ### [GLM 0.9.9.2](https://github.com/g-truc/glm/releases/tag/0.9.9.2) - 2018-09-14
 #### Fixes:
-- Fixed GLM_FORCE_CXX** section in the manual
-- Fixed default initialization with vector and quaternion types using GLM_FORCE_CTOR_INIT #812
+- Fixed `GLM_FORCE_CXX**` section in the manual
+- Fixed default initialization with vector and quaternion types using `GLM_FORCE_CTOR_INIT` #812
 
 ### [GLM 0.9.9.1](https://github.com/g-truc/glm/releases/tag/0.9.9.1) - 2018-09-03
 #### Features:
-- Added bitfieldDeinterleave to GTC_bitfield
-- Added missing equal and notEqual with epsilon for quaternion types to GTC_quaternion
-- Added EXT_matrix_relational: equal and notEqual with epsilon for matrix types
-- Added missing aligned matrix types to GTC_type_aligned
+- Added `bitfieldDeinterleave` to *GLM_GTC_bitfield*
+- Added missing `glm::equal` and `glm::notEqual` with epsilon for quaternion types to *GLM_GTC_quaternion*
+- Added *GLM_EXT_matrix_relational*: `glm::equal` and `glm::notEqual` with epsilon for matrix types
+- Added missing aligned matrix types to *GLM_GTC_type_aligned*
 - Added C++17 detection
-- Added Visual C++ language standard version detection
+- Added *Visual C++* language standard version detection
 - Added PDF manual build from markdown
 
 #### Improvements:
-- Added a section to the manual for contributing to GLM
+- Added a section to the manual for contributing to *GLM*
 - Refactor manual, lists all configuration defines
-- Added missing vec1 based constructors
-- Redesigned constexpr support which excludes both SIMD and constexpr #783
-- Added detection of Visual C++ 2017 toolsets
+- Added missing `glm::vec1` based constructors
+- Redesigned constexpr support which excludes both SIMD and `constexpr` #783
+- Added detection of *Visual C++ 2017* toolsets
 - Added identity functions #765
 - Splitted headers into EXT extensions to improve compilation time #670
 - Added separated performance tests
 - Clarified refract valid range of the indices of refraction, between -1 and 1 inclusively #806
 
 #### Fixes:
-- Fixed SIMD detection on Clang and GCC
-- Fixed build problems due to printf and std::clock_t #778
+- Fixed SIMD detection on *Clang* and *GCC*
+- Fixed build problems due to `std::printf` and `std::clock_t` #778
 - Fixed int mod
 - Anonymous unions require C++ language extensions
-- Fixed ortho #790
-- Fixed Visual C++ 2013 warnings in vector relational code #782
-- Fixed ICC build errors with constexpr #704
+- Fixed `glm::ortho` #790
+- Fixed *Visual C++* 2013 warnings in vector relational code #782
+- Fixed *ICC* build errors with constexpr #704
 - Fixed defaulted operator= and constructors #791
 - Fixed invalid conversion from int scalar with vec4 constructor when using SSE instruction
 - Fixed infinite loop in random functions when using negative radius values using an assert #739
 
 ### [GLM 0.9.9.0](https://github.com/g-truc/glm/releases/tag/0.9.9.0) - 2018-05-22
 #### Features:
-- Added RGBM encoding in GTC_packing #420
-- Added GTX_color_encoding extension
-- Added GTX_vec_swizzle, faster compile time swizzling then swizzle operator #558
-- Added GTX_exterior_product with a vec2 cross implementation #621
-- Added GTX_matrix_factorisation to factor matrices in various forms #654
-- Added [GLM_ENABLE_EXPERIMENTAL](manual.md#section7_4) to enable experimental features.
+- Added *RGBM* encoding in *GLM_GTC_packing* #420
+- Added *GLM_GTX_color_encoding* extension
+- Added *GLM_GTX_vec_swizzle*, faster compile time swizzling then swizzle operator #558
+- Added *GLM_GTX_exterior_product* with a `vec2` `glm::cross` implementation #621
+- Added *GLM_GTX_matrix_factorisation* to factor matrices in various forms #654
+- Added [`GLM_ENABLE_EXPERIMENTAL`](manual.md#section7_4) to enable experimental features.
 - Added packing functions for integer vectors #639
 - Added conan packaging configuration #643 #641
-- Added quatLookAt to GTX_quaternion #659
-- Added fmin, fmax and fclamp to GTX_extended_min_max #372
-- Added EXT_vector_relational: extend equal and notEqual to take an epsilon argument
-- Added EXT_vector_relational: openBounded and closeBounded
-- Added EXT_vec1: *vec1 types
-- Added GTX_texture: levels function
+- Added `glm::quatLookAt` to *GLM_GTX_quaternion* #659
+- Added `glm::fmin`, `glm::fmax` and `glm::fclamp` to *GLM_GTX_extended_min_max* #372
+- Added *GLM_EXT_vector_relational*: extend `glm::equal` and `glm::notEqual` to take an epsilon argument
+- Added *GLM_EXT_vector_relational*: `glm::openBounded` and `glm::closeBounded`
+- Added *GLM_EXT_vec1*: `*vec1` types
+- Added *GLM_GTX_texture*: `levels` function
 - Added spearate functions to use both nagative one and zero near clip plans #680
-- Added GLM_FORCE_SINGLE_ONLY to use GLM on platforms that don't support double #627
-- Added GTX_easing for interpolation functions #761
+- Added `GLM_FORCE_SINGLE_ONLY` to use *GLM* on platforms that don't support double #627
+- Added *GLM_GTX_easing* for interpolation functions #761
 
 #### Improvements:
 - No more default initialization of vector, matrix and quaternion types
@@ -230,151 +321,151 @@ glm::mat4 camera(float Translate, glm::vec2 const& Rotate)
 - Clarify quat_cast documentation, applying on pure rotation matrices #759
 
 #### Fixes:
-- Removed doxygen references to GTC_half_float which was removed in 0.9.4
-- Fixed glm::decompose #448
-- Fixed intersectRayTriangle #6
+- Removed doxygen references to *GLM_GTC_half_float* which was removed in 0.9.4
+- Fixed `glm::decompose` #448
+- Fixed `glm::intersectRayTriangle` #6
 - Fixed dual quaternion != operator #629
-- Fixed usused variable warning in GTX_spline #618
-- Fixed references to GLM_FORCE_RADIANS which was removed #642
-- Fixed glm::fastInverseSqrt to use fast inverse square #640
-- Fixed axisAngle NaN #638
-- Fixed integer pow from GTX_integer with null exponent #658
-- Fixed quat normalize build error #656
-- Fixed Visual C++ 2017.2 warning regarding __has_feature definision #655
+- Fixed usused variable warning in *GLM_GTX_spline* #618
+- Fixed references to `GLM_FORCE_RADIANS` which was removed #642
+- Fixed `glm::fastInverseSqrt` to use fast inverse square #640
+- Fixed `glm::axisAngle` NaN #638
+- Fixed integer pow from *GLM_GTX_integer* with null exponent #658
+- Fixed `quat` `normalize` build error #656
+- Fixed *Visual C++ 2017.2* warning regarding `__has_feature` definision #655
 - Fixed documentation warnings
-- Fixed GLM_HAS_OPENMP when OpenMP is not enabled
-- Fixed Better follow GLSL min and max specification #372
+- Fixed `GLM_HAS_OPENMP` when *OpenMP* is not enabled
+- Fixed Better follow GLSL `min` and `max` specification #372
 - Fixed quaternion constructor from two vectors special cases #469
-- Fixed glm::to_string on quaternions wrong components order #681
-- Fixed acsch #698
-- Fixed isnan on CUDA #727
+- Fixed `glm::to_string` on quaternions wrong components order #681
+- Fixed `glm::acsch` #698
+- Fixed `glm::isnan` on *CUDA* #727
 
 #### Deprecation:
-- Requires Visual Studio 2013, GCC 4.7, Clang 3.4, Cuda 7, ICC 2013 or a C++11 compiler
-- Removed GLM_GTX_simd_vec4 extension
-- Removed GLM_GTX_simd_mat4 extension
-- Removed GLM_GTX_simd_quat extension
-- Removed GLM_SWIZZLE, use GLM_FORCE_SWIZZLE instead
-- Removed GLM_MESSAGES, use GLM_FORCE_MESSAGES instead
-- Removed GLM_DEPTH_ZERO_TO_ONE, use GLM_FORCE_DEPTH_ZERO_TO_ONE instead
-- Removed GLM_LEFT_HANDED, use GLM_FORCE_LEFT_HANDED instead
-- Removed GLM_FORCE_NO_CTOR_INIT
-- Removed glm::uninitialize
+- Requires *Visual Studio 2013*, *GCC 4.7*, *Clang 3.4*, *Cuda 7*, *ICC 2013* or a C++11 compiler
+- Removed *GLM_GTX_simd_vec4* extension
+- Removed *GLM_GTX_simd_mat4* extension
+- Removed *GLM_GTX_simd_quat* extension
+- Removed `GLM_SWIZZLE`, use `GLM_FORCE_SWIZZLE` instead
+- Removed `GLM_MESSAGES`, use `GLM_FORCE_MESSAGES` instead
+- Removed `GLM_DEPTH_ZERO_TO_ONE`, use `GLM_FORCE_DEPTH_ZERO_TO_ONE` instead
+- Removed `GLM_LEFT_HANDED`, use `GLM_FORCE_LEFT_HANDED` instead
+- Removed `GLM_FORCE_NO_CTOR_INIT`
+- Removed `glm::uninitialize`
 
 ---
 ### [GLM 0.9.8.5](https://github.com/g-truc/glm/releases/tag/0.9.8.5) - 2017-08-16
 #### Features:
-- Added Conan package support #647
+- Added *Conan* package support #647
 
 #### Fixes:
-- Fixed Clang version detection from source #608
-- Fixed packF3x9_E1x5 exponent packing #614
-- Fixed build error min and max specializations with integer #616
-- Fixed simd_mat4 build error #652
+- Fixed *Clang* version detection from source #608
+- Fixed `glm::packF3x9_E1x5` exponent packing #614
+- Fixed build error `min` and `max` specializations with integer #616
+- Fixed `simd_mat4` build error #652
 
 ---
 ### [GLM 0.9.8.4](https://github.com/g-truc/glm/releases/tag/0.9.8.4) - 2017-01-22
 #### Fixes:
-- Fixed GTC_packing test failing on GCC x86 due to denorms #212 #577
-- Fixed POPCNT optimization build in Clang #512
-- Fixed intersectRayPlane returns true in parallel case #578
-- Fixed GCC 6.2 compiler warnings #580
-- Fixed GTX_matrix_decompose decompose #582 #448
-- Fixed GCC 4.5 and older build #566
-- Fixed Visual C++ internal error when declaring a global vec type with siwzzle expression enabled #594
-- Fixed GLM_FORCE_CXX11 with Clang and libstlc++ which wasn't using C++11 STL features. #604
+- Fixed *GLM_GTC_packing* test failing on *GCC* x86 due to denorms #212 #577
+- Fixed `POPCNT` optimization build in *Clang* #512
+- Fixed `glm::intersectRayPlane` returns true in parallel case #578
+- Fixed *GCC* 6.2 compiler warnings #580
+- Fixed *GLM_GTX_matrix_decompose* `glm::decompose` #582 #448
+- Fixed *GCC* 4.5 and older build #566
+- Fixed *Visual C++* internal error when declaring a global vec type with siwzzle expression enabled #594
+- Fixed `GLM_FORCE_CXX11` with Clang and libstlc++ which wasn't using C++11 STL features. #604
 
 ---
 ### [GLM 0.9.8.3](https://github.com/g-truc/glm/releases/tag/0.9.8.3) - 2016-11-12
 #### Improvements:
-- Broader support of GLM_FORCE_UNRESTRICTED_GENTYPE #378
+- Broader support of `GLM_FORCE_UNRESTRICTED_GENTYPE` #378
 
 #### Fixes:
 - Fixed Android build error with C++11 compiler but C++98 STL #284 #564
-- Fixed GTX_transform2 shear* functions #403
-- Fixed interaction between GLM_FORCE_UNRESTRICTED_GENTYPE and ortho function #568
-- Fixed bitCount with AVX on 32 bit builds #567
-- Fixed CMake find_package with version specification #572 #573
+- Fixed *GLM_GTX_transform2* shear* functions #403
+- Fixed interaction between `GLM_FORCE_UNRESTRICTED_GENTYPE` and `glm::ortho` function #568
+- Fixed `glm::bitCount` with AVX on 32 bit builds #567
+- Fixed *CMake* `find_package` with version specification #572 #573
 
 ---
 ### [GLM 0.9.8.2](https://github.com/g-truc/glm/releases/tag/0.9.8.2) - 2016-11-01
 #### Improvements:
-- Added Visual C++ 15 detection
-- Added Clang 4.0 detection
-- Added warning messages when using GLM_FORCE_CXX** but the compiler
+- Added *Visual C++* 15 detection
+- Added *Clang* 4.0 detection
+- Added warning messages when using `GLM_FORCE_CXX**` but the compiler
   is known to not fully support the requested C++ version #555
-- Refactored GLM_COMPILER_VC values
-- Made quat, vec, mat type component length() static #565
+- Refactored `GLM_COMPILER_VC` values
+- Made quat, vec, mat type component `length()` static #565
 
 #### Fixes:
-- Fixed Visual C++ constexpr build error #555, #556
+- Fixed *Visual C++* `constexpr` build error #555, #556
 
 ---
 ### [GLM 0.9.8.1](https://github.com/g-truc/glm/releases/tag/0.9.8.1) - 2016-09-25
 #### Improvements:
-- Optimized quaternion log function #554
+- Optimized quaternion `glm::log` function #554
 
 #### Fixes:
-- Fixed GCC warning filtering, replaced -pedantic by -Wpedantic
+- Fixed *GCC* warning filtering, replaced -pedantic by -Wpedantic
 - Fixed SIMD faceforward bug. #549
-- Fixed GCC 4.8 with C++11 compilation option #550
-- Fixed Visual Studio aligned type W4 warning #548
+- Fixed *GCC* 4.8 with C++11 compilation option #550
+- Fixed *Visual Studio* aligned type W4 warning #548
 - Fixed packing/unpacking function fixed for 5_6_5 and 5_5_5_1 #552
 
 ---
 ### [GLM 0.9.8.0](https://github.com/g-truc/glm/releases/tag/0.9.8.0) - 2016-09-11
 #### Features:
 - Added right and left handed projection and clip control support #447 #415 #119
-- Added compNormalize and compScale functions to GTX_component_wise
-- Added packF3x9_E1x5 and unpackF3x9_E1x5 to GTC_packing for RGB9E5 #416
-- Added (un)packHalf to GTC_packing
-- Added (un)packUnorm and (un)packSnorm to GTC_packing
-- Added 16bit pack and unpack to GTC_packing
-- Added 8bit pack and unpack to GTC_packing
-- Added missing bvec* && and || operators
-- Added iround and uround to GTC_integer, fast round on positive values
+- Added `glm::compNormalize` and `glm::compScale` functions to *GLM_GTX_component_wise*
+- Added `glm::packF3x9_E1x5` and `glm::unpackF3x9_E1x5` to *GLM_GTC_packing* for RGB9E5 #416
+- Added `(un)packHalf` to *GLM_GTC_packing*
+- Added `(un)packUnorm` and `(un)packSnorm` to *GLM_GTC_packing*
+- Added 16bit pack and unpack to *GLM_GTC_packing*
+- Added 8bit pack and unpack to *GLM_GTC_packing*
+- Added missing `bvec*` && and || operators
+- Added `glm::iround` and `glm::uround` to *GLM_GTC_integer*, fast round on positive values
 - Added raw SIMD API
 - Added 'aligned' qualifiers
-- Added GTC_type_aligned with aligned *vec* types
-- Added GTC_functions extension
-- Added quaternion version of isnan and isinf #521
-- Added lowestBitValue to GTX_bit #536
-- Added GLM_FORCE_UNRESTRICTED_GENTYPE allowing non basic genType #543
+- Added *GLM_GTC_type_aligned* with aligned *vec* types
+- Added *GLM_GTC_functions* extension
+- Added quaternion version of `glm::isnan` and `glm::isinf` #521
+- Added `glm::lowestBitValue` to *GLM_GTX_bit* #536
+- Added `GLM_FORCE_UNRESTRICTED_GENTYPE` allowing non basic `genType` #543
 
 #### Improvements:
-- Improved SIMD and swizzle operators interactions with GCC and Clang #474
-- Improved GTC_random linearRand documentation
-- Improved GTC_reciprocal documentation
-- Improved GLM_FORCE_EXPLICIT_CTOR coverage #481
-- Improved OpenMP support detection for Clang, GCC, ICC and VC
-- Improved GTX_wrap for SIMD friendliness
-- Added constexpr for *vec*, *mat*, *quat* and *dual_quat* types #493
-- Added NEON instruction set detection
-- Added MIPS CPUs detection
-- Added PowerPC CPUs detection
-- Use Cuda built-in function for abs function implementation with Cuda compiler
-- Factorized GLM_COMPILER_LLVM and GLM_COMPILER_APPLE_CLANG into GLM_COMPILER_CLANG
+- Improved SIMD and swizzle operators interactions with *GCC* and *Clang* #474
+- Improved *GLM_GTC_random* `linearRand` documentation
+- Improved *GLM_GTC_reciprocal* documentation
+- Improved `GLM_FORCE_EXPLICIT_CTOR` coverage #481
+- Improved *OpenMP* support detection for *Clang*, *GCC*, *ICC* and *VC*
+- Improved *GLM_GTX_wrap* for SIMD friendliness
+- Added `constexpr` for `*vec*`, `*mat*`, `*quat*` and `*dual_quat*` types #493
+- Added *NEON* instruction set detection
+- Added *MIPS* CPUs detection
+- Added *PowerPC* CPUs detection
+- Use *Cuda* built-in function for abs function implementation with Cuda compiler
+- Factorized `GLM_COMPILER_LLVM` and `GLM_COMPILER_APPLE_CLANG` into `GLM_COMPILER_CLANG`
 - No more warnings for use of long long
 - Added more information to build messages
 
 #### Fixes:
-- Fixed GTX_extended_min_max filename typo #386
-- Fixed intersectRayTriangle to not do any unintentional backface culling
-- Fixed long long warnings when using C++98 on GCC and Clang #482
+- Fixed *GLM_GTX_extended_min_max* filename typo #386
+- Fixed `glm::intersectRayTriangle` to not do any unintentional backface culling
+- Fixed long long warnings when using C++98 on *GCC* and *Clang* #482
 - Fixed sign with signed integer function on non-x86 architecture
 - Fixed strict aliasing warnings #473
-- Fixed missing vec1 overload to length2 and distance2 functions #431
-- Fixed GLM test '/fp:fast' and '/Za' command-line options are incompatible
-- Fixed quaterion to mat3 cast function mat3_cast from GTC_quaternion #542
-- Fixed GTX_io for Cuda #547 #546
+- Fixed missing `glm::vec1` overload to `glm::length2` and `glm::distance2` functions #431
+- Fixed *GLM* test '/fp:fast' and '/Za' command-line options are incompatible
+- Fixed quaterion to mat3 cast function `glm::mat3_cast` from *GLM_GTC_quaternion* #542
+- Fixed *GLM_GTX_io* for *Cuda* #547 #546
 
 #### Deprecation:
-- Removed GLM_FORCE_SIZE_FUNC define
-- Deprecated GLM_GTX_simd_vec4 extension
-- Deprecated GLM_GTX_simd_mat4 extension
-- Deprecated GLM_GTX_simd_quat extension
-- Deprecated GLM_SWIZZLE, use GLM_FORCE_SWIZZLE instead
-- Deprecated GLM_MESSAGES, use GLM_FORCE_MESSAGES instead
+- Removed `GLM_FORCE_SIZE_FUNC` define
+- Deprecated *GLM_GTX_simd_vec4* extension
+- Deprecated *GLM_GTX_simd_mat4* extension
+- Deprecated *GLM_GTX_simd_quat* extension
+- Deprecated `GLM_SWIZZLE`, use `GLM_FORCE_SWIZZLE` instead
+- Deprecated `GLM_MESSAGES`, use `GLM_FORCE_MESSAGES` instead
 
 ---
 ### [GLM 0.9.7.6](https://github.com/g-truc/glm/releases/tag/0.9.7.6) - 2016-07-16
@@ -701,14 +792,14 @@ glm::mat4 camera(float Translate, glm::vec2 const& Rotate)
 - Increased static_assert coverage
 - Replaced GLM traits by STL traits when possible
 - Allowed including individual core feature
-- Increased unit tests completness
+- Increased unit tests completeness
 - Added creating of a quaternion from two vectors
 - Added C++11 initializer lists
 - Fixed umulExtended and imulExtended implementations for vector types (#76)
 - Fixed CUDA coverage for GTC extensions
 - Added GTX_io extension
 - Improved GLM messages enabled when defining GLM_MESSAGES
-- Hidden matrix _inverse function implementation detail into private section
+- Hidden matrix_inverse function implementation detail into private section
 
 ---
 ### [GLM 0.9.4.6](https://github.com/g-truc/glm/releases/tag/0.9.4.6) - 2013-09-20
@@ -868,7 +959,7 @@ generation distribution
 ---
 ### [GLM 0.9.2.7](https://github.com/g-truc/glm/releases/tag/0.9.2.7) - 2011-10-24
 - Added more swizzling constructors
-- Added missing none-squared matrix products
+- Added missing non-squared matrix products
 
 ---
 ### [GLM 0.9.2.6](https://github.com/g-truc/glm/releases/tag/0.9.2.6) - 2011-10-01
@@ -1197,7 +1288,7 @@ generation distribution
 ### GLM 0.2 - 2005-05-05
 - Improve adaptative from GLSL.
 - Add experimental extensions based on OpenGL extension process.
-- Fixe bugs.
+- Fixed bugs.
 
 ---
 ### GLM 0.1 - 2005-02-21

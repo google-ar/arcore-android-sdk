@@ -111,6 +111,7 @@
 #include "./ext/scalar_constants.hpp"
 #include "./ext/scalar_integer.hpp"
 #include "./ext/scalar_packing.hpp"
+#include "./ext/scalar_reciprocal.hpp"
 #include "./ext/scalar_relational.hpp"
 #include "./ext/scalar_ulp.hpp"
 
@@ -120,6 +121,7 @@
 #include "./ext/vector_common.hpp"
 #include "./ext/vector_integer.hpp"
 #include "./ext/vector_packing.hpp"
+#include "./ext/vector_reciprocal.hpp"
 #include "./ext/vector_relational.hpp"
 #include "./ext/vector_ulp.hpp"
 
@@ -198,9 +200,11 @@
 #include "./gtx/color_encoding.hpp"
 #include "./gtx/color_space.hpp"
 #include "./gtx/color_space_YCoCg.hpp"
+#include "./gtx/common.hpp"
 #include "./gtx/compatibility.hpp"
 #include "./gtx/component_wise.hpp"
 #include "./gtx/dual_quaternion.hpp"
+#include "./gtx/easing.hpp"
 #include "./gtx/euler_angles.hpp"
 #include "./gtx/extend.hpp"
 #include "./gtx/extended_min_max.hpp"
@@ -210,10 +214,18 @@
 #include "./gtx/functions.hpp"
 #include "./gtx/gradient_paint.hpp"
 #include "./gtx/handed_coordinate_space.hpp"
+
+#if __cplusplus >= 201103L
+#include "./gtx/hash.hpp"
+#endif
+
 #include "./gtx/integer.hpp"
 #include "./gtx/intersect.hpp"
+#include "./gtx/io.hpp"
 #include "./gtx/log_base.hpp"
 #include "./gtx/matrix_cross_product.hpp"
+#include "./gtx/matrix_decompose.hpp"
+#include "./gtx/matrix_factorisation.hpp"
 #include "./gtx/matrix_interpolation.hpp"
 #include "./gtx/matrix_major_storage.hpp"
 #include "./gtx/matrix_operation.hpp"
@@ -225,15 +237,17 @@
 #include "./gtx/number_precision.hpp"
 #include "./gtx/optimum_pow.hpp"
 #include "./gtx/orthonormalize.hpp"
+#include "./gtx/pca.hpp"
 #include "./gtx/perpendicular.hpp"
 #include "./gtx/polar_coordinates.hpp"
 #include "./gtx/projection.hpp"
 #include "./gtx/quaternion.hpp"
 #include "./gtx/raw_data.hpp"
+#include "./gtx/rotate_normalized_axis.hpp"
 #include "./gtx/rotate_vector.hpp"
 #include "./gtx/spline.hpp"
 #include "./gtx/std_based_type.hpp"
-#if !(GLM_COMPILER & GLM_COMPILER_CUDA)
+#if !((GLM_COMPILER & GLM_COMPILER_CUDA) || (GLM_COMPILER & GLM_COMPILER_HIP))
 #	include "./gtx/string_cast.hpp"
 #endif
 #include "./gtx/transform.hpp"

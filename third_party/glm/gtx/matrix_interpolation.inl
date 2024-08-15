@@ -1,26 +1,37 @@
 /// @ref gtx_matrix_interpolation
 
-#include "../gtc/constants.hpp"
+#include "../ext/scalar_constants.hpp"
+
+#include <limits>
 
 namespace glm
 {
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER void axisAngle(mat<4, 4, T, Q> const& m, vec<3, T, Q> & axis, T& angle)
+	GLM_FUNC_QUALIFIER void axisAngle(mat<4, 4, T, Q> const& m, vec<3, T, Q>& axis, T& angle)
 	{
-		T epsilon = static_cast<T>(0.01);
-		T epsilon2 = static_cast<T>(0.1);
+		T const epsilon =
+		    std::numeric_limits<T>::epsilon() * static_cast<T>(1e2);
 
-		if((abs(m[1][0] - m[0][1]) < epsilon) && (abs(m[2][0] - m[0][2]) < epsilon) && (abs(m[2][1] - m[1][2]) < epsilon))
+        bool const nearSymmetrical =
+            abs(m[1][0] - m[0][1]) < epsilon &&
+            abs(m[2][0] - m[0][2]) < epsilon &&
+            abs(m[2][1] - m[1][2]) < epsilon;
+
+		if(nearSymmetrical)
 		{
-			if ((abs(m[1][0] + m[0][1]) < epsilon2) && (abs(m[2][0] + m[0][2]) < epsilon2) && (abs(m[2][1] + m[1][2]) < epsilon2) && (abs(m[0][0] + m[1][1] + m[2][2] - static_cast<T>(3.0)) < epsilon2))
+            bool const nearIdentity =
+                abs(m[1][0] + m[0][1]) < epsilon &&
+                abs(m[2][0] + m[0][2]) < epsilon &&
+                abs(m[2][1] + m[1][2]) < epsilon &&
+                abs(m[0][0] + m[1][1] + m[2][2] - T(3.0)) < epsilon;
+			if (nearIdentity)
 			{
 				angle = static_cast<T>(0.0);
-				axis.x = static_cast<T>(1.0);
-				axis.y = static_cast<T>(0.0);
-				axis.z = static_cast<T>(0.0);
+				axis = vec<3, T, Q>(
+				    static_cast<T>(1.0), static_cast<T>(0.0), static_cast<T>(0.0));
 				return;
 			}
-			angle = static_cast<T>(3.1415926535897932384626433832795);
+			angle = pi<T>();
 			T xx = (m[0][0] + static_cast<T>(1.0)) * static_cast<T>(0.5);
 			T yy = (m[1][1] + static_cast<T>(1.0)) * static_cast<T>(0.5);
 			T zz = (m[2][2] + static_cast<T>(1.0)) * static_cast<T>(0.5);
@@ -74,17 +85,23 @@ namespace glm
 			}
 			return;
 		}
-		T s = sqrt((m[2][1] - m[1][2]) * (m[2][1] - m[1][2]) + (m[2][0] - m[0][2]) * (m[2][0] - m[0][2]) + (m[1][0] - m[0][1]) * (m[1][0] - m[0][1]));
-		if (glm::abs(s) < T(0.001))
-			s = static_cast<T>(1);
+
 		T const angleCos = (m[0][0] + m[1][1] + m[2][2] - static_cast<T>(1)) * static_cast<T>(0.5);
-		if(angleCos - static_cast<T>(1) < epsilon)
-			angle = pi<T>() * static_cast<T>(0.25);
+		if(angleCos >= static_cast<T>(1.0))
+		{
+			angle = static_cast<T>(0.0);
+		}
+		else if (angleCos <= static_cast<T>(-1.0))
+		{
+			angle = pi<T>();
+		}
 		else
+		{
 			angle = acos(angleCos);
-		axis.x = (m[1][2] - m[2][1]) / s;
-		axis.y = (m[2][0] - m[0][2]) / s;
-		axis.z = (m[0][1] - m[1][0]) / s;
+		}
+
+        axis = glm::normalize(glm::vec<3, T, Q>(
+            m[1][2] - m[2][1], m[2][0] - m[0][2], m[0][1] - m[1][0]));
 	}
 
 	template<typename T, qualifier Q>
