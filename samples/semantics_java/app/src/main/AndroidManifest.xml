@@ -19,6 +19,13 @@
     package="com.google.ar.core.examples.java.hellosemantics">
 
   <uses-permission android:name="android.permission.CAMERA"/>
+  <!-- Required to post notifications for Android T+ devices -->
+
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <!-- Google Play assumes that certain hardware related permissions indicate that the underlying
+       hardware features are required by default.
+       (https://developer.android.com/topic/arc/manifest.html#implied-features). -->
+  <uses-feature android:name="android.hardware.camera" android:required="true" />
   <!-- Limits app visibility in the Google Play Store to ARCore supported devices
        (https://developers.google.com/ar/devices). -->
   <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>

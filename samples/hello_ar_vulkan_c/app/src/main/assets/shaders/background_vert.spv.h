@@ -18,6 +18,9 @@
 
 // 1011.0.0
 #pragma once
+
+#include <cstdint>
+
 const uint32_t background_vert[] = {
     0x07230203, 0x00010000, 0x0008000a, 0x0000001f, 0x00000000, 0x00020011,
     0x00000001, 0x0006000b, 0x00000001, 0x4c534c47, 0x6474732e, 0x3035342e,
