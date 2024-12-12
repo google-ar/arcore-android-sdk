@@ -51,15 +51,14 @@ jint JNI_OnLoad(JavaVM *vm, void *) {
 
 JNI_METHOD(jlong, createEglImage)
 (JNIEnv *env, jclass, jobject hardware_buffer) {
-#if (__ANDROID_API__ >= 26)
+#if (__ANDROID_API__ >= 27)
   EGLImageKHR image = opengl_helper->CreateEglImage(
       AHardwareBuffer_fromHardwareBuffer(env, hardware_buffer));
 
   return image == EGL_NO_IMAGE ? 0 : reinterpret_cast<intptr_t>(image);
 #else
   jclass jcls = env->FindClass("java/lang/UnsupportedOperationException");
-  env->ThrowNew(jcls,
-                "Hardware Buffer is not supported on compiled NDK level.");
+  env->ThrowNew(jcls, "Hardware Buffer is only supported on Android 27+.");
   return 0;
 #endif
 }
