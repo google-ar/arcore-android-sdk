@@ -74,12 +74,14 @@ void Texture::UpdateWithDepthImageOnGlThread(const ArSession& session,
   ArImage_getHeight(&session, depth_image, &image_height);
   ArImage_getPlanePixelStride(&session, depth_image, 0, &image_pixel_stride);
   ArImage_getPlaneRowStride(&session, depth_image, 0, &image_row_stride);
-  ArImage_release(depth_image);
+
   glBindTexture(GL_TEXTURE_2D, texture_id_);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, image_width, image_height, 0, GL_RG,
                GL_UNSIGNED_BYTE, depth_data);
   width_ = image_width;
   height_ = image_height;
+  
+  ArImage_release(depth_image);
 }
 
 }  // namespace hello_ar
