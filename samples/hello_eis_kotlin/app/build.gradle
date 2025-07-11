@@ -18,14 +18,14 @@ apply plugin: 'kotlin-android'
 
 android {
     namespace "com.google.ar.core.examples.kotlin.helloeis"
-    compileSdkVersion 35
+    compileSdkVersion 36
     defaultConfig {
         applicationId "com.google.ar.core.examples.kotlin.helloeis"
 
         // AR Optional apps must declare minSdkVersion >= 14.
         // AR Required apps must declare minSdkVersion >= 24.
         minSdkVersion 24
-        targetSdkVersion 35
+        targetSdkVersion 36
         versionCode 1
         versionName '1.0'
     }
@@ -46,7 +46,7 @@ android {
 
 dependencies {
     // ARCore (Google Play Services for AR) library.
-    implementation 'com.google.ar:core:1.49.0'
+    implementation 'com.google.ar:core:1.50.0'
 
     // Obj - a simple Wavefront OBJ file loader
     // https://github.com/javagl/Obj

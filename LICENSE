@@ -3947,8 +3947,22 @@ TCMalloc
    limitations under the License.
 
 *******************************************************************************
-Tink
+examples
 *******************************************************************************
+===============================================================================
+
+All files in the following folders:
+- third_party/arcore/ar/core/c_api/arcore_c_api.h
+- third_party/arcore/java/com/google/ar/
+- third_party/arcore/unity/arcore_extensions/Assets/GoogleARCoreExtensions/
+
+are licensed as follows:
+ARCore Additional Terms of Service
+
+All other files are licensed as follows:
+Apache License Version 2.0
+
+===============================================================================
 
                                  Apache License
                            Version 2.0, January 2004
@@ -4151,6 +4165,40 @@ Tink
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+===============================================================================
+
+ARCore Additional Terms of Service
+
+Last modified: May 11, 2022
+
+To use ARCore (including the ARCore SDK, APIs, other developer services, and
+associated software and documentation) (collectively, "APIs"), you must accept
+(1) the Google APIs Terms of Service, and (2) these ARCore Additional Terms of
+Service (the "Additional Terms"). If these Additional Terms conflict with the
+Google APIs Terms of Service, these Additional Terms will govern for your use of
+ARCore.
+
+Terms of Service and Privacy Policy The terms of service for your API Client
+(e.g., your app) will (1) notify end users that the API Client includes ARCore
+functionality provided by Google; and (2) state that use of ARCore functionality
+is subject to the then-current versions of the: (A) Google Terms of Service at
+policies.google.com/terms; and (B) Google Privacy Policy at
+google.com/policies/privacy.
+
+User Privacy Disclosures You must follow the user privacy requirements
+applicable to your API Client.
+
+Child-Directed Applications You may not use ARCore Cloud Anchors or ARCore
+Geospatial API in an API Client that would be deemed to be a “Web site or online
+service directed to children” under the Children’s Online Privacy Protection Act
+(COPPA).
+
+No Re-Creating Google Products or Features You will not use the APIs to create a
+product or service with features that are substantially similar to or that
+re-create the features of another Google product or service (such as Live View
+on Google Maps). Your product or service must contain substantial, independent
+value and features beyond the Google products or services.
 
 *******************************************************************************
 java_annotations

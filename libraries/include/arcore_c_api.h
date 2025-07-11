@@ -822,9 +822,9 @@ inline ArStreetscapeGeometry *ArAsStreetscapeGeometry(ArTrackable *trackable) {
 /// @ingroup ArTrackable
 /// Object types for heterogeneous query/update lists.
 AR_DEFINE_ENUM(ArTrackableType){
-    /// The base Trackable type. Can be passed to @c ::ArSession_getAllTrackables
-    /// and @c ::ArFrame_getUpdatedTrackables as the @p filter_type to get
-    /// all/updated Trackables of all types.
+    /// The base Trackable type. Can be passed to @c
+    /// ::ArSession_getAllTrackables and @c ::ArFrame_getUpdatedTrackables as
+    /// the @p filter_type to get all/updated Trackables of all types.
     AR_TRACKABLE_BASE_TRACKABLE = 0x41520100,
 
     /// The @c ::ArPlane subtype of Trackable.
@@ -846,8 +846,8 @@ AR_DEFINE_ENUM(ArTrackableType){
     AR_TRACKABLE_EARTH = 0x41520109,
 
     /// On supported devices, trackable type for depth image based hit results
-    /// returned by @c ::ArFrame_hitTest when @c ::ArConfig_setDepthMode has been
-    /// set to @c #AR_DEPTH_MODE_AUTOMATIC.
+    /// returned by @c ::ArFrame_hitTest when @c ::ArConfig_setDepthMode has
+    /// been set to @c #AR_DEPTH_MODE_AUTOMATIC.
     AR_TRACKABLE_DEPTH_POINT = 0x41520111,
 
     /// Trackable type for results retrieved from
@@ -872,11 +872,11 @@ AR_DEFINE_ENUM(ArSessionFeature){
     /// ARCore's behavior changes in the following ways:
     ///
     /// - The display will be mirrored. Specifically,
-    ///   @c ::ArCamera_getProjectionMatrix will include a horizontal flip in the
-    ///   generated projection matrix and APIs that reason about things in screen
-    ///   space, such as @c ::ArFrame_transformCoordinates2d, will mirror screen
-    ///   coordinates. Open GL apps should consider using @c glFrontFace to
-    ///   render mirrored assets without changing their winding direction.
+    ///   @c ::ArCamera_getProjectionMatrix will include a horizontal flip in
+    ///   the generated projection matrix and APIs that reason about things in
+    ///   screen space, such as @c ::ArFrame_transformCoordinates2d, will mirror
+    ///   screen coordinates. Open GL apps should consider using @c glFrontFace
+    ///   to render mirrored assets without changing their winding direction.
     /// - @c ::ArCamera_getTrackingState will always output
     ///   @c #AR_TRACKING_STATE_PAUSED.
     /// - @c ::ArFrame_hitTest will always output an empty list.
@@ -926,8 +926,9 @@ AR_DEFINE_ENUM(ArStatus){
     /// @c #AR_TRACKING_STATE_TRACKING state, but the session was not.
     AR_ERROR_NOT_TRACKING = -5,
 
-    /// A texture name was not set by calling @c ::ArSession_setCameraTextureName
-    /// before the first call to @c ::ArSession_update.
+    /// A texture name was not set by calling @c
+    /// ::ArSession_setCameraTextureName before the first call to @c
+    /// ::ArSession_update.
     AR_ERROR_TEXTURE_NOT_SET = -6,
 
     /// An operation required GL context but one was not available.
@@ -941,9 +942,9 @@ AR_DEFINE_ENUM(ArStatus){
     AR_ERROR_CAMERA_PERMISSION_NOT_GRANTED = -9,
 
     /// Acquire failed because the object being acquired was already released.
-    /// For example, this happens if the application holds an @c ::ArFrame beyond
-    /// the next call to @c ::ArSession_update, and then tries to acquire its
-    /// Point Cloud.
+    /// For example, this happens if the application holds an @c ::ArFrame
+    /// beyond the next call to @c ::ArSession_update, and then tries to acquire
+    /// its Point Cloud.
     AR_ERROR_DEADLINE_EXCEEDED = -10,
 
     /// There are no available resources to complete the operation. In cases of
@@ -1004,21 +1005,22 @@ AR_DEFINE_ENUM(ArStatus){
 
     /// The <a
     /// href="https://developers.google.com/android/guides/setup#declare-dependencies">Fused
-    /// Location Provider for Android library</a> is required, but wasn't found in
-    /// the client app's binary prior to calling @c ::ArSession_configure when @c
-    /// ::ArGeospatialMode is set to @c #AR_GEOSPATIAL_MODE_ENABLED.
+    /// Location Provider for Android library</a> is required, but wasn't found
+    /// in the client app's binary prior to calling @c ::ArSession_configure
+    /// when @c ::ArGeospatialMode is set to @c #AR_GEOSPATIAL_MODE_ENABLED.
     ///
     /// <p>Ensure that your app <a
     /// href="https://developers.google.com/ar/develop/c/geospatial/developer-guide#include-required-libraries">includes
-    /// the Fused Location Provider of Android library</a>, and that your app's <a
+    /// the Fused Location Provider of Android library</a>, and that your app's
+    /// <a
     /// href="https://developers.google.com/ar/develop/c/geospatial/developer-guide#include-required-proguard-rules">ProGuard
     /// rules are correctly set up for the Geospatial API</a>.
     ///
     /// <p>When building your app, check the resulting binary with the <a
     /// href="https://developer.android.com/studio/debug/apk-analyzer">APK
-    /// Analyzer</a>, and ensure that the built application binary includes the @c
-    /// com.google.android.gms.location package, and that its contents are not
-    /// renamed or minified.
+    /// Analyzer</a>, and ensure that the built application binary includes the
+    /// @c com.google.android.gms.location package, and that its contents are
+    /// not renamed or minified.
 
     AR_ERROR_GOOGLE_PLAY_SERVICES_LOCATION_LIBRARY_NOT_LINKED = -22,
 
@@ -1141,8 +1143,8 @@ AR_DEFINE_ENUM(ArCloudAnchorState){
         "ARCore SDK 1.12. See release notes to learn more.") = -3,
 
     /// The application has exhausted the request quota allotted to the given
-    /// API key. The developer should request additional quota for the ARCore API
-    /// for their API key from the Google Developers Console.
+    /// API key. The developer should request additional quota for the ARCore
+    /// API for their API key from the Google Developers Console.
     AR_CLOUD_ANCHOR_STATE_ERROR_RESOURCE_EXHAUSTED = -4,
 
     /// Hosting failed, because the server could not successfully process the
@@ -1159,13 +1161,13 @@ AR_DEFINE_ENUM(ArCloudAnchorState){
         "deprecated in ARCore SDK 1.12. See release notes to learn more.") = -7,
 
     /// The Cloud Anchor could not be resolved because the SDK version used to
-    /// resolve the anchor is older than and incompatible with the version used to
-    /// host it.
+    /// resolve the anchor is older than and incompatible with the version used
+    /// to host it.
     AR_CLOUD_ANCHOR_STATE_ERROR_RESOLVING_SDK_VERSION_TOO_OLD = -8,
 
     /// The Cloud Anchor could not be resolved because the SDK version used to
-    /// resolve the anchor is newer than and incompatible with the version used to
-    /// host it.
+    /// resolve the anchor is newer than and incompatible with the version used
+    /// to host it.
     AR_CLOUD_ANCHOR_STATE_ERROR_RESOLVING_SDK_VERSION_TOO_NEW = -9,
 
     /// The ARCore Cloud Anchor service was unreachable. This can happen for
@@ -1243,8 +1245,8 @@ AR_DEFINE_ENUM(ArLightEstimationMode){
     AR_LIGHT_ESTIMATION_MODE_AMBIENT_INTENSITY = 1,
     /// Lighting Estimation is enabled, generating inferred Environmental HDR
     /// Lighting Estimation in linear color space. Note,
-    /// @c #AR_LIGHT_ESTIMATION_MODE_ENVIRONMENTAL_HDR is not supported when using
-    /// the front-facing (selfie) camera.
+    /// @c #AR_LIGHT_ESTIMATION_MODE_ENVIRONMENTAL_HDR is not supported when
+    /// using the front-facing (selfie) camera.
     AR_LIGHT_ESTIMATION_MODE_ENVIRONMENTAL_HDR = 2,
 };
 
@@ -1275,15 +1277,16 @@ AR_DEFINE_ENUM(ArRecordingStatus){
 /// @ingroup ArConfig
 /// Selects the behavior of @c ::ArSession_update.
 AR_DEFINE_ENUM(ArUpdateMode){
-    /// @c ::ArSession_update will wait until a new camera image is available, or
-    /// until the built-in timeout (currently 66ms) is reached. On most devices
-    /// the camera is configured to capture 30 frames per second. If the camera
-    /// image does not arrive by the built-in timeout, then @c ::ArSession_update
+    /// @c ::ArSession_update will wait until a new camera image is available,
+    /// or until the built-in timeout (currently 66ms) is reached. On most
+    /// devices the camera is configured to capture 30 frames per second. If the
+    /// camera image does not arrive by the built-in timeout, then @c
+    /// ::ArSession_update
     /// will return the most recent @c ::ArFrame object.
     AR_UPDATE_MODE_BLOCKING = 0,
-    /// @c ::ArSession_update will return immediately without blocking. If no new
-    /// camera image is available, then @c ::ArSession_update will return the most
-    /// recent @c ::ArFrame object.
+    /// @c ::ArSession_update will return immediately without blocking. If no
+    /// new camera image is available, then @c ::ArSession_update will return
+    /// the most recent @c ::ArFrame object.
     AR_UPDATE_MODE_LATEST_CAMERA_IMAGE = 1,
 };
 
@@ -1511,8 +1514,8 @@ AR_DEFINE_ENUM(ArSemanticLabel){
     /// Pixels of non-walkable vegetation, like trees and shrubs. In contrast,
     /// 'terrain' specifies walkable vegetation, like grass.
     AR_SEMANTIC_LABEL_TREE = 3,
-    /// Pixels of drivable surfaces for vehicles, including paved, unpaved, dirt,
-    /// driveways, crosswalks, etc.
+    /// Pixels of drivable surfaces for vehicles, including paved, unpaved,
+    /// dirt, driveways, crosswalks, etc.
     AR_SEMANTIC_LABEL_ROAD = 4,
     /// Pixels of sidewalks for pedestrians and cyclists, including associated
     /// curbs.
@@ -1521,20 +1524,22 @@ AR_DEFINE_ENUM(ArSemanticLabel){
     /// mountains, etc. In contrast, 'tree' specifies non-walkable vegetation,
     /// like trees and bushes.
     AR_SEMANTIC_LABEL_TERRAIN = 6,
-    /// Pixels of structures that are not buildings, including fences, guardrails,
+    /// Pixels of structures that are not buildings, including fences,
+    /// guardrails,
     /// stand-alone walls, tunnels, bridges, etc.
     AR_SEMANTIC_LABEL_STRUCTURE = 7,
-    /// Pixels of general temporary and permanent objects and obstacles, including
-    /// street signs, traffic signs, free-standing business signs, billboards,
-    /// poles, mailboxes, fire hydrants, street lights, phone booths, bus stop
-    /// enclosures, cones, parking meters, animals, etc.
+    /// Pixels of general temporary and permanent objects and obstacles,
+    /// including street signs, traffic signs, free-standing business signs,
+    /// billboards, poles, mailboxes, fire hydrants, street lights, phone
+    /// booths, bus stop enclosures, cones, parking meters, animals, etc.
     AR_SEMANTIC_LABEL_OBJECT = 8,
     /// Pixels of vehicles, including cars, vans, buses, trucks, motorcycles,
     /// bicycles, trains, etc.
     AR_SEMANTIC_LABEL_VEHICLE = 9,
     /// Pixels of humans, including pedestrians and bicycle/motorcycle riders.
     AR_SEMANTIC_LABEL_PERSON = 10,
-    /// Pixels of ground surfaces covered by water, including lakes, rivers, etc.
+    /// Pixels of ground surfaces covered by water, including lakes, rivers,
+    /// etc.
     AR_SEMANTIC_LABEL_WATER = 11,
 };
 
@@ -1678,8 +1683,8 @@ AR_DEFINE_ENUM(ArCloudAnchorMode){
 /// ::ArConfig_setGeospatialMode to set the desired mode.
 AR_DEFINE_ENUM(ArGeospatialMode){
     /// The Geospatial API is disabled. When a configuration with @c
-    /// #AR_GEOSPATIAL_MODE_DISABLED becomes active on the @c ::ArSession, current
-    /// @c ::ArEarth and @c ::ArAnchor objects created from @c
+    /// #AR_GEOSPATIAL_MODE_DISABLED becomes active on the @c ::ArSession,
+    /// current @c ::ArEarth and @c ::ArAnchor objects created from @c
     /// ::ArEarth_acquireNewAnchor will stop updating; have their @c
     /// ::ArTrackingState set to @c #AR_TRACKING_STATE_STOPPED and should be
     /// released; and @c ::ArSession_acquireEarth will return @c NULL. If
@@ -1728,8 +1733,8 @@ AR_DEFINE_ENUM(ArGeospatialMode){
     /// This mode is not compatible with the front-facing
     /// (selfie) camera. If @c ::ArGeospatialMode is @c
     /// #AR_GEOSPATIAL_MODE_ENABLED on a session using
-    /// @c #AR_CAMERA_CONFIG_FACING_DIRECTION_FRONT, @c ::ArSession_configure will
-    /// return @c #AR_ERROR_UNSUPPORTED_CONFIGURATION.
+    /// @c #AR_CAMERA_CONFIG_FACING_DIRECTION_FRONT, @c ::ArSession_configure
+    /// will return @c #AR_ERROR_UNSUPPORTED_CONFIGURATION.
     ///
     /// Not all devices support @c #AR_GEOSPATIAL_MODE_ENABLED, use
     /// @c ::ArSession_isGeospatialModeSupported to check if the current device
@@ -1810,8 +1815,8 @@ AR_DEFINE_ENUM(ArStreetscapeGeometryQuality){
 AR_DEFINE_ENUM(ArInstantPlacementMode){
     /// Instant Placement is disabled.
 
-    /// When Instant Placement is disabled, any @c ::ArInstantPlacementPoint that
-    /// has
+    /// When Instant Placement is disabled, any @c ::ArInstantPlacementPoint
+    /// that has
     /// @c
     /// #AR_INSTANT_PLACEMENT_POINT_TRACKING_METHOD_SCREENSPACE_WITH_APPROXIMATE_DISTANCE<!--NOLINT-->
     /// tracking method will result in tracking state becoming permanently
@@ -1820,8 +1825,8 @@ AR_DEFINE_ENUM(ArInstantPlacementMode){
 
     /// Enable Instant Placement. If the hit test is successful,
     /// @c ::ArFrame_hitTestInstantPlacement will return a single
-    /// @c ::ArInstantPlacementPoint with the +Y pointing upward, against gravity.
-    /// Otherwise, returns an empty result set.
+    /// @c ::ArInstantPlacementPoint with the +Y pointing upward, against
+    /// gravity. Otherwise, returns an empty result set.
     ///
     /// This mode is currently intended to be used with hit tests against
     /// horizontal surfaces.
@@ -1832,15 +1837,16 @@ AR_DEFINE_ENUM(ArInstantPlacementMode){
     ///    with +Y pointing upward, against gravity.
     ///  - No guarantees are made with respect to orientation of +X and +Z.
     ///    Specifically, a hit test against a vertical surface, such as a wall,
-    ///    will not result in a pose that's in any way aligned to the plane of the
-    ///    wall, other than +Y being up, against gravity.
+    ///    will not result in a pose that's in any way aligned to the plane of
+    ///    the wall, other than +Y being up, against gravity.
     ///  - The @c ::ArInstantPlacementPoint's tracking method may
     ///    never become
     ///    @c #AR_INSTANT_PLACEMENT_POINT_TRACKING_METHOD_FULL_TRACKING or may
     ///    take a long time to reach this state. The tracking method remains
     ///    @c
     ///    #AR_INSTANT_PLACEMENT_POINT_TRACKING_METHOD_SCREENSPACE_WITH_APPROXIMATE_DISTANCE.<!--NOLINT-->
-    ///    until a (tiny) horizontal plane is fitted at the point of the hit test.
+    ///    until a (tiny) horizontal plane is fitted at the point of the hit
+    ///    test.
     AR_INSTANT_PLACEMENT_MODE_LOCAL_Y_UP = 2,
 };
 
@@ -1851,8 +1857,8 @@ AR_DEFINE_ENUM(ArCoordinates2dType){
     AR_COORDINATES_2D_TEXTURE_TEXELS = 0,
     /// GPU texture coordinates, (s,t) normalized to [0.0f, 1.0f] range.
     AR_COORDINATES_2D_TEXTURE_NORMALIZED = 1,
-    /// CPU image, (x,y) in pixels. The range of x and y is determined by the CPU
-    /// image resolution.
+    /// CPU image, (x,y) in pixels. The range of x and y is determined by the
+    /// CPU image resolution.
     AR_COORDINATES_2D_IMAGE_PIXELS = 2,
     /// CPU image, (x,y) normalized to [0.0f, 1.0f] range.
     AR_COORDINATES_2D_IMAGE_NORMALIZED = 3,
@@ -1876,8 +1882,8 @@ AR_DEFINE_ENUM(ArCoordinates3dType){
     /// href="https://developers.google.com/ar/develop/c/electronic-image-stabilization">Electronic
     /// Image Stabilization developer guide</a> for more information.
     AR_COORDINATES_3D_EIS_TEXTURE_NORMALIZED = 0,
-    /// Normalized Device Coordinates (NDC), display-rotated, (x,y) normalized to
-    /// [-1.0f, 1.0f] range to compensate for perspective shift for EIS.
+    /// Normalized Device Coordinates (NDC), display-rotated, (x,y) normalized
+    /// to [-1.0f, 1.0f] range to compensate for perspective shift for EIS.
     ///
     /// <p>Use with @c ::ArFrame_transformCoordinates3d. See the <a
     /// href="https://developers.google.com/ar/develop/c/electronic-image-stabilization">Electronic
