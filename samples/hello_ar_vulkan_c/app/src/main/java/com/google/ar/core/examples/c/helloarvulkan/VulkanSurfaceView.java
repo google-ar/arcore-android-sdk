@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.ar.core.examples.c.simplevulkan;
+package com.google.ar.core.examples.c.helloarvulkan;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -65,6 +65,9 @@ public class VulkanSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
     /** Called to draw the current frame. */
     public void onDrawFrame();
+
+    /** Called when the surface is destroyed. */
+    public void onSurfaceDestroyed();
   }
 
   /**
@@ -128,6 +131,7 @@ public class VulkanSurfaceView extends SurfaceView implements SurfaceHolder.Call
 
   /** This method is part of the SurfaceHolder.Callback2 interface. */
   public void surfaceDestroyed(SurfaceHolder holder) {
+    renderer.onSurfaceDestroyed();
     drawTimer.cancel();
   }
 

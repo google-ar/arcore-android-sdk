@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef C_ARCORE_SIMPLE_VULKAN_JNI_INTERFACE_H_
-#define C_ARCORE_SIMPLE_VULKAN_JNI_INTERFACE_H_
+#ifndef C_ARCORE_HELLO_AR_VULKAN_JNI_INTERFACE_H_
+#define C_ARCORE_HELLO_AR_VULKAN_JNI_INTERFACE_H_
 
 #include <jni.h>
 /**

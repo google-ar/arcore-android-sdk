@@ -5,10 +5,9 @@
 
 #define GLM_VERSION_MAJOR 1
 #define GLM_VERSION_MINOR 0
-#define GLM_VERSION_PATCH 1
+#define GLM_VERSION_PATCH 2
 #define GLM_VERSION_REVISION 0 // Deprecated
 #define GLM_VERSION 1000 // Deprecated
-#define GLM_VERSION_MESSAGE "GLM: version 1.0.1"
 
 #define GLM_MAKE_API_VERSION(variant, major, minor, patch) \
     ((((uint32_t)(variant)) << 29U) | (((uint32_t)(major)) << 22U) | (((uint32_t)(minor)) << 12U) | ((uint32_t)(patch)))
@@ -149,10 +148,7 @@
 // http://gcc.gnu.org/projects/cxx0x.html
 // http://msdn.microsoft.com/en-us/library/vstudio/hh567368(v=vs.120).aspx
 
-// Android has multiple STLs but C++11 STL detection doesn't always work #284 #564
-#if GLM_PLATFORM == GLM_PLATFORM_ANDROID && !defined(GLM_LANG_STL11_FORCED)
-#	define GLM_HAS_CXX11_STL 0
-#elif (GLM_COMPILER & GLM_COMPILER_CUDA_RTC) == GLM_COMPILER_CUDA_RTC
+#if (GLM_COMPILER & GLM_COMPILER_CUDA_RTC) == GLM_COMPILER_CUDA_RTC
 #	define GLM_HAS_CXX11_STL 0
 #elif (GLM_COMPILER & GLM_COMPILER_HIP)
 #	define GLM_HAS_CXX11_STL 0
@@ -340,8 +336,10 @@
 #endif
 
 // [nodiscard]
+
 #if GLM_LANG & GLM_LANG_CXX17_FLAG
-#	define GLM_NODISCARD [[nodiscard]]
+// disable use of [[nodiscard]] in C++17 due compiler bug
+#	define GLM_NODISCARD /*[[nodiscard]]*/
 #else
 #	define GLM_NODISCARD
 #endif
@@ -507,7 +505,7 @@
 #	define GLM_DEFAULTED_FUNC_QUALIFIER GLM_FUNC_QUALIFIER
 #endif//GLM_HAS_DEFAULTED_FUNCTIONS
 #if !defined(GLM_FORCE_CTOR_INIT)
-#	define GLM_DEFAULTED_DEFAULT_CTOR_DECL GLM_CUDA_FUNC_DECL
+#	define GLM_DEFAULTED_DEFAULT_CTOR_DECL
 #	define GLM_DEFAULTED_DEFAULT_CTOR_QUALIFIER GLM_DEFAULTED_FUNC_QUALIFIER
 #else
 #	define GLM_DEFAULTED_DEFAULT_CTOR_DECL GLM_FUNC_DISCARD_DECL
@@ -596,12 +594,10 @@
 #	define GLM_ALIGNED_TYPEDEF(type, name, alignment) typedef __declspec(align(alignment)) type name
 #elif GLM_COMPILER & (GLM_COMPILER_GCC | GLM_COMPILER_CLANG | GLM_COMPILER_INTEL)
 #	if GLM_LANG & GLM_LANG_CXX14_FLAG
-// BEGIN GOOGLE MODIFICATION
 #		define GLM_DEPRECATED [[deprecated]]
 #	else
 #		define GLM_DEPRECATED __attribute__((__deprecated__))
 #	endif
-// END GOOGLE MODIFICATION
 #	define GLM_ALIGNED_TYPEDEF(type, name, alignment) typedef type name __attribute__((aligned(alignment)))
 #elif (GLM_COMPILER & GLM_COMPILER_CUDA) || (GLM_COMPILER & GLM_COMPILER_HIP)
 #	define GLM_DEPRECATED
@@ -983,7 +979,7 @@ namespace detail
 #		define GLM_STR(x) GLM_STR_HELPER(x)
 
 	// Report GLM version
-#		pragma message (GLM_STR(GLM_VERSION_MESSAGE))
+#		pragma message ("GLM: version " GLM_STR(GLM_VERSION_MAJOR) "." GLM_STR(GLM_VERSION_MINOR) "." GLM_STR(GLM_VERSION_PATCH))
 
 	// Report C++ language
 #	if (GLM_LANG & GLM_LANG_CXX20_FLAG) && (GLM_LANG & GLM_LANG_EXT)

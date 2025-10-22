@@ -17,7 +17,7 @@
 
 #include <dlfcn.h>
 
-namespace simple_vulkan {
+namespace hello_ar_vulkan {
 
 bool LoadVulkan() {
   void* libvulkan = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
@@ -1523,4 +1523,4 @@ PFN_vkGetAndroidHardwareBufferPropertiesANDROID
 PFN_vkGetMemoryAndroidHardwareBufferANDROID
     vkGetMemoryAndroidHardwareBufferANDROID;
 
-}  // namespace simple_vulkan
+}  // namespace hello_ar_vulkan

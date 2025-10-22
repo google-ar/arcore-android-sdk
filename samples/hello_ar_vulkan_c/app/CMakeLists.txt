@@ -32,16 +32,21 @@ add_library( glm INTERFACE )
 set_target_properties( glm PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${GLM_INCLUDE})
 
 # This is the main app library.
-add_library(simple_vulkan_native SHARED
+add_library(hello_ar_vulkan_native SHARED
            src/main/cpp/android_vulkan_loader.cc
            src/main/cpp/vulkan_handler.cc
-           src/main/cpp/simple_vulkan_application.cc
+           src/main/cpp/background_renderer.cc
+           src/main/cpp/model_renderer.cc
+           src/main/cpp/depth_map.cc
+           src/main/cpp/point_cloud_renderer.cc
+           src/main/cpp/plane_renderer.cc
+           src/main/cpp/hello_ar_vulkan_application.cc
            src/main/cpp/jni_interface.cc
            src/main/cpp/util.cc)
 
-target_include_directories(simple_vulkan_native PRIVATE
+target_include_directories(hello_ar_vulkan_native PRIVATE
            src/main/cpp)
-target_link_libraries(simple_vulkan_native
+target_link_libraries(hello_ar_vulkan_native
                       android
                       log
                       EGL

@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef C_ARCORE_SIMPLE_VULKAN_ANDROID_VULKAN_LOADER_H_
-#define C_ARCORE_SIMPLE_VULKAN_ANDROID_VULKAN_LOADER_H_
+#ifndef C_ARCORE_HELLO_AR_VULKAN_ANDROID_VULKAN_LOADER_H_
+#define C_ARCORE_HELLO_AR_VULKAN_ANDROID_VULKAN_LOADER_H_
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_android.h>
 
-namespace simple_vulkan {
+namespace hello_ar_vulkan {
 
 bool LoadVulkan();
 void LoadCommonFunctions0(void* libvulkan);
@@ -548,5 +548,5 @@ extern PFN_vkGetMemoryAndroidHardwareBufferANDROID
 extern PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT;
 extern PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT;
 
-}  // namespace simple_vulkan
+}  // namespace hello_ar_vulkan
 #endif

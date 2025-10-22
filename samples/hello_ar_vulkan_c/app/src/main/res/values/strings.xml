@@ -15,7 +15,7 @@
    limitations under the License.
 -->
 <resources>
-  <string translatable="false" name="app_name">Simple Vulkan</string>
+  <string translatable="false" name="app_name">Hello AR Vulkan</string>
   <string translatable="false" name="depth_use_explanation">When Depth is enabled on supported devices, virtual objects adapt to the environment by blending in with the real world.</string>
   <string translatable="false" name="button_text_enable_depth">Enable</string>
   <string translatable="false" name="button_text_disable_depth">Disable</string>

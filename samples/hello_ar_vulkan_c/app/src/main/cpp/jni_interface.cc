@@ -18,11 +18,11 @@
 #include <android/asset_manager_jni.h>
 #include <jni.h>
 
-#include "simple_vulkan_application.h"
+#include "hello_ar_vulkan_application.h"
 
 #define JNI_METHOD(return_type, method_name) \
   JNIEXPORT return_type JNICALL              \
-      Java_com_google_ar_core_examples_c_simplevulkan_JniInterface_##method_name
+    Java_com_google_ar_core_examples_c_helloarvulkan_JniInterface_##method_name
 
 extern "C" {
 
@@ -30,13 +30,13 @@ namespace {
 // maintain a reference to the JVM so we can use it later.
 static JavaVM *g_vm = nullptr;
 
-inline jlong jptr(
-    simple_vulkan::SimpleVulkanApplication *native_simple_vulkan_application) {
-  return reinterpret_cast<intptr_t>(native_simple_vulkan_application);
+inline jlong jptr(hello_ar_vulkan::HelloArVulkanApplication*
+                      native_hello_ar_vulkan_application) {
+  return reinterpret_cast<intptr_t>(native_hello_ar_vulkan_application);
 }
 
-inline simple_vulkan::SimpleVulkanApplication *native(jlong ptr) {
-  return reinterpret_cast<simple_vulkan::SimpleVulkanApplication *>(ptr);
+inline hello_ar_vulkan::HelloArVulkanApplication* native(jlong ptr) {
+  return reinterpret_cast<hello_ar_vulkan::HelloArVulkanApplication*>(ptr);
 }
 
 }  // namespace
@@ -49,7 +49,18 @@ jint JNI_OnLoad(JavaVM *vm, void *) {
 JNI_METHOD(jlong, createNativeApplication)
 (JNIEnv *env, jclass, jobject j_asset_manager) {
   AAssetManager *asset_manager = AAssetManager_fromJava(env, j_asset_manager);
-  return jptr(new simple_vulkan::SimpleVulkanApplication(asset_manager));
+  return jptr(new hello_ar_vulkan::HelloArVulkanApplication(asset_manager));
+}
+
+JNI_METHOD(jboolean, isDepthSupported)
+(JNIEnv *, jclass, jlong native_application) {
+  return native(native_application)->IsDepthSupported();
+}
+
+JNI_METHOD(void, onSettingsChange)
+(JNIEnv *, jclass, jlong native_application,
+ jboolean is_instant_placement_enabled) {
+  native(native_application)->OnSettingsChange(is_instant_placement_enabled);
 }
 
 JNI_METHOD(void, destroyNativeApplication)
@@ -73,6 +84,11 @@ JNI_METHOD(void, onSurfaceCreated)
   native(native_application)->OnSurfaceCreated(env, surface);
 }
 
+JNI_METHOD(void, onSurfaceDestroyed)
+(JNIEnv *, jclass, jlong native_application) {
+  native(native_application)->OnSurfaceDestroyed();
+}
+
 JNI_METHOD(void, onDisplayGeometryChanged)
 (JNIEnv *, jobject, jlong native_application, int display_rotation, int width,
  int height) {
@@ -81,8 +97,21 @@ JNI_METHOD(void, onDisplayGeometryChanged)
 }
 
 JNI_METHOD(void, onSurfaceDrawFrame)
-(JNIEnv *, jclass, jlong native_application) {
-  native(native_application)->OnDrawFrame();
+(JNIEnv*, jclass, jlong native_application,
+ jboolean depth_color_visualization_enabled, jboolean use_depth_for_occlusion) {
+  native(native_application)
+      ->OnDrawFrame(depth_color_visualization_enabled, use_depth_for_occlusion);
+}
+
+JNI_METHOD(void, onTouched)
+(JNIEnv *, jclass, jlong native_application, jfloat x, jfloat y) {
+  native(native_application)->OnTouched(x, y);
+}
+
+JNI_METHOD(jboolean, hasDetectedPlanes)
+(JNIEnv*, jclass, jlong native_application) {
+  return static_cast<jboolean>(
+      native(native_application)->HasDetectedPlanes() ? JNI_TRUE : JNI_FALSE);
 }
 
 JNIEnv *GetJniEnv() {

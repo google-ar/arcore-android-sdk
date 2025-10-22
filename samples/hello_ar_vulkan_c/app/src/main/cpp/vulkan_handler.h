@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef THIRD_PARTY_ARCORE_JAVA_COM_GOOGLE_AR_CORE_EXAMPLES_C_SIMPLEVULKAN_CPP_VULKAN_HANDLER_H_
-#define THIRD_PARTY_ARCORE_JAVA_COM_GOOGLE_AR_CORE_EXAMPLES_C_SIMPLEVULKAN_CPP_VULKAN_HANDLER_H_
+#ifndef THIRD_PARTY_ARCORE_JAVA_COM_GOOGLE_AR_CORE_EXAMPLES_C_HELLOARVULKAN_CPP_VULKAN_HANDLER_H_
+#define THIRD_PARTY_ARCORE_JAVA_COM_GOOGLE_AR_CORE_EXAMPLES_C_HELLOARVULKAN_CPP_VULKAN_HANDLER_H_
 
 #include <android/asset_manager.h>
 #include <android/native_window.h>
@@ -34,14 +34,14 @@
   {                                                                           \
     VkResult status = (func);                                                 \
     if (VK_SUCCESS != status) {                                               \
-      __android_log_print(ANDROID_LOG_ERROR, "Simple Vulkan ",                \
+      __android_log_print(ANDROID_LOG_ERROR, "Hello Ar Vulkan ",              \
                           "==== Vulkan error %d. File[%s], line[%d]", status, \
                           __FILE__, __LINE__);                                \
       assert(false);                                                          \
     }                                                                         \
   }
 
-namespace simple_vulkan {
+namespace hello_ar_vulkan {
 
 /**
  * Class with all the elements required to setup a Vulkan environment, and
@@ -51,40 +51,6 @@ class VulkanHandler {
  public:
   enum class ShaderType { kVertexShader, kFragmentShader };
 
-  /**
-   * @struct Vertex Information to be processed in the vertex shader.
-   */
-  struct VertexInfo {
-    // pos_x: x-axis position in the screen where the vertex of the image will
-    // be rendered. Normalized between -1 (left) and 1 (right).
-    float pos_x;
-    // pos_y: y-axis position in the screen where the vertex of the image will
-    // be rendered. Normalized between -1 (top) and 1 (bottom).
-    float pos_y;
-    // tex_u: x-axis position of the texture to be renderer. Normalized between
-    // 0 (left) and 1 (right).
-    float tex_u;
-    // tex_v: y-axis position of the texture to be renderer. Normalized between
-    // 0 (top) and 1 (bottom).
-    float tex_v;
-  };
-
-  /**
-   * Structure with texture image.
-   */
-  struct TextureImageInfo {
-    VkImageView texture_image_view;
-    VkDeviceMemory texture_memory;
-    VkImage texture_image;
-  };
-
-  /**
-   * Structure with swapchain image's relative.
-   */
-  struct SwapchinImageRelative {
-    VkImageView swapchain_view;
-    VkFramebuffer frame_buffer;
-  };
 
   /**
    * Vulkan Handler Constructor
@@ -117,16 +83,6 @@ class VulkanHandler {
    */
   void WaitForFrame(int current_frame);
 
-  /**
-   * Create image based on the provided hardware buffer and bind the rendering
-   * command to the command buffer.
-   *
-   * @param current_frame the index of current frame in the flight.
-   * @param hardware_buffer the chunk of memory containing the ARCore camera
-   * image info.
-   */
-  void RenderFromHardwareBuffer(int current_frame,
-                                AHardwareBuffer* hardware_buffer);
 
   /**
    * Check whether the vertices are set for the frame.
@@ -146,7 +102,7 @@ class VulkanHandler {
    * 4 corners' vertices.
    */
   void SetVerticesAndIndicesForFrame(int current_frame,
-                                     std::vector<VertexInfo> vertices,
+                                     std::vector<util::VertexInfo> vertices,
                                      std::vector<uint16_t> indices);
 
   /**
@@ -215,6 +171,164 @@ class VulkanHandler {
   void PresentRecordingCommandBuffer(int current_frame,
                                      uint32_t swapchain_image_index);
 
+  /**
+   * Clean the texture image info.
+   *
+   * @param texture_image_info the texture image info to clean.
+   */
+
+  void CleanTextureImageInfo(util::TextureImageInfo& texture_image_info);
+
+  /**
+   * Clean the buffer and its memory.
+   *
+   * @param buffer the buffer to clean.
+   * @param buffer_memory the memory of the buffer to clean.
+   * @param mapped_data the mapped data of the buffer to clean.
+   */
+  void CleanBuffer(VkBuffer& buffer, VkDeviceMemory& buffer_memory,
+                   void* mapped_data = nullptr);
+
+  /**
+   * Find the memory type that matches the given type filter and properties.
+   *
+   * @param physical_device the physical device to find the memory type for.
+   * @param typeFilter the type filter to match.
+   * @param properties the properties to match.
+   *
+   * @return the memory type that matches the given type filter and properties.
+   */
+  uint32_t FindMemoryType(VkPhysicalDevice physical_device, uint32_t typeFilter,
+                          VkMemoryPropertyFlags properties);
+
+  /**
+   * Load a shader from the asset manager.
+   *
+   * @param content the shader content.
+   * @param size the shader size.
+   *
+   * @return the shader module.
+   */
+  VkShaderModule LoadShader(VkDevice logical_device,
+                            const uint32_t* const content, size_t size) const;
+
+  /**
+   * Create a buffer with the given size, usage, and properties.
+   *
+   * @param physical_device the physical device to create the buffer for.
+   * @param size the size of the buffer.
+   * @param usage the usage of the buffer.
+   * @param properties the properties of the buffer.
+   * @param buffer the buffer to create.
+   * @param buffer_memory the memory of the buffer.
+   */
+  void CreateBuffer(VkPhysicalDevice physical_device, VkDeviceSize size,
+                    VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
+                    VkBuffer& buffer, VkDeviceMemory& buffer_memory);
+
+  /** Transitions the layout of the given Vulkan image.
+   *
+   * The behavior regarding CPU blocking depends on the `current_frame`
+   * argument:
+   * - Synchronous (Blocking): If `current_frame` is -1 (the default), this
+   * function will block the calling thread until the layout transition is
+   * complete.
+   * - Asynchronous (Non-Blocking): If `current_frame` is a non-negative value,
+   *   the transition is associated with the specified frame and the function
+   *   returns without waiting for completion.
+   *
+   * @param image: The Vulkan image to transition.
+   * @param old_layout: The current layout of the image.
+   * @param new_layout: The desired new layout of the image.
+   * @param synchronous: Whether to block the calling thread until the layout
+   * transition is complete. True by default.
+   * @param current_frame: The index of the current frame in flight. Defaults to
+   * -1 for synchronous blocking execution. Provide a valid frame index for
+   * asynchronous execution.
+   */
+  void TransitionImageLayout(VkImage image, VkImageLayout old_layout,
+                             VkImageLayout new_layout, bool synchronous = true,
+                             int current_frame = -1);
+
+  /** Copies data from a Vulkan buffer to a Vulkan image.
+   *
+   * The behavior regarding CPU blocking depends on the `current_frame`
+   * argument:
+   * - Synchronous (Blocking): If `current_frame` is -1 (the default), this
+   *  function will block the calling thread until the copy operation is
+   *  complete.
+   * - Asynchronous (Non-Blocking): If `current_frame` is a non-negative value,
+   *   the copy is associated with the specified frame, and the function
+   *   returns without waiting for completion. Synchronization should be handled
+   *   externally, typically using fences or semaphores associated with the
+   *   frame.
+   *
+   * @param buffer the source Vulkan buffer containing the data to copy.
+   * @param image the destination Vulkan image.
+   * @param width the width of the region to copy in pixels.
+   * @param height the height of the region to copy in pixels.
+   * @param aspect_mask the aspect mask of the image to copy to.
+   * @param synchronous whether to block the calling thread until the copy
+   * operation is complete. True by default.
+   * @param current_frame the index of current frame in the flight.
+   */
+  void CopyBufferToImage(
+      VkBuffer buffer, VkImage image, uint32_t width, uint32_t height,
+      VkImageAspectFlags aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT,
+      bool synchronous = true, int current_frame = -1);
+
+  /**
+   * Copies data from a source buffer to a destination buffer.
+   *
+   * @param src_buffer the source Vulkan buffer containing the data to copy.
+   * @param dst_buffer the destination Vulkan buffer.
+   * @param size the size of the data to copy.
+   */
+  void CopyBuffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size);
+
+  /**
+   * Update the depth texture.
+   *
+   * @param ar_session the AR session to use for the depth map.
+   * @param ar_frame the AR frame to use for the depth map.
+   * @param current_frame the index of the current frame in flight.
+   */
+  void UpdateDepthTexture(ArSession* ar_session, ArFrame* ar_frame,
+                          int current_frame);
+
+  VkPhysicalDevice GetPhysicalDevice() { return physical_device_; }
+  VkDevice GetLogicalDevice() { return logical_device_; }
+  VkQueue GetQueue() { return queue_; }
+  VkCommandPool GetCommandPool() { return command_pool_; }
+  VkCommandBuffer GetCommandBuffer(int current_frame) {
+    return command_buffers_[current_frame];
+  }
+  VkRenderPass GetRenderPass() { return render_pass_; }
+  int GetMaxFramesInFlight() { return max_frames_in_flight_; }
+  VkSurfaceCapabilitiesKHR GetSurfaceCapabilities() {
+    return surface_capabilities_;
+  }
+
+  VkBuffer GetIndexBuffer(int current_frame) {
+    return index_buffers_[current_frame];
+  }
+  VkBuffer* GetVertexBuffer(int current_frame) {
+    return &vertex_buffers_[current_frame];
+  }
+
+  uint32_t GetIndexCount(int current_frame) {
+    return index_count_[current_frame];
+  }
+  VkImageView GetDepthTextureView(int current_frame) const {
+    return depth_texture_infos_[current_frame].texture_image_view;
+  }
+  VkSampler GetDepthSampler() const { return depth_sampler_; }
+
+  float GetDepthAspectRatio(int current_frame) const {
+    return static_cast<float>(depth_texture_widths_[current_frame]) /
+           static_cast<float>(depth_texture_heights_[current_frame]);
+  }
+
  private:
   // Creation function of vulkan class. Dependent classes are put into
   // the parametes.
@@ -233,23 +347,7 @@ class VulkanHandler {
   VkRenderPass CreateRenderPass(VkDevice logical_device);
   VkCommandPool CreateCommandPool(VkDevice logical_device,
                                   uint32_t queue_family_index);
-  VkDescriptorPool CreateDescriptorPool(VkDevice logical_device,
-                                        int max_frames_in_flight);
 
-  VkSampler CreateSampler(VkDevice logical_device,
-                          VkSamplerYcbcrConversionInfo sampler_conversion_info);
-  VkDescriptorSetLayout CreateDescriptorSetLayout(VkDevice logical_device,
-                                                  VkSampler sampler);
-  VkPipelineLayout CreatePipelineLayout(
-      VkDevice logical_device, VkDescriptorSetLayout descriptor_set_layout);
-  VkPipeline CreateGraphicsPipeline(VkDevice logical_device,
-                                    VkRenderPass render_pass,
-                                    VkPipelineLayout pipeline_layout);
-
-  void InitDescriptorSets(VkDevice logical_device,
-                          VkDescriptorPool descriptor_pool,
-                          VkDescriptorSetLayout descriptor_set_layout,
-                          int max_frames_in_flight);
   void InitSwapchainImageRelatives(
       VkDevice logical_device, VkSwapchainKHR swapchain,
       VkRenderPass render_pass, VkSurfaceCapabilitiesKHR surface_capabilities,
@@ -257,21 +355,30 @@ class VulkanHandler {
   void InitCommandBuffers(VkDevice logical_device, VkCommandPool command_pool,
                           int max_frames_in_flight);
   void InitSyncObjects(VkDevice logical_device, int max_frames_in_flight);
+  void CreateDepthResources();
+  VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates,
+                               VkImageTiling tiling,
+                               VkFormatFeatureFlags features);
+  VkFormat FindDepthFormat();
+  void CreateImage(uint32_t width, uint32_t height, VkFormat format,
+                   VkImageTiling tiling, VkImageUsageFlags usage,
+                   VkMemoryPropertyFlags properties, VkImage& image,
+                   VkDeviceMemory& image_memory);
+  VkImageView CreateImageView(VkImage image, VkFormat format,
+                              VkImageAspectFlags aspect_flags);
+
+  // Depth Texture related functions.
+  void CreateDepthSampler();
+  void RecreateDepthResources(int32_t width, int32_t height,
+                              int32_t plane_data_size, int current_frame);
+  void DestroyDepthResources(int current_frame);
 
   // Cleanup functions
-  void CleanTextureImageInfo(int index);
-  void CleanVertiesAndIndies(int index);
+  void CleanVerticesAndIndices(int index);
 
-  // Other reference functions.
-  uint32_t FindMemoryType(VkPhysicalDevice physical_device, uint32_t typeFilter,
-                          VkMemoryPropertyFlags properties);
-  VkShaderModule LoadShader(VkDevice logical_device,
-                            const uint32_t* const content, size_t size) const;
-  void CreateBuffer(VkPhysicalDevice physical_device, VkDeviceSize size,
-                    VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
-                    VkBuffer& buffer, VkDeviceMemory& buffer_memory);
-  void TransitionImageLayout(VkImage image, VkImageLayout old_layout,
-                             VkImageLayout new_layout);
+  // Helper functions to begin and end single time commands.
+  VkCommandBuffer BeginSingleTimeCommands();
+  void EndSingleTimeCommands(VkCommandBuffer& command_buffer);
 
   VkInstance instance_;
   VkSurfaceKHR surface_;
@@ -281,14 +388,9 @@ class VulkanHandler {
   VkSurfaceCapabilitiesKHR surface_capabilities_;
   VkSurfaceFormatKHR surface_format_;
   VkSwapchainKHR swapchain_ = VK_NULL_HANDLE;
-  VkSamplerYcbcrConversion conversion_ = VK_NULL_HANDLE;
-  VkSampler sampler_ = VK_NULL_HANDLE;
-  VkDescriptorSetLayout descriptor_set_layout_ = VK_NULL_HANDLE;
-  VkPipelineLayout pipeline_layout_ = VK_NULL_HANDLE;
-  VkPipeline graphics_pipeline_ = VK_NULL_HANDLE;
   VkRenderPass render_pass_ = VK_NULL_HANDLE;
   VkCommandPool command_pool_ = VK_NULL_HANDLE;
-  VkDescriptorPool descriptor_pool_;
+  util::TextureImageInfo depth_buffer_info_;
 
   int max_frames_in_flight_ = 0;
 
@@ -296,10 +398,8 @@ class VulkanHandler {
   uint32_t swapchain_length_;
 
   // array of frame buffers and views
-  std::vector<TextureImageInfo> texture_image_infos_;
   std::vector<VkCommandBuffer> command_buffers_;
-  std::vector<SwapchinImageRelative> swapchain_image_relatives_;
-  std::vector<VkDescriptorSet> descriptor_sets_;
+  std::vector<util::SwapchainImageRelative> swapchain_image_relatives_;
   std::vector<VkBuffer> index_buffers_;
   std::vector<VkDeviceMemory> index_buffers_memory_;
   std::vector<uint32_t> index_count_;
@@ -308,8 +408,17 @@ class VulkanHandler {
   std::vector<VkSemaphore> image_available_semaphores;
   std::vector<VkSemaphore> render_finished_semaphores;
   std::vector<VkFence> fences_;
+  // Depth texture resources.
+  std::vector<util::TextureImageInfo> depth_texture_infos_;
+  VkSampler depth_sampler_ = VK_NULL_HANDLE;
+  std::vector<VkImageLayout> depth_texture_layouts_;
+  std::vector<VkBuffer> depth_staging_buffers_;
+  std::vector<VkDeviceMemory> depth_staging_buffer_memories_;
+  std::vector<void*> mapped_depth_staging_buffers_;
+  std::vector<int32_t> depth_texture_widths_;
+  std::vector<int32_t> depth_texture_heights_;
 };
 
-}  // namespace simple_vulkan
+}  // namespace hello_ar_vulkan
 
-#endif  // THIRD_PARTY_ARCORE_JAVA_COM_GOOGLE_AR_CORE_EXAMPLES_C_SIMPLEVULKAN_CPP_VULKAN_HANDLER_H_
+#endif  // THIRD_PARTY_ARCORE_JAVA_COM_GOOGLE_AR_CORE_EXAMPLES_C_HELLOARVULKAN_CPP_VULKAN_HANDLER_H_

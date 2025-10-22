@@ -181,7 +181,14 @@ void HelloArApplication::OnDrawFrame(bool depthColorVisualizationEnabled,
   }
 
   void* native_hardware_buffer = nullptr;
-  ArFrame_getHardwareBuffer(ar_session_, ar_frame_, &native_hardware_buffer);
+  ArStatus status = ArFrame_getHardwareBuffer(ar_session_, ar_frame_,
+                                              &native_hardware_buffer);
+
+  if (status != AR_SUCCESS || native_hardware_buffer == nullptr) {
+    LOGE("Failed to get AHardwareBuffer from ARFrame. Status: %d", status);
+    // Skip this frame if hardware buffer is not available.
+    return;
+  }
 
   if (eglGetNativeClientBufferANDROID == nullptr) {
     LOGE("eglGetNativeClientBufferANDROID symbol does not exist.");

@@ -25,10 +25,10 @@ def arcore_libpath = "${buildDir}/arcore-native"
 configurations { natives }
 
 android {
-    namespace "com.google.ar.core.examples.c.simplevulkan"
+    namespace "com.google.ar.core.examples.c.helloarvulkan"
     compileSdkVersion 36
     defaultConfig {
-        applicationId "com.google.ar.core.examples.c.simplevulkan"
+        applicationId "com.google.ar.core.examples.c.helloarvulkan"
 
         // "AR Optional" apps must declare minSdkVersion >= 14.
         // "AR Required" apps must declare minSdkVersion >= 28.
@@ -70,8 +70,8 @@ android {
 
 dependencies {
     // ARCore (Google Play Services for AR) library.
-    implementation 'com.google.ar:core:1.50.0'
-    natives 'com.google.ar:core:1.50.0'
+    implementation 'com.google.ar:core:1.51.0'
+    natives 'com.google.ar:core:1.51.0'
 
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'com.google.android.material:material:1.1.0'
