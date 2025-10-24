@@ -33,5 +33,8 @@
 
   <string translatable="false" name="searching_planes">Searching for surfaces...</string>
   <string translatable="false" name="waiting_taps">Tap on a surface to place an object.</string>
+    <string name="depth_api">Depth API</string>
+  <string name="instant_placement">Instant Placement</string>
+  <string name="setting">setting</string>
 
 </resources>
