@@ -17,7 +17,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.google.ar.core.examples.java.helloar.HelloArActivity">
+    tools:context="com.google.ar.core.examples.kotlin.helloar.HelloArActivity">
 
   <android.opengl.GLSurfaceView
       android:id="@+id/surfaceview"
@@ -32,6 +32,7 @@
       android:layout_alignParentEnd="true"
       android:layout_alignParentTop="true"
       android:layout_margin="25dp"
+      android:contentDescription="@string/setting"
       android:src="@drawable/ic_settings"
       android:background="@android:color/transparent"/>
 
