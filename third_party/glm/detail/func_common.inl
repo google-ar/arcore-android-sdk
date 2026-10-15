@@ -49,7 +49,7 @@ namespace glm
 
 	template<typename T>
 	struct TAbs {
-		GLM_FUNC_QUALIFIER T operator()(const T& a) { return abs(a); }
+		T operator()(const T& a) { return abs(a); }
 	};
 
 	// round
@@ -67,7 +67,7 @@ namespace glm
 
 		template<typename T>
 		struct TRound {
-			GLM_FUNC_QUALIFIER T operator()(const T& a) { return round(a); }
+			T operator()(const T& a) { return round(a); }
 		};
 
 	// trunc
@@ -85,12 +85,12 @@ namespace glm
 
 		template<typename T>
 		struct TTrunc {
-			GLM_FUNC_QUALIFIER T operator()(const T& a) { return trunc(a); }
+			T operator()(const T& a) { return trunc(a); }
 		};
 
 		template<typename T>
 		struct TFmod {
-			GLM_FUNC_QUALIFIER T operator()(const T& a, const T& b) { return std::fmod(a, b); }
+			T operator()(const T& a, const T& b) { return std::fmod(a, b); }
 		};
 
 }//namespace glm
@@ -334,9 +334,9 @@ namespace detail
 	template<typename T, qualifier Q, bool Aligned>
 	struct convert_vec4_to_vec3
 	{
-		GLM_FUNC_QUALIFIER static vec<4, T, Q> call(vec<3, T, Q> const& a)
+		GLM_FUNC_QUALIFIER static vec<3, T, Q> call(vec<4, T, Q> const& a)
 		{
-			return vec<4, T, Q>(a.x, a.y, a.z, 0.0f);
+			return vec<3, T, Q>(a.x, a.y, a.z);
 		}
 	};
 
@@ -345,7 +345,7 @@ namespace detail
 		template<int c>
 		GLM_FUNC_QUALIFIER GLM_CONSTEXPR static vec<L, T, Q> call(vec<L, T, Q> const& a)
 		{
-			vec<L, T, Q> v(0.0f);
+			vec<L, T, Q> v(T(0));
 			for (int i = 0; i < L; ++i)
 				v[i] = a[c];
 			return v;

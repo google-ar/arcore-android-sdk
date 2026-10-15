@@ -66,6 +66,5 @@ class MLKitObjectDetector(context: Activity) : ObjectDetector(context) {
     }
   }
 
-  @Suppress("USELESS_IS_CHECK")
-  fun hasCustomModel() = builder is CustomObjectDetectorOptions.Builder
+  fun hasCustomModel() = false
 }

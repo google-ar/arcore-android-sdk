@@ -2320,6 +2320,8 @@ ArStatus ArSession_createWithFeatures(void *env,
                                       const ArSessionFeature *features,
                                       ArSession **out_session_pointer);
 
+//     session_create_with_attribution_source)
+
 // === ArFuture functions ===
 
 /// @ingroup ArFuture

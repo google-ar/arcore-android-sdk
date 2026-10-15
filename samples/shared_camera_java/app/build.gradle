@@ -36,14 +36,14 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
 
 dependencies {
     // ARCore (Google Play Services for AR) library.
-    implementation 'com.google.ar:core:1.56.0'
+    implementation 'com.google.ar:core:1.57.0'
 
     // Obj - a simple Wavefront OBJ file loader
     // https://github.com/javagl/Obj

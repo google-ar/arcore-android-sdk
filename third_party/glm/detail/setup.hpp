@@ -5,7 +5,7 @@
 
 #define GLM_VERSION_MAJOR 1
 #define GLM_VERSION_MINOR 0
-#define GLM_VERSION_PATCH 2
+#define GLM_VERSION_PATCH 3
 #define GLM_VERSION_REVISION 0 // Deprecated
 #define GLM_VERSION 1000 // Deprecated
 
@@ -336,10 +336,8 @@
 #endif
 
 // [nodiscard]
-
 #if GLM_LANG & GLM_LANG_CXX17_FLAG
-// disable use of [[nodiscard]] in C++17 due compiler bug
-#	define GLM_NODISCARD /*[[nodiscard]]*/
+#	define GLM_NODISCARD [[nodiscard]]
 #else
 #	define GLM_NODISCARD
 #endif
