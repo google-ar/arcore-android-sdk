@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <item
+      android:id="@+id/anchor_reset"
+      android:title="Anchor Setting" />
+
+  <group android:checkableBehavior="single">
+
+    <item
+        android:id="@+id/geospatial"
+        android:title="Geospatial" />
+
+    <item
+        android:id="@+id/terrain"
+        android:title="Terrain" />
+
+    <item
+        android:id="@+id/rooftop"
+        android:title="Rooftop" />
+
+  </group>
+
+</menu>
